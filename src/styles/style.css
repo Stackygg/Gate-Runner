@@ -1475,7 +1475,7 @@ html, body {
 #modal-gameover {
   align-items: center;
   justify-content: center;
-  padding-bottom: max(55px, calc(35px + env(safe-area-inset-bottom)));
+  padding: max(8px, env(safe-area-inset-top, 8px)) 12px max(12px, env(safe-area-inset-bottom, 12px)) 12px;
 }
 
 #modal-ad-player,
@@ -1483,14 +1483,21 @@ html, body {
   z-index: 100000 !important;
   align-items: center;
   justify-content: center;
-  padding-bottom: max(55px, calc(35px + env(safe-area-inset-bottom)));
+  padding: max(8px, env(safe-area-inset-top, 8px)) 12px max(12px, env(safe-area-inset-bottom, 12px)) 12px;
 }
 
 #modal-gameover .modal-card,
 #modal-ad-player .modal-card {
-  margin-bottom: max(40px, calc(25px + env(safe-area-inset-bottom)));
-  max-height: 85vh;
+  margin: 0 auto;
+  max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#modal-gameover .modal-card::-webkit-scrollbar,
+#modal-ad-player .modal-card::-webkit-scrollbar {
+  display: none;
 }
 
 .modal-card {
@@ -3236,18 +3243,198 @@ html, body {
     gap: 6px;
   }
 
-  /* Modals de fin de mission (GameOver / Récompenses) et Pub surélevées */
+  /* Modal de Fin de Mission (GameOver / Récompenses) : Pleine hauteur sans scroll */
   #modal-gameover,
   #modal-ad-player {
-    padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom)));
+    padding: max(6px, env(safe-area-inset-top, 6px)) 8px max(10px, env(safe-area-inset-bottom, 10px)) 8px;
+    align-items: center;
+    justify-content: center;
   }
 
   #modal-gameover .modal-card,
   #modal-ad-player .modal-card {
-    margin-bottom: max(65px, calc(50px + env(safe-area-inset-bottom)));
-    max-height: 80vh;
-    padding: 20px 16px;
-    gap: 12px;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 440px;
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 14px);
+    padding: 10px 14px;
+    gap: 7px;
+    border-radius: 18px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  #modal-gameover .modal-card::-webkit-scrollbar,
+  #modal-ad-player .modal-card::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Compactage ergonomique des blocs de fin de mission sur mobile */
+  #modal-gameover .modal-badge {
+    padding: 3px 12px;
+    font-size: 0.68rem;
+  }
+
+  #modal-gameover .modal-title {
+    font-size: 1.15rem;
+    margin: 0;
+  }
+
+  #modal-gameover .results-stats-box {
+    padding: 6px 12px;
+    gap: 3px;
+    border-radius: 10px;
+  }
+
+  #modal-gameover .stat-row {
+    font-size: 0.78rem;
+  }
+
+  #modal-gameover .stat-value.highlight {
+    font-size: 0.92rem;
+  }
+
+  /* Hauts-Faits compacts */
+  #modal-gameover .gameover-quests-box {
+    padding: 6px 10px;
+    gap: 4px;
+    border-radius: 10px;
+    margin-top: 0;
+  }
+
+  #modal-gameover .gameover-quests-title {
+    font-size: 0.66rem;
+    gap: 4px;
+  }
+
+  #modal-gameover .gameover-quest-row {
+    padding: 3px 8px;
+    gap: 6px;
+    border-radius: 8px;
+  }
+
+  #modal-gameover .quest-status-badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+
+  #modal-gameover .quest-row-title {
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+
+  #modal-gameover .quest-row-desc {
+    font-size: 0.6rem;
+    line-height: 1.1;
+  }
+
+  #modal-gameover .quest-reward-pill {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+
+  /* Butin de mission compact */
+  #modal-gameover .gameover-loot-box {
+    padding: 6px 8px;
+    gap: 5px;
+    border-radius: 10px;
+  }
+
+  #modal-gameover .gameover-loot-header {
+    gap: 4px;
+  }
+
+  #modal-gameover .loot-header-icon {
+    font-size: 0.95rem;
+  }
+
+  #modal-gameover .loot-header-title {
+    font-size: 0.75rem;
+  }
+
+  #modal-gameover .gameover-loot-grid {
+    gap: 5px;
+  }
+
+  #modal-gameover .loot-slot-cell {
+    min-height: 78px;
+    padding: 5px 3px 4px 3px;
+    gap: 2px;
+    border-radius: 9px;
+  }
+
+  #modal-gameover .loot-cell-icon-wrap {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+  }
+
+  #modal-gameover .loot-cell-icon {
+    font-size: 1.05rem;
+  }
+
+  #modal-gameover .loot-cell-icon .icon-iridium {
+    width: 17px;
+    height: 17px;
+  }
+
+  #modal-gameover .loot-cell-val {
+    font-size: 0.76rem;
+  }
+
+  #modal-gameover .loot-cell-title {
+    font-size: 0.56rem;
+  }
+
+  #modal-gameover .loot-cell-badge {
+    font-size: 0.46rem;
+    padding: 1px 3px;
+  }
+
+  #modal-gameover .gameover-loot-details {
+    padding: 4px 8px;
+    font-size: 0.64rem;
+    margin-top: 0;
+  }
+
+  #modal-gameover .btn-loot-to-hangar {
+    padding: 5px 8px;
+    font-size: 0.68rem;
+    border-radius: 6px;
+  }
+
+  /* Actions en bas (Pub + Boutons Suivant / Menu) */
+  #modal-gameover .modal-actions-gameover {
+    gap: 6px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  #modal-gameover .btn-ad-double {
+    padding: 8px 12px;
+    min-height: 38px;
+    border-radius: 10px;
+  }
+
+  #modal-gameover .ad-icon-big {
+    font-size: 1.25rem;
+  }
+
+  #modal-gameover .ad-label-big {
+    font-size: 1.05rem;
+  }
+
+  #modal-gameover .modal-actions-row {
+    gap: 8px;
+  }
+
+  #modal-gameover .modal-actions-row .btn-secondary,
+  #modal-gameover .modal-actions-row .btn-primary {
+    padding: 9px 12px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+    min-height: 38px;
   }
 
   /* Ajustement de la sous-barre HUD sur petits écrans */
