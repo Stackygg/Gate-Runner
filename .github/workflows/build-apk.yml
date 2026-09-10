@@ -18,8 +18,6 @@ jobs:
     steps:
       - name: 📥 Récupération du code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: ⚙️ Configuration de Node.js
         uses: actions/setup-node@v4
@@ -35,7 +33,7 @@ jobs:
       - name: 📱 Configuration du SDK Android & Licences
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platforms;android-35 build-tools;35.0.0'
+          packages: 'platforms;android-36 build-tools;36.0.0'
 
       - name: 📦 Installation des dépendances NPM
         run: npm install
@@ -51,27 +49,11 @@ jobs:
 
       - name: 🔨 Compilation de l'APK (:app:assembleDebug)
         working-directory: android
-        run: |
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            echo "❌ Gradle a échoué avec le code ${PIPESTATUS[0]}"
-            exit ${PIPESTATUS[0]}
-          fi
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
       - name: 📦 Préparation du fichier APK final
         run: |
-          # Commit gradle log and directory tree to build-logs branch for complete diagnosis
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B build-logs
-          cp gradle.log full_gradle.log || true
-          echo -e "\n=== ARBORESCENCE BUILD ===" >> full_gradle.log
-          find android -maxdepth 5 >> full_gradle.log || true
-          git add full_gradle.log
-          git commit -m "ci: gradle build log and file list" || true
-          git push origin build-logs --force || true
-          
-          echo "=== Recherche de tous les fichiers .apk ==="
+          echo "=== Recherche du fichier APK généré ==="
           find . -name "*.apk"
           APK_PATH=$(find . -name "*.apk" -type f | head -n 1)
           if [ -z "$APK_PATH" ]; then
