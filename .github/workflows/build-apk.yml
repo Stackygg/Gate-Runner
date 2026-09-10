@@ -49,35 +49,31 @@ jobs:
       - name: 🔑 Droits d'exécution sur Gradle Wrapper
         run: chmod +x android/gradlew
 
-      - name: 🔨 Compilation de l'APK (assembleDebug)
+      - name: 🔨 Compilation de l'APK (:app:assembleDebug)
         working-directory: android
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle.log
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle.log
           if [ ${PIPESTATUS[0]} -ne 0 ]; then
             echo "❌ Gradle a échoué avec le code ${PIPESTATUS[0]}"
             exit ${PIPESTATUS[0]}
           fi
 
-      - name: 📄 Sauvegarde du journal d'erreur en cas d'échec
-        if: failure()
+      - name: 📦 Préparation du fichier APK final
         run: |
-          echo "## ❌ Erreur de compilation Gradle" >> $GITHUB_STEP_SUMMARY
-          echo '```text' >> $GITHUB_STEP_SUMMARY
-          tail -n 120 gradle.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          # Commit gradle log and directory tree to build-logs branch for complete diagnosis
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B build-logs
-          cp gradle.log error.log
-          git add error.log
-          git commit -m "ci: capture gradle error log" || true
+          cp gradle.log full_gradle.log || true
+          echo -e "\n=== ARBORESCENCE BUILD ===" >> full_gradle.log
+          find android -maxdepth 5 >> full_gradle.log || true
+          git add full_gradle.log
+          git commit -m "ci: gradle build log and file list" || true
           git push origin build-logs --force || true
-
-      - name: 📦 Préparation du fichier APK final
-        run: |
-          echo "=== Recherche du fichier APK généré ==="
-          find android -name "*.apk"
-          APK_PATH=$(find android -name "*.apk" -type f | head -n 1)
+          
+          echo "=== Recherche de tous les fichiers .apk ==="
+          find . -name "*.apk"
+          APK_PATH=$(find . -name "*.apk" -type f | head -n 1)
           if [ -z "$APK_PATH" ]; then
             echo "❌ ERREUR: Aucun fichier APK trouvé !"
             exit 1
