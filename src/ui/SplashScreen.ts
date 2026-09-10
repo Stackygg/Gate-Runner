@@ -5,6 +5,8 @@ export class SplashScreen {
   private elLaser: HTMLElement | null = null;
   private elStudio: HTMLElement | null = null;
   private elStudioWrap: HTMLElement | null = null;
+  private elLogoBox: HTMLElement | null = null;
+  private elLogoOrangeWrap: HTMLElement | null = null;
 
   private isDismissed: boolean = false;
   private isStudioIgnited: boolean = false;
@@ -23,6 +25,8 @@ export class SplashScreen {
     this.elLaser = this.elOverlay.querySelector('.splash-laser-beam');
     this.elStudio = this.elOverlay.querySelector('.splash-studio-text');
     this.elStudioWrap = this.elOverlay.querySelector('.splash-studio-wrap');
+    this.elLogoBox = this.elOverlay.querySelector('.splash-logo-box');
+    this.elLogoOrangeWrap = this.elOverlay.querySelector('.splash-logo-orange-wrap');
 
     // Permet d'ignorer / passer immédiatement l'écran au toucher / clic sans déclencher d'action sous-jacente
     const handleSkip = (e: Event) => {
@@ -68,6 +72,19 @@ export class SplashScreen {
         }
       }
 
+      // Révélation progressive du Logo Orange de haut en bas calée au pixel près sur le passage du faisceau laser
+      if (this.elLogoOrangeWrap && this.elLogoBox) {
+        const logoRect = this.elLogoBox.getBoundingClientRect();
+        if (currentY <= logoRect.top) {
+          this.elLogoOrangeWrap.style.clipPath = 'inset(0 0 100% 0)';
+        } else if (currentY >= logoRect.bottom) {
+          this.elLogoOrangeWrap.style.clipPath = 'inset(0 0 0% 0)';
+        } else {
+          const remainingPx = Math.max(0, logoRect.bottom - currentY);
+          this.elLogoOrangeWrap.style.clipPath = `inset(0 0 ${remainingPx.toFixed(1)}px 0)`;
+        }
+      }
+
       // Déclenchement PILE quand le laser touche le mot "STUDIO"
       if (!this.isStudioIgnited && this.elStudioWrap) {
         const studioRect = this.elStudioWrap.getBoundingClientRect();
@@ -107,6 +124,13 @@ export class SplashScreen {
     if (this.isDismissed || !this.elOverlay) return;
     this.isDismissed = true;
     this.elOverlay.style.pointerEvents = 'none';
+
+    if (this.elLogoOrangeWrap) {
+      this.elLogoOrangeWrap.style.clipPath = 'inset(0 0 0% 0)';
+    }
+    if (!this.isStudioIgnited) {
+      this.igniteStudio();
+    }
 
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);

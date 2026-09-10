@@ -7843,17 +7843,43 @@ html, body {
   justify-content: center;
 }
 
-/* Logo Fusée + STACKY en Blanc pur */
-.splash-stacky-logo,
-.splash-stacky-logo path {
-  fill: #FFFFFF !important;
-}
-
-.splash-stacky-logo {
+/* Logo Fusée + STACKY : Couche de base en Blanc pur */
+.splash-logo-white {
   width: 100%;
   height: auto;
   display: block;
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.55)) drop-shadow(0 0 28px rgba(255, 107, 0, 0.3));
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.55)) drop-shadow(0 0 28px rgba(255, 107, 0, 0.2));
+}
+
+.splash-logo-white,
+.splash-logo-white path {
+  fill: #FFFFFF !important;
+}
+
+/* Enveloppe de la couche Orange Incandescent (Révélée de haut en bas au passage du laser) */
+.splash-logo-orange-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  clip-path: inset(0 0 100% 0);
+  will-change: clip-path;
+}
+
+/* Logo Fusée + STACKY : Couche Orange Incandescent */
+.splash-logo-orange {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 0 14px rgba(255, 120, 0, 0.95)) 
+          drop-shadow(0 0 32px rgba(255, 60, 0, 0.75)) 
+          drop-shadow(0 0 5px #FFF4E5);
+}
+
+.splash-logo-orange,
+.splash-logo-orange path {
+  fill: url(#splash-logo-grad) !important;
 }
 
 /* Conteneur STUDIO sous le Logo */
