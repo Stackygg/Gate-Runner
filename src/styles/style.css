@@ -7946,14 +7946,16 @@ html, body {
   }
 }
 
-/* Texte STUDIO : Caché au départ, puis s'enflamme d'un orange incandescent PILE à l'impact du laser */
+/* Texte STUDIO : De la même couleur orange incandescent que le logo, avec légère bordure blanche */
 .splash-studio-text {
   font-family: var(--font-display);
   font-size: clamp(1.2rem, 4.2vw, 1.6rem);
   font-weight: 900;
   letter-spacing: 0.55em;
   text-indent: 0.55em; /* Compense le letter-spacing pour un centrage géométrique parfait */
-  color: #FFF3E0;
+  color: #FF5500;
+  -webkit-text-stroke: 1.1px rgba(255, 255, 255, 0.9);
+  paint-order: stroke fill;
   text-transform: uppercase;
   opacity: 0;
   will-change: opacity, transform, filter, text-shadow;
@@ -7968,69 +7970,78 @@ html, body {
   0% {
     opacity: 0;
     transform: translateY(4px) scale(0.94);
-    filter: brightness(4) blur(4px);
+    filter: brightness(3.5) blur(3px);
+    color: #FF8800;
+    -webkit-text-stroke: 1.4px #FFFFFF;
+    paint-order: stroke fill;
     text-shadow: 
-      0 0 20px #FFFFFF, 
-      0 0 45px #FFF4D0, 
-      0 0 80px #FF7700, 
-      0 0 130px #FF3300;
+      0 0 15px rgba(255, 255, 255, 0.9), 
+      0 0 35px #FFAA00, 
+      0 0 70px #FF5500, 
+      0 0 110px #FF2200;
   }
   15% {
     opacity: 1;
     transform: translateY(0) scale(1.07);
-    filter: brightness(3.0) blur(0px);
+    filter: brightness(2.2) blur(0px);
+    color: #FF6600;
+    -webkit-text-stroke: 1.3px rgba(255, 255, 255, 0.95);
+    paint-order: stroke fill;
     text-shadow: 
-      0 0 8px #FFFFFF, 
-      0 0 20px #FFF0B0, 
-      0 0 45px #FFAA00, 
-      0 0 75px #FF5500, 
-      0 0 110px #FF1100;
+      0 0 10px rgba(255, 255, 255, 0.8), 
+      0 0 24px #FFA000, 
+      0 0 50px #FF5500, 
+      0 0 85px #FF1100;
   }
   35% {
     transform: translateY(0) scale(1.0);
-    filter: brightness(1.6);
+    filter: brightness(1.3);
+    color: #FF5500;
+    -webkit-text-stroke: 1.1px rgba(255, 255, 255, 0.92);
+    paint-order: stroke fill;
     text-shadow: 
-      0 0 4px #FFFFFF, 
-      0 0 12px #FFE599, 
-      0 0 26px #FF8800, 
-      0 0 52px #FF4400, 
-      0 0 85px #E61E00;
+      0 0 6px rgba(255, 200, 150, 0.7), 
+      0 0 16px #FF8800, 
+      0 0 36px #FF4400, 
+      0 0 60px #E61E00;
   }
   100% {
     opacity: 1;
     transform: translateY(0) scale(1.0);
-    color: #FFF2DF;
-    filter: brightness(1.25);
+    color: #FF5500;
+    -webkit-text-stroke: 1.1px rgba(255, 255, 255, 0.9);
+    paint-order: stroke fill;
+    filter: brightness(1.1);
     text-shadow: 
-      0 0 3px #FFFFFF, 
-      0 0 10px #FFDF80, 
-      0 0 22px #FF7A00, 
-      0 0 42px #FF3D00, 
-      0 0 70px #D61A00,
-      0 0 100px rgba(255, 30, 0, 0.75);
+      0 0 8px rgba(255, 140, 0, 0.95), 
+      0 0 20px rgba(255, 75, 0, 0.85), 
+      0 0 38px rgba(255, 45, 0, 0.65), 
+      0 0 65px rgba(230, 30, 0, 0.45);
   }
 }
 
 @keyframes studioIncandescentLoop {
   0% {
-    filter: brightness(1.2) drop-shadow(0 0 12px rgba(255, 120, 0, 0.6));
+    color: #FF5500;
+    -webkit-text-stroke: 1.1px rgba(255, 255, 255, 0.88);
+    paint-order: stroke fill;
+    filter: brightness(1.05) drop-shadow(0 0 10px rgba(255, 110, 0, 0.6));
     text-shadow: 
-      0 0 3px #FFFFFF, 
-      0 0 10px #FFDF80, 
-      0 0 22px #FF7A00, 
-      0 0 42px #FF3D00, 
-      0 0 70px #D61A00,
-      0 0 100px rgba(255, 30, 0, 0.75);
+      0 0 8px rgba(255, 140, 0, 0.95), 
+      0 0 20px rgba(255, 75, 0, 0.85), 
+      0 0 38px rgba(255, 45, 0, 0.65), 
+      0 0 65px rgba(230, 30, 0, 0.45);
   }
   100% {
-    filter: brightness(1.45) drop-shadow(0 0 20px rgba(255, 80, 0, 0.9));
+    color: #FF5D00;
+    -webkit-text-stroke: 1.1px rgba(255, 255, 255, 0.95);
+    paint-order: stroke fill;
+    filter: brightness(1.22) drop-shadow(0 0 18px rgba(255, 80, 0, 0.85));
     text-shadow: 
-      0 0 4px #FFFFFF, 
-      0 0 14px #FFF0A0, 
-      0 0 30px #FF9000, 
-      0 0 55px #FF4D00, 
-      0 0 85px #FF1E00,
-      0 0 125px rgba(255, 50, 0, 0.9);
+      0 0 10px rgba(255, 150, 0, 1), 
+      0 0 24px rgba(255, 85, 0, 0.9), 
+      0 0 44px rgba(255, 50, 0, 0.75), 
+      0 0 75px rgba(230, 30, 0, 0.55);
   }
 }
 
