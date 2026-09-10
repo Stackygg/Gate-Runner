@@ -20,6 +20,7 @@ import { GameOverModal } from './ui/GameOverModal';
 import { BottomUpgradeDock } from './ui/BottomUpgradeDock';
 import { ShopModal } from './ui/ShopModal';
 import { AdService } from './services/AdService';
+import { SplashScreen } from './ui/SplashScreen';
 
 export type GameState = 'MENU' | 'PRE_FLIGHT' | 'PLAYING' | 'BOSS' | 'GAUNTLET' | 'GAMEOVER' | 'PAUSED';
 
@@ -36,6 +37,7 @@ export class GameApp {
   private gameOverModal: GameOverModal;
   private bottomUpgradeDock: BottomUpgradeDock;
   private shopModal: ShopModal;
+  private splashScreen: SplashScreen;
 
   private state: GameState = 'MENU';
   private previousState: GameState = 'PLAYING';
@@ -79,6 +81,7 @@ export class GameApp {
     this.particles = new ParticleSystem();
     this.store = new UpgradeStore();
     this.hud = new HUD();
+    this.splashScreen = new SplashScreen();
 
     // Initialisation du Service de Publicités Récompensées
     AdService.init(this.store);

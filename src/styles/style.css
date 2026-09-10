@@ -7692,6 +7692,330 @@ html, body {
   box-shadow: 0 0 24px rgba(16, 185, 129, 0.75);
 }
 
+/* ==========================================================================
+   ÉCRAN DE CHARGEMENT / SPLASH SCREEN CYBER-LASER (STACKY STUDIO)
+   ========================================================================== */
 
+.splash-screen-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 45%, #0e1224 0%, #060914 60%, #020308 100%);
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+}
 
+/* Dissolution fluide lors de la fin de l'intro */
+.splash-screen-overlay.splash-dismiss {
+  opacity: 0;
+  filter: blur(8px);
+  transform: scale(1.03);
+  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none !important;
+}
 
+.splash-screen-overlay.splash-dismiss-fast {
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+  pointer-events: none !important;
+}
+
+/* Lueur néon ambiante en arrière-plan */
+.splash-bg-glow {
+  position: absolute;
+  width: min(520px, 85vw);
+  height: min(520px, 85vw);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 107, 0, 0.18) 0%, rgba(255, 107, 0, 0.04) 50%, transparent 75%);
+  pointer-events: none;
+  filter: blur(45px);
+  z-index: 2;
+  animation: splashGlowBreathe 3s ease-in-out infinite alternate;
+}
+
+@keyframes splashGlowBreathe {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+/* Faisceau Laser Orange (Holographique chirurgical ultra-lumineux) */
+.splash-laser-beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 107, 0, 0.3) 10%, 
+    #FF6B00 28%, 
+    #FFF2E6 48%, 
+    #FFFFFF 50%, 
+    #FFF2E6 52%, 
+    #FF6B00 72%, 
+    rgba(255, 107, 0, 0.3) 90%, 
+    transparent 100%
+  );
+  box-shadow: 
+    0 0 6px #FFFFFF, 
+    0 0 16px #FF6B00, 
+    0 0 35px rgba(255, 107, 0, 0.85), 
+    0 0 75px rgba(255, 80, 0, 0.5);
+  z-index: 25;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: splashLaserSweep 1.45s cubic-bezier(0.38, 0.05, 0.22, 1) forwards;
+}
+
+/* Traînée lumineuse vers le haut */
+.splash-laser-beam::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background: linear-gradient(to top, rgba(255, 107, 0, 0.35) 0%, rgba(255, 107, 0, 0.06) 60%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Micro-halo d'illumination projeté vers l'avant */
+.splash-laser-beam::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.45) 0%, rgba(255, 107, 0, 0.18) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+@keyframes splashLaserSweep {
+  0% {
+    transform: translateY(-80px);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh);
+    opacity: 0;
+  }
+}
+
+/* Contenu Central : Logo + "Studio" */
+.splash-center-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-12px);
+  animation: splashContentEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes splashContentEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-12px) scale(1);
+  }
+}
+
+/* Boîte du Logo SVG */
+.splash-logo-box {
+  position: relative;
+  width: min(220px, 55vw);
+  max-width: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Logo Fusée + STACKY en Blanc pur */
+.splash-stacky-logo,
+.splash-stacky-logo path {
+  fill: #FFFFFF !important;
+}
+
+.splash-stacky-logo {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.55)) drop-shadow(0 0 28px rgba(255, 107, 0, 0.3));
+}
+
+/* Conteneur STUDIO sous le Logo */
+.splash-studio-wrap {
+  position: relative;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+}
+
+/* Texte STUDIO : Émerge avec un éclat néon orange au passage du laser */
+.splash-studio-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 4vw, 1.55rem);
+  font-weight: 900;
+  letter-spacing: 0.55em;
+  text-indent: 0.55em; /* Compense le letter-spacing pour un centrage géométrique parfait */
+  color: #FF6B00;
+  text-transform: uppercase;
+  opacity: 0;
+  will-change: opacity, transform, filter, text-shadow;
+  animation: splashStudioReveal 1.5s cubic-bezier(0.2, 0.8, 0.25, 1) 0.8s forwards;
+}
+
+@keyframes splashStudioReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.92);
+    filter: blur(10px) brightness(3);
+    text-shadow: 0 0 35px #FFFFFF, 0 0 60px #FF6B00;
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+    filter: blur(0px) brightness(2.2);
+    text-shadow: 0 0 25px #FFFFFF, 0 0 50px #FF6B00, 0 0 75px #FF6B00;
+  }
+  35% {
+    transform: translateY(0) scale(1.0);
+    filter: brightness(1.4);
+    text-shadow: 0 0 16px #FFF2E6, 0 0 32px #FF6B00, 0 0 55px rgba(255, 107, 0, 0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1.0);
+    filter: brightness(1.1);
+    text-shadow: 0 0 10px #FF8822, 0 0 25px #FF6B00, 0 0 40px rgba(255, 107, 0, 0.55);
+  }
+}
+
+/* Trait néon holographique sous "STUDIO" */
+.splash-studio-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 2px;
+  width: 0;
+  background: linear-gradient(90deg, transparent 0%, #FF6B00 30%, #FFFFFF 50%, #FF6B00 70%, transparent 100%);
+  box-shadow: 0 0 12px #FF6B00, 0 0 24px #FF6B00;
+  opacity: 0;
+  border-radius: 99px;
+  animation: splashStudioUnderline 1.3s cubic-bezier(0.2, 0.8, 0.25, 1) 0.85s forwards;
+}
+
+@keyframes splashStudioUnderline {
+  0% {
+    width: 0;
+    opacity: 0;
+  }
+  20% {
+    width: 140px;
+    opacity: 1;
+  }
+  60% {
+    width: 110px;
+    opacity: 0.85;
+  }
+  100% {
+    width: 80px;
+    opacity: 0.5;
+  }
+}
+
+/* Barre de chargement discrète en bas */
+.splash-bottom-loader {
+  position: absolute;
+  bottom: max(32px, env(safe-area-inset-bottom, 24px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+  pointer-events: none;
+  animation: splashLoaderEntrance 0.8s ease-out 0.2s both;
+}
+
+@keyframes splashLoaderEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 0.85;
+    transform: translateY(0);
+  }
+}
+
+.splash-loader-progress {
+  width: 140px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+.splash-loader-bar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #FF6B00 0%, #FFB066 50%, #00F0FF 100%);
+  border-radius: 99px;
+  transform-origin: left center;
+  animation: splashLoaderFill 2.2s cubic-bezier(0.25, 0.4, 0.25, 1) forwards;
+}
+
+@keyframes splashLoaderFill {
+  0% {
+    transform: scaleX(0);
+  }
+  40% {
+    transform: scaleX(0.45);
+  }
+  75% {
+    transform: scaleX(0.85);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.splash-loader-text {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: rgba(240, 244, 252, 0.6);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
