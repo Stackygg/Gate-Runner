@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Stacky Fleet : Gate Runner | Space Multiplier Shoot'em Up</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Orbitron:wght@500;700;900&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="./src/styles/style.css" />
+  </head>
+  <body>
+    <div id="game-app">
+      <!-- 3D Perspective Canvas -->
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Glassmorphic Cyber UI Layer -->
+      <div id="ui-layer">
+        
+        <!-- Top In-Game HUD (Épuré & Visibilité Maximale) -->
+        <header id="hud-top" class="hud-bar hidden">
+          <div class="hud-main-row">
+            <div class="hud-left">
+              <div class="hud-pill diamonds-pill">
+                <span class="pill-icon">💎</span>
+                <span id="hud-session-diamonds" class="pill-value highlight">0</span>
+              </div>
+            </div>
+
+            <!-- Mission Progress Bar -->
+            <div class="hud-center">
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div id="hud-distance-fill" class="gauge-fill"></div>
+                  <div id="hud-ship-marker" class="ship-marker">🚀</div>
+                  <div class="boss-marker">👾</div>
+                </div>
+                <div class="gauge-labels">
+                  <span id="hud-level-label">MISSION 01</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hud-right">
+              <button id="btn-hud-music-toggle" class="btn-icon btn-hud-music" title="Couper / Activer la Musique" aria-label="Musique">🎵</button>
+              <button id="btn-pause" class="btn-icon" title="Pause" aria-label="Pause">⏸️</button>
+            </div>
+          </div>
+
+          <!-- Second line: Flotte, Dégâts %, Vitesse % -->
+          <div class="hud-stats-subbar">
+            <div class="sub-stat-item">
+              <span class="sub-stat-icon">🚀</span>
+              <span class="sub-stat-label">FLOTTE :</span>
+              <span id="hud-sub-fleet" class="sub-stat-val">1</span>
+            </div>
+            <span class="sub-stat-sep">•</span>
+            <div class="sub-stat-item">
+              <span class="sub-stat-icon">💥</span>
+              <span class="sub-stat-label">DÉGÂTS :</span>
+              <span id="hud-sub-damage" class="sub-stat-val">100%</span>
+            </div>
+            <span class="sub-stat-sep">•</span>
+            <div class="sub-stat-item">
+              <span class="sub-stat-icon">⚡</span>
+              <span class="sub-stat-label">VITESSE :</span>
+              <span id="hud-sub-firerate" class="sub-stat-val">100%</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Boss Health Bar -->
+        <div id="boss-hud" class="boss-hud-container hidden">
+          <div class="boss-hud-header">
+            <span class="boss-warning-tag">⚠️ ALERTE VAISSEAU-MÈRE ⚠️</span>
+            <div id="boss-timer-badge" class="boss-timer-badge hidden">
+              <span class="timer-icon">⏱️</span>
+              <span id="boss-timer-text" class="timer-sec">30.0s</span>
+              <span class="timer-sep">•</span>
+              <span class="timer-mult-label">BONUS :</span>
+              <span id="boss-multiplier-text" class="timer-mult-val">x5.0</span>
+            </div>
+            <span id="boss-name" class="boss-name">TITAN QUANTIQUE</span>
+          </div>
+          <div class="boss-hp-bar">
+            <div id="boss-hp-fill" class="boss-hp-fill" style="width: 100%;"></div>
+            <span id="boss-hp-text" class="boss-hp-text">120 / 120 HP</span>
+          </div>
+        </div>
+
+        <!-- Mothership / Escort Health Bar (Mode Défense / Escorte) -->
+        <div id="mothership-hud" class="mothership-hud-container hidden">
+          <div class="mothership-hud-header">
+            <span class="mothership-title-tag">🛡️ INTÉGRITÉ DU VAISSEAU MÈRE</span>
+            <span id="mothership-status-tag" class="mothership-status-tag">BOUCLIER 100%</span>
+          </div>
+          <div class="mothership-hp-bar">
+            <div id="mothership-hp-fill" class="mothership-hp-fill" style="width: 100%;"></div>
+            <span id="mothership-hp-text" class="mothership-hp-text">100 / 100 PV</span>
+          </div>
+        </div>
+
+        <!-- Wave / Phase Holographic Alert Banner -->
+        <div id="phase-alert-banner" class="phase-alert-banner hidden">
+          <div id="phase-banner-badge" class="phase-banner-badge">PHASE 1 / 4</div>
+          <div id="phase-banner-title" class="phase-banner-title">AVANT-POSTE DE RECONNAISSANCE</div>
+        </div>
+
+        <!-- Main Menu Screen (Accueil & Choix de Mission) -->
+        <div id="screen-main-menu" class="screen-view active">
+          <div class="hangar-container">
+            <!-- Top Bar Menu : Bouton musique (on/off), Nom de la musique, Cristaux, Diamants, Boutique, Settings -->
+            <!-- Top Bar Menu : Ressources à gauche, Musique & Paramètres à droite -->
+            <div class="hangar-top-bar">
+              <div class="top-bar-group top-bar-resources">
+                <div class="hangar-nav-btn nav-btn-curr crystals" title="Minerai d'Iridium Brut (Achats simples, rerolls, escorte)">
+                  <span class="curr-emoji"><span class="icon-iridium"></span></span>
+                  <span id="hangar-crystals-total" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr iridium-bars" title="Barres d'Iridium Raffiné (Achat de Vaisseaux)">
+                  <span class="curr-emoji"><span class="icon-iridium-bar"></span></span>
+                  <span id="hangar-bars-total" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr diamonds" title="Diamants de Mission (Améliorations de Mission)">
+                  <span class="curr-emoji">💎</span>
+                  <span id="hangar-diamonds-total" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr diamond-dust" title="Poudre de Diamant (Amélioration d'Équipements)">
+                  <span class="curr-emoji"><span class="icon-diamond-dust"></span></span>
+                  <span id="hangar-dust-total" class="curr-val">0</span>
+                </div>
+              </div>
+
+              <div class="top-bar-group top-bar-controls">
+                <div id="btn-hangar-music" class="hangar-nav-btn nav-btn-music" role="button" title="Changer de Musique">
+                  <span id="hangar-music-name">ARCADE GROOVE</span>
+                </div>
+                <button id="btn-hangar-music-toggle" class="hangar-nav-btn nav-btn-icon" title="Couper / Activer la musique">🎵</button>
+                <button id="btn-hangar-settings" class="hangar-nav-btn nav-btn-icon nav-btn-settings" title="Paramètres Audio & Jeu">⚙️</button>
+              </div>
+            </div>
+
+            <div class="hangar-center-content">
+              <!-- Titre Compact -->
+              <div class="hangar-hero compact-hero">
+                <h1 class="game-title compact-title">
+                  <span class="title-sub">STACKY FLEET</span>
+                  <span class="title-main">GATE RUNNER</span>
+                </h1>
+              </div>
+
+              <div class="hangar-main-content compact-main">
+                <!-- Grille des 4 Stations Galactiques (2x2) -->
+                <div class="main-stations-grid">
+                  <!-- 1. MISSIONS -->
+                  <div id="btn-main-missions" class="station-button-card missions-card-btn" role="button" tabindex="0" title="Accéder aux Missions & Campagne">
+                    <div class="station-card-bg missions-bg"></div>
+                    <div class="station-card-overlay missions-overlay"></div>
+                    <div class="station-card-content">
+                      <div class="station-header-row">
+                        <div class="station-title-wrap">
+                          <span class="station-icon">🎯</span>
+                          <span class="station-title">MISSIONS</span>
+                        </div>
+                        <span id="missions-quick-badge" class="station-badge status-missions">MISSION 01</span>
+                      </div>
+                      <div class="station-meta-row">
+                        <span class="station-subtitle">Missions & Evénements</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 2. BOUTIQUE -->
+                  <div id="btn-main-shop" class="station-button-card shop-card-btn" role="button" tabindex="0" title="Accéder à la Boutique">
+                    <div class="station-card-bg shop-bg"></div>
+                    <div class="station-card-overlay shop-overlay"></div>
+                    <div class="station-card-content">
+                      <div class="station-header-row">
+                        <div class="station-title-wrap">
+                          <span class="station-icon">🛒</span>
+                          <span class="station-title">BOUTIQUE</span>
+                        </div>
+                        <span class="station-badge status-shop">OFFRES</span>
+                      </div>
+                      <div class="station-meta-row">
+                        <span class="station-subtitle">Vaisseaux, équipements & monnaies</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 3. HANGAR (Débloqué Niveau 5) -->
+                  <div id="btn-main-hangar" class="station-button-card hangar-card-btn" role="button" tabindex="0" title="Accéder au Hangar & Équipements">
+                    <div class="station-card-bg hangar-bg"></div>
+                    <div class="station-card-overlay hangar-overlay"></div>
+                    <div id="hangar-locked-overlay" class="station-locked-center hidden">
+                      <span class="lock-center-icon">🔒</span>
+                      <span class="lock-center-text">Déverrouillé au niveau 5</span>
+                    </div>
+                    <div class="station-card-content">
+                      <div class="station-header-row">
+                        <div class="station-title-wrap">
+                          <span class="station-icon">🛸</span>
+                          <span class="station-title">HANGAR</span>
+                        </div>
+                        <span id="hangar-notification-dot" class="station-notif-dot hidden"></span>
+                      </div>
+                      <div class="station-meta-row">
+                        <span class="station-subtitle">Vaisseaux & Équipements</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 4. DÉFIS (Débloqué Niveau 5) -->
+                  <div id="btn-main-challenges" class="station-button-card challenges-card-btn" role="button" tabindex="0" title="Accéder aux Défis Quotidiens">
+                    <div class="station-card-bg challenges-bg"></div>
+                    <div class="station-card-overlay challenges-overlay"></div>
+                    <div id="challenges-locked-overlay" class="station-locked-center hidden">
+                      <span class="lock-center-icon">🔒</span>
+                      <span class="lock-center-text">Déverrouillé au niveau 5</span>
+                    </div>
+                    <div class="station-card-content">
+                      <div class="station-header-row">
+                        <div class="station-title-wrap">
+                          <span class="station-icon">⚔️</span>
+                          <span class="station-title">DÉFIS</span>
+                        </div>
+                        <span class="station-badge status-challenges">2X / JOUR</span>
+                      </div>
+                      <div class="station-meta-row">
+                        <span class="station-subtitle">Missions Spéciales (x2 Pub)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 5. RAFFINERIE (Débloqué Niveau 10) -->
+                  <div id="btn-main-refinery" class="station-button-card refinery-card-btn" role="button" tabindex="0" title="Accéder à la Raffinerie & Fonderie">
+                    <div class="station-card-bg refinery-bg"></div>
+                    <div class="station-card-overlay refinery-overlay"></div>
+                    <div id="refinery-locked-overlay" class="station-locked-center hidden">
+                      <span class="lock-center-icon">🔒</span>
+                      <span class="lock-center-text">Déverrouillé au niveau 10</span>
+                    </div>
+                    <div class="station-card-content">
+                      <div class="station-header-row">
+                        <div class="station-title-wrap">
+                          <span class="station-icon">🏭</span>
+                          <span class="station-title">RAFFINERIE</span>
+                        </div>
+                      </div>
+                      <div class="station-meta-row">
+                        <span class="station-subtitle">Fonte des Minerais</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 6. ÉVÉNEMENTS (Débloqué Niveau 15) -->
+                  <div id="btn-main-events" class="station-button-card events-card-btn" role="button" tabindex="0" title="Accéder aux Événements Saisonniers & Classement">
+                    <div class="station-card-bg events-bg"></div>
+                    <div class="station-card-overlay events-overlay"></div>
+                    <div id="events-main-locked-overlay" class="station-locked-center hidden">
+                      <span class="lock-center-icon">🔒</span>
+                      <span class="lock-center-text">Déverrouillé au niveau 15</span>
+                    </div>
+                    <div class="station-card-content">
+                      <div class="station-header-row">
+                        <div class="station-title-wrap">
+                          <span class="station-icon">🏆</span>
+                          <span class="station-title">ÉVÉNEMENTS</span>
+                        </div>
+                        <span class="station-badge status-events">TOP 100</span>
+                      </div>
+                      <div class="station-meta-row">
+                        <span class="station-subtitle">Saison & Classement Chrono</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Zone Inférieure : Placeholder News -->
+            <div class="hangar-footer compact-footer">
+              <div id="main-news-banner" class="main-news-card" role="button" tabindex="0" title="Consulter les Dernières Transmissions">
+                <div class="news-card-left">
+                  <div class="news-badge-row">
+                    <span class="news-pill-tag">📢 HOLONET // NEWS</span>
+                    <span class="news-pill-date">ACTIF</span>
+                  </div>
+                  <div class="news-headline">FORGES D'IRIDIUM & RAFFINERIE OUVERTES !</div>
+                  <div class="news-snippet">Fondez vos diamants en poudre d'amélioration et raffinez l'Iridium en lingots de flotte.</div>
+                </div>
+                <div class="news-card-arrow">
+                  <span class="news-arrow-icon">▶</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Version en bas à gauche -->
+            <div class="main-screen-version">
+              <span class="version-dot"></span>
+              <span class="version-text">v1.0.0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dedicated Missions & Campaign Screen -->
+        <div id="screen-missions" class="screen-view missions-screen-view hidden">
+          <div class="missions-dedicated-container">
+            <!-- Top Bar de l'écran Missions : Bouton Retour & Toutes les Devises -->
+            <div class="missions-screen-top-bar">
+              <button id="btn-missions-back" class="btn-hangar-back" title="Retour au menu principal">
+                <span>◀ RETOUR</span>
+              </button>
+              <div class="hangar-screen-currencies">
+                <div class="hangar-nav-btn nav-btn-curr crystals" title="Minerai d'Iridium Brut">
+                  <span class="curr-emoji"><span class="icon-iridium"></span></span>
+                  <span id="missions-screen-crystals" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr iridium-bars" title="Barres d'Iridium Raffiné">
+                  <span class="curr-emoji"><span class="icon-iridium-bar"></span></span>
+                  <span id="missions-screen-bars" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr diamonds" title="Diamants de Mission">
+                  <span class="curr-emoji">💎</span>
+                  <span id="missions-screen-diamonds" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr diamond-dust" title="Poudre de Diamant">
+                  <span class="curr-emoji"><span class="icon-diamond-dust"></span></span>
+                  <span id="missions-screen-dust" class="curr-val">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mode Switcher Navigation (Missions à gauche, Événements à droite avec flèches) -->
+            <div class="missions-mode-nav-bar">
+              <button id="btn-mode-prev" class="mode-nav-arrow" title="Mode Précédent" aria-label="Mode Précédent">◀</button>
+              <div class="mode-tabs-wrapper">
+                <button id="tab-btn-missions" class="mode-tab-btn active" title="Afficher la Campagne & Missions">
+                  <span class="mode-tab-icon">🎯</span>
+                  <span class="mode-tab-label">MISSIONS</span>
+                </button>
+                <button id="tab-btn-events" class="mode-tab-btn" title="Afficher les Événements">
+                  <span class="mode-tab-icon">⚡</span>
+                  <span class="mode-tab-label">ÉVÉNEMENTS</span>
+                  <span id="tab-events-lock-badge" class="tab-lock-badge">🔒</span>
+                </button>
+              </div>
+              <button id="btn-mode-next" class="mode-nav-arrow" title="Mode Suivant" aria-label="Mode Suivant">▶</button>
+            </div>
+
+            <!-- Conteneur des Sous-Vues (Pleine Hauteur) -->
+            <div class="missions-workspace-modes">
+              <!-- VUE 1 : MISSIONS & CAMPAGNE -->
+              <div id="view-mode-missions" class="mode-subview active">
+                <div class="mission-selector-panel dedicated-missions-box">
+                  <!-- Navigation des missions -->
+                  <div class="mission-nav-row">
+                    <button id="btn-hangar-prev-mission" class="btn-nav btn-mission-nav" title="Mission précédente">◀</button>
+                    <div class="mission-badge-box">
+                      <div id="hangar-selected-mission-label" class="mission-big-label">MISSION 01</div>
+                      <div id="hangar-mission-status" class="mission-type-tag expedition">EXPÉDITION</div>
+                    </div>
+                    <button id="btn-hangar-next-mission" class="btn-nav btn-mission-nav" title="Mission suivante">▶</button>
+                  </div>
+
+                  <!-- Carte Améliorations de la Mission & Solde de Diamants -->
+                  <div class="mission-active-upgrades-card">
+                    <div class="mission-upgrades-header">
+                      <div class="upgrades-title-wrap">
+                        <span class="upgrades-icon">⚡</span>
+                        <span class="upgrades-title">AMÉLIORATIONS DE LA MISSION</span>
+                      </div>
+                      <div class="mission-diamonds-badge" title="Diamants récoltés sur cette mission spécifique">
+                        <span class="dia-icon">💎</span>
+                        <span id="mission-active-diamonds-val" class="dia-val">0</span>
+                        <span class="dia-label">DIAMANTS</span>
+                      </div>
+                    </div>
+
+                    <!-- 3 Voies d'Améliorations avec Jauges visuelles (Pips) -->
+                    <div class="mission-tracks-grid">
+                      <!-- Cadence de tir -->
+                      <div class="track-row-card">
+                        <div class="track-row-info">
+                          <div class="track-name-row">
+                            <span class="track-icon">⚡</span>
+                            <span class="track-name">Cadence de tir</span>
+                          </div>
+                          <span id="track-firerate-tier-badge" class="track-tier-badge">PALIER 1</span>
+                        </div>
+                        <div class="track-pips-container">
+                          <div id="track-firerate-pips" class="track-pips-bar"></div>
+                          <span id="track-firerate-step-label" class="track-step-num">0/5</span>
+                        </div>
+                      </div>
+
+                      <!-- Puissance Laser -->
+                      <div class="track-row-card">
+                        <div class="track-row-info">
+                          <div class="track-name-row">
+                            <span class="track-icon">💥</span>
+                            <span class="track-name">Puissance Laser</span>
+                          </div>
+                          <span id="track-damage-tier-badge" class="track-tier-badge">PALIER 1</span>
+                        </div>
+                        <div class="track-pips-container">
+                          <div id="track-damage-pips" class="track-pips-bar"></div>
+                          <span id="track-damage-step-label" class="track-step-num">0/5</span>
+                        </div>
+                      </div>
+
+                      <!-- Boost Diamants -->
+                      <div class="track-row-card">
+                        <div class="track-row-info">
+                          <div class="track-name-row">
+                            <span class="track-icon">💎</span>
+                            <span class="track-name">Boost Diamants</span>
+                          </div>
+                          <span id="track-diamond-tier-badge" class="track-tier-badge">PALIER 1</span>
+                        </div>
+                        <div class="track-pips-container">
+                          <div id="track-diamond-pips" class="track-pips-bar"></div>
+                          <span id="track-diamond-step-label" class="track-step-num">0/5</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Actions Recyclage Diamants en Poudre & Remboursement -->
+                    <div class="mission-recycling-actions">
+                      <button id="btn-recycle-mission-diamonds" class="btn-mission-recycle" title="Convertir les diamants de cette mission en Poudre de Diamant (10 💎 = 1 Poudre)">
+                        <span class="recycle-btn-icon"><span class="icon-diamond-dust"></span></span>
+                        <div class="recycle-btn-text">
+                          <span class="recycle-btn-title">RECYCLER EN POUDRE DE DIAMANT</span>
+                          <span class="recycle-btn-sub">Convertit le solde de la mission (10 💎 ➔ 1 <span class="icon-diamond-dust"></span>)</span>
+                        </div>
+                      </button>
+                      <button id="btn-refund-mission-upgrades" class="btn-mission-refund" title="Réinitialiser les 3 voies d'améliorations et récupérer l'intégralité des diamants investis">
+                        <span class="refund-btn-icon">🔄</span>
+                        <div class="refund-btn-text">
+                          <span class="refund-btn-title">RÉINITIALISER LES AMÉLIORATIONS</span>
+                          <span class="refund-btn-sub">Rembourse tous les diamants 💎 investis</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 3 Quêtes / Hauts-Faits par Mission -->
+                  <div class="hangar-quests-section dedicated-quests-section">
+                    <div class="hangar-quests-header">
+                      <span class="quests-badge-tag">🎯 HAUTS-FAITS (IRIDIUM <span class="icon-iridium"></span>)</span>
+                    </div>
+                    <div id="hangar-mission-quests-list" class="hangar-quests-list">
+                      <!-- 3 quêtes générées dynamiquement -->
+                    </div>
+                  </div>
+
+                  <!-- Bouton Lancer depuis l'écran Missions -->
+                  <button id="btn-missions-launch" class="btn-launch-game compact-launch">
+                    <span class="launch-glow"></span>
+                    <span class="launch-text">DÉCOLLER (MISSION <span id="missions-screen-level-num">1</span>)</span>
+                    <span class="launch-icon">🚀</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- VUE 2 : ÉVÉNEMENTS (À DROITE) -->
+              <div id="view-mode-events" class="mode-subview hidden">
+                <!-- État Verrouillé (< Niveau 15) -->
+                <div id="events-locked-state" class="events-locked-card">
+                  <div class="locked-holo-icon">🔒</div>
+                  <div class="locked-badge-pill">DÉVERROUILLÉ AU NIVEAU 15</div>
+                  <div class="locked-card-title">ÉVÉNEMENTS & CLASSEMENTS SAISONNIERS</div>
+                  <p class="locked-card-desc">
+                    Terminez la Mission 14 de la campagne pour rejoindre la Division Galactique, défier 100 pilotes au chrono et remporter les récompenses saisonnières exclusives !
+                  </p>
+                  <div class="locked-progress-bar-wrap">
+                    <div class="locked-prog-label">
+                      <span>Progression Campagne</span>
+                      <span id="events-unlock-progress-text">Mission 1 / 15</span>
+                    </div>
+                    <div class="locked-prog-track">
+                      <div id="events-unlock-progress-fill" class="locked-prog-fill" style="width: 6.6%;"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- État Débloqué (>= Niveau 15) : Événement à Venir -->
+                <div id="events-unlocked-state" class="events-season-container hidden">
+                  <!-- Bloc Grisé Holographique "Événement à venir (Dans 21j)" -->
+                  <div class="events-upcoming-card">
+                    <div class="upcoming-holo-header">
+                      <div class="upcoming-icon-wrap">
+                        <span class="upcoming-holo-icon">⏳</span>
+                      </div>
+                      <div class="upcoming-badge-row">
+                        <span class="upcoming-status-badge">SÉRIE SAISONNIÈRE // EN ATTENTE</span>
+                        <span class="upcoming-countdown-badge">⏱️ DANS 21J 00H 00M</span>
+                      </div>
+                    </div>
+
+                    <div class="upcoming-main-body">
+                      <h3 class="upcoming-title">ÉVÉNEMENT À VENIR (DANS 21J)</h3>
+                      <p class="upcoming-desc">
+                        Le prochain tournoi galactique est actuellement en préparation dans les chantiers de l'Hyperespace.<br />
+                        Revenez dans <strong>21 jours</strong> pour affronter une division de <strong>100 pilotes</strong> au chrono et remporter des barres d'Iridium et de la poudre de diamant !
+                      </p>
+
+                      <div class="upcoming-features-grid">
+                        <div class="upcoming-feature-item">
+                          <span class="feat-icon">⏱️</span>
+                          <div class="feat-text">
+                            <span class="feat-title">Course d'Assaut Chronométrée</span>
+                            <span class="feat-sub">Division compétitive de 100 pilotes</span>
+                          </div>
+                        </div>
+                        <div class="upcoming-feature-item">
+                          <span class="feat-icon">🏆</span>
+                          <div class="feat-text">
+                            <span class="feat-title">Récompenses de Fin de Saison</span>
+                            <span class="feat-sub">Barres d'Iridium, Poudre & Titres exclusifs</span>
+                          </div>
+                        </div>
+                        <div class="upcoming-feature-item">
+                          <span class="feat-icon">🛸</span>
+                          <div class="feat-text">
+                            <span class="feat-title">Flotte Prête au Combat</span>
+                            <span class="feat-sub">Améliorez vos équipements dans le Hangar</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Bouton Lancer l'Événement (Centré & Grisé) -->
+                  <button id="btn-event-launch" class="btn-launch-game event-launch-btn disabled" disabled>
+                    <span class="launch-text">DÉCOLLER POUR LE TOURNOI (DANS 21J) ⏱️</span>
+                    <span class="launch-icon">🔒</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             ÉCRAN DÉDIÉ : DÉFIS QUOTIDIENS (2X PAR JOUR • PUB X2)
+             ================================================================== -->
+        <div id="screen-challenges" class="screen-view missions-screen-view challenges-screen-view hidden">
+          <div class="missions-dedicated-container challenges-dedicated-container">
+            <!-- Header : Retour & Monnaies -->
+            <div class="hangar-top-bar missions-top-bar">
+              <button id="btn-challenges-back" class="hangar-nav-btn nav-btn-icon" title="Retour au Menu Principal">
+                <span class="nav-icon-symbol">◀</span>
+                <span class="nav-btn-text">RETOUR</span>
+              </button>
+              <div class="top-bar-group top-bar-currencies">
+                <div class="hangar-nav-btn nav-btn-curr crystals" title="Minerai d'Iridium Brut">
+                  <span class="curr-emoji"><span class="icon-iridium"></span></span>
+                  <span id="challenges-screen-crystals" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr iridium-bars" title="Barres d'Iridium Raffiné">
+                  <span class="curr-emoji"><span class="icon-iridium-bar"></span></span>
+                  <span id="challenges-screen-bars" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr diamonds" title="Diamants de Mission">
+                  <span class="curr-emoji">💎</span>
+                  <span id="challenges-screen-diamonds" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr diamond-dust" title="Poudre de Diamant">
+                  <span class="curr-emoji"><span class="icon-diamond-dust"></span></span>
+                  <span id="challenges-screen-dust" class="curr-val">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Titre & Compteur de Réinitialisation -->
+            <div class="challenges-hero-header">
+              <div class="challenges-title-row">
+                <div class="challenges-title-wrap">
+                  <span class="challenges-hero-icon">⚔️</span>
+                  <h2 class="challenges-main-title">DÉFIS QUOTIDIENS</h2>
+                </div>
+                <div class="challenges-daily-timer-badge">
+                  <span>🔄 RESET DANS :</span>
+                  <span id="challenges-reset-countdown">08:35:12</span>
+                </div>
+              </div>
+              <p class="challenges-hero-desc">
+                Secteurs spéciaux à haut rendement • <strong>2 tentatives par jour par défi</strong> • Doublez votre butin 1x par défi avec la pub (📺) !
+              </p>
+            </div>
+
+            <!-- Grille des 4 Défis Quotidiens -->
+            <div class="daily-challenges-grid">
+              <!-- Défi 1 : Raid d'Iridium -->
+              <div class="daily-challenge-card" data-challenge-id="crystals">
+                <div class="challenge-card-header">
+                  <div class="challenge-id-badge">DÉFI 01 // RAID</div>
+                  <span id="challenge-attempts-crystals" class="challenge-attempts-pill">2 / 2 RESTANTS</span>
+                </div>
+                <div class="challenge-card-body">
+                  <div class="challenge-icon-box crystals-icon-box">🔮</div>
+                  <div class="challenge-card-info">
+                    <div class="challenge-card-title">RAID D'IRIDIUM</div>
+                    <div class="challenge-card-obj">Détruire les escadrons de chasseurs furtifs</div>
+                    <div class="challenge-reward-preview">
+                      <span class="reward-prefix">BUTIN DE BASE :</span>
+                      <span class="reward-amount">+350 <span class="icon-iridium"></span> Minerais</span>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn-launch-challenge" data-challenge-id="crystals">
+                  <span>DÉCOLLER</span>
+                  <span>🚀</span>
+                </button>
+              </div>
+
+              <!-- Défi 2 : Moisson de Diamants -->
+              <div class="daily-challenge-card" data-challenge-id="diamonds">
+                <div class="challenge-card-header">
+                  <div class="challenge-id-badge">DÉFI 02 // MOISSON</div>
+                  <span id="challenge-attempts-diamonds" class="challenge-attempts-pill">2 / 2 RESTANTS</span>
+                </div>
+                <div class="challenge-card-body">
+                  <div class="challenge-icon-box diamonds-icon-box">💎</div>
+                  <div class="challenge-card-info">
+                    <div class="challenge-card-title">MOISSON DE DIAMANTS</div>
+                    <div class="challenge-card-obj">Franchir les vortex et portails diamantaires</div>
+                    <div class="challenge-reward-preview">
+                      <span class="reward-prefix">BUTIN DE BASE :</span>
+                      <span class="reward-amount">+40 💎 Diamants</span>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn-launch-challenge" data-challenge-id="diamonds">
+                  <span>DÉCOLLER</span>
+                  <span>🚀</span>
+                </button>
+              </div>
+
+              <!-- Défi 3 : Forge de Poussière Stellaire -->
+              <div class="daily-challenge-card" data-challenge-id="dust">
+                <div class="challenge-card-header">
+                  <div class="challenge-id-badge">DÉFI 03 // EXTRACTION</div>
+                  <span id="challenge-attempts-dust" class="challenge-attempts-pill">2 / 2 RESTANTS</span>
+                </div>
+                <div class="challenge-card-body">
+                  <div class="challenge-icon-box dust-icon-box"><span class="icon-diamond-dust" style="width: 1.5em; height: 1.5em;"></span></div>
+                  <div class="challenge-card-info">
+                    <div class="challenge-card-title">POUSSIÈRE DE DIAMANT</div>
+                    <div class="challenge-card-obj">Neutraliser le Destroyer lourd quantique</div>
+                    <div class="challenge-reward-preview">
+                      <span class="reward-prefix">BUTIN DE BASE :</span>
+                      <span class="reward-amount">+15 <span class="icon-diamond-dust"></span> Poudre</span>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn-launch-challenge" data-challenge-id="dust">
+                  <span>DÉCOLLER</span>
+                  <span>🚀</span>
+                </button>
+              </div>
+
+              <!-- Défi 4 : Convoi d'Iridium -->
+              <div class="daily-challenge-card" data-challenge-id="bars">
+                <div class="challenge-card-header">
+                  <div class="challenge-id-badge">DÉFI 04 // ESCORTE</div>
+                  <span id="challenge-attempts-bars" class="challenge-attempts-pill">2 / 2 RESTANTS</span>
+                </div>
+                <div class="challenge-card-body">
+                  <div class="challenge-icon-box bars-icon-box">🟦</div>
+                  <div class="challenge-card-info">
+                    <div class="challenge-card-title">CONVOI D'IRIDIUM</div>
+                    <div class="challenge-card-obj">Escorter la navette marchande sans perte</div>
+                    <div class="challenge-reward-preview">
+                      <span class="reward-prefix">BUTIN DE BASE :</span>
+                      <span class="reward-amount">+2 <span class="icon-iridium-bar"></span> Barres</span>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn-launch-challenge" data-challenge-id="bars">
+                  <span>DÉCOLLER</span>
+                  <span>🚀</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Victoire Défi & Multiplicateur Publicitaire x2 -->
+        <div id="modal-challenge-victory" class="modal-overlay hidden">
+          <div class="modal-window challenge-victory-modal">
+            <div class="modal-header">
+              <h2 class="modal-title">🎉 DÉFI ACCOMPLI !</h2>
+              <button id="btn-close-challenge-victory" class="btn-close-modal">✕</button>
+            </div>
+            <div class="modal-body text-center">
+              <div class="challenge-victory-icon-wrap">
+                <span id="challenge-victory-icon" class="victory-big-icon">🎁</span>
+              </div>
+              <div id="challenge-victory-name" class="challenge-victory-name">RAID D'IRIDIUM TERMINÉ</div>
+              <div class="challenge-victory-reward-box">
+                <span class="reward-box-label">RÉCOMPENSE VALIDÉE</span>
+                <span id="challenge-victory-reward-text" class="reward-box-val">+350 Minerais d'Iridium</span>
+              </div>
+              <div class="challenge-double-box">
+                <p class="double-box-tip">Regardez une courte transmission sponsorisée (📺) pour doubler instantanément votre butin !</p>
+                <button id="btn-challenge-double-ad" class="btn-primary btn-double-reward">
+                  <span>📺 DOUBLER LE BUTIN (x2)</span>
+                  <span id="challenge-double-reward-preview" class="double-tag">+350 Minerais</span>
+                </button>
+              </div>
+              <button id="btn-challenge-continue" class="btn-secondary btn-continue-reward">
+                <span>CONTINUER ➔</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Dedicated Hangar & Equipment Screen -->
+        <div id="screen-hangar" class="screen-view hangar-screen-view hidden">
+          <div class="hangar-dedicated-container">
+            <!-- Top Bar du Hangar -->
+            <div class="hangar-screen-top-bar">
+              <button id="btn-hangar-back" class="btn-hangar-back" title="Retour au menu principal">
+                <span>◀ RETOUR</span>
+              </button>
+              <div class="hangar-screen-title-box">
+                <span class="hangar-icon-holo">🛸</span>
+                <span class="hangar-screen-title">HANGAR & ÉQUIPEMENTS</span>
+              </div>
+              <div class="hangar-screen-currencies">
+                <div class="hangar-nav-btn nav-btn-curr crystals" title="Minerai d'Iridium Brut">
+                  <span class="curr-emoji"><span class="icon-iridium"></span></span>
+                  <span id="hangar-screen-crystals" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr iridium-bars" title="Barres d'Iridium Raffiné (Achat de Vaisseaux)">
+                  <span class="curr-emoji"><span class="icon-iridium-bar"></span></span>
+                  <span id="hangar-screen-bars" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr diamonds" title="Diamants de Mission">
+                  <span class="curr-emoji">💎</span>
+                  <span id="hangar-screen-diamonds" class="curr-val">0</span>
+                </div>
+                <div class="hangar-nav-btn nav-btn-curr diamond-dust" title="Poudre de Diamant (Amélioration d'Équipements)">
+                  <span class="curr-emoji"><span class="icon-diamond-dust"></span></span>
+                  <span id="hangar-screen-dust" class="curr-val">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Workspace: Deux Volets (Vaisseau + Slots à gauche, Sac d'équipement à droite) -->
+            <div class="hangar-workspace">
+              <!-- Volet Vaisseau & Slots -->
+              <div class="hangar-col-ship">
+                <!-- Carte Vaisseau 3D & Sélecteur -->
+                <div class="hangar-card ship-bay-card">
+                  <div class="ship-canvas-wrap">
+                    <canvas id="hangar-ship-canvas" width="200" height="110"></canvas>
+                    <div id="hangar-ship-archetype" class="ship-archetype-badge">INTERCEPTEUR POLYVALENT</div>
+                  </div>
+
+                  <div class="ship-selector-row">
+                    <button id="btn-hangar-prev-ship" class="btn-nav">◀</button>
+                    <div class="ship-title-meta">
+                      <div id="hangar-ship-name" class="hangar-ship-name">STACKY INTERCEPTOR</div>
+                      <div id="hangar-ship-slots-count" class="hangar-slots-counter">2 SLOTS D'ÉQUIPEMENT</div>
+                    </div>
+                    <button id="btn-hangar-next-ship" class="btn-nav">▶</button>
+                  </div>
+
+                  <div class="ship-perk-container">
+                    <span class="perk-label">BONUS PASSIF DU VAISSEAU :</span>
+                    <span id="hangar-ship-perk-text" class="perk-text">⚡ Cadence de tir +10%</span>
+                  </div>
+
+                  <button id="btn-hangar-select-skin" class="btn-action-small btn-ship-equip-action">ÉQUIPÉ</button>
+                </div>
+
+                <!-- Panneau Emplacements (Slots) du Vaisseau Actif -->
+                <div class="hangar-card ship-slots-card">
+                  <div class="card-title-bar">
+                    <span class="card-title-icon">⚡</span>
+                    <span class="card-title-text">SLOTS DU VAISSEAU</span>
+                    <span id="hangar-slots-filled-badge" class="slots-filled-badge">0/2</span>
+                  </div>
+                  <div id="hangar-ship-slots-container" class="ship-slots-list">
+                    <!-- Généré dynamiquement selon les slots du vaisseau -->
+                  </div>
+
+                  <!-- Résumé des Bonus Totaux d'Équipement -->
+                  <div class="equipped-stats-summary-box">
+                    <div class="stats-summary-title">TOTAL DES BONUS ACTIFS :</div>
+                    <div id="hangar-equipped-stats-summary" class="stats-summary-chips">
+                      <span class="stat-chip">Dégâts : +0%</span>
+                      <span class="stat-chip">Cadence : +0%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Volet Inventaire & Sac d'Équipement -->
+              <div class="hangar-col-inventory">
+                <div class="hangar-card inventory-card">
+                  <div class="inventory-card-header">
+                    <div class="inv-title-meta">
+                      <span class="inv-title">🎒 SAC D'ÉQUIPEMENT</span>
+                      <span id="hangar-inventory-count" class="inv-count-pill">0 OBJETS</span>
+                    </div>
+                    <!-- Onglets de filtrage rapide -->
+                    <div class="inventory-tabs-row">
+                      <button class="inv-tab-btn active" data-filter="ALL">TOUT</button>
+                      <button class="inv-tab-btn" data-filter="CHEST">📦 COFFRES <span id="hangar-chests-count-pill" class="inv-chests-badge hidden">0</span></button>
+                      <button class="inv-tab-btn" data-filter="WEAPON">🔫 TOURELLES</button>
+                      <button class="inv-tab-btn" data-filter="SHIELD">🛡️ BOUCLIERS</button>
+                      <button class="inv-tab-btn" data-filter="ENGINE">⚡ MOTEURS</button>
+                      <button class="inv-tab-btn" data-filter="CORE">🔮 MODULES</button>
+                    </div>
+                  </div>
+
+                  <div id="hangar-inventory-empty" class="inventory-empty-state hidden">
+                    <span class="empty-icon">📦</span>
+                    <span class="empty-text">Aucun équipement trouvé pour ce filtre.</span>
+                    <span class="empty-sub">Terminez des missions pour débloquer du butin aléatoire !</span>
+                  </div>
+
+                  <!-- Grille des Objets d'Inventaire -->
+                  <div id="hangar-inventory-grid" class="inventory-cards-grid">
+                    <!-- Items générés dynamiquement -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Upgrades Dock (Barre d'améliorations à 5 échelons en bas d'écran) -->
+        <div id="bottom-upgrade-dock" class="bottom-upgrade-dock hidden">
+          <!-- Bonus Escort Force Banner (Au-dessus de la box) -->
+          <div class="dock-bonus-escort-bar">
+            <div class="bonus-escort-left">
+              <span class="bonus-icon">🚀</span>
+              <span class="bonus-label">ESCORT FORCE <span class="highlight-green">+1 VAISSEAU</span></span>
+            </div>
+            <div class="bonus-escort-right">
+              <button id="btn-dock-ship-ad" class="btn-dock-bonus-pill btn-bonus-ad" title="Regarder une pub pour +1 vaisseau">
+                <span>🎬 PUB (GRATUIT)</span>
+              </button>
+              <button id="btn-dock-ship-crystal" class="btn-dock-bonus-pill btn-bonus-crystal" title="Utiliser 1 Iridium pour +1 vaisseau">
+                <span><span class="icon-iridium"></span> 1 IRIDIUM</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="dock-header">
+            <div class="dock-diamonds-box">
+              <span class="dock-curr-icon">💎</span>
+              <span class="dock-curr-label">DIAMANTS :</span>
+              <span id="dock-diamonds-val" class="dock-curr-val">0</span>
+            </div>
+            <div class="dock-launch-hint">
+              <span class="pulse-dot"></span> TOUCHEZ OU GLISSEZ POUR DÉCOLLER 🚀
+            </div>
+          </div>
+
+          <div class="dock-cards-grid">
+            <!-- Card 1: Vitesse de tir -->
+            <div id="dock-card-fireRate" class="dock-card">
+              <div class="dock-card-top">
+                <span class="dock-icon">⚡</span>
+                <div class="dock-card-meta">
+                  <div class="dock-card-title">VITESSE TIR</div>
+                  <div id="dock-tier-fireRate" class="dock-card-tier">PALIER 1</div>
+                </div>
+              </div>
+              <div id="dock-pips-fireRate" class="pip-gauge">
+                <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+              </div>
+              <button id="btn-dock-fireRate" class="btn-dock-action btn-track-fireRate">
+                <span>+ NIVEAU 1/5</span>
+                <span class="btn-cost-tag">💎 8</span>
+              </button>
+            </div>
+
+            <!-- Card 2: Puissance laser -->
+            <div id="dock-card-damage" class="dock-card">
+              <div class="dock-card-top">
+                <span class="dock-icon">💥</span>
+                <div class="dock-card-meta">
+                  <div class="dock-card-title">PUISSANCE</div>
+                  <div id="dock-tier-damage" class="dock-card-tier">PALIER 1</div>
+                </div>
+              </div>
+              <div id="dock-pips-damage" class="pip-gauge">
+                <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+              </div>
+              <button id="btn-dock-damage" class="btn-dock-action btn-track-damage">
+                <span>+ NIVEAU 1/5</span>
+                <span class="btn-cost-tag">💎 10</span>
+              </button>
+            </div>
+
+            <!-- Card 3: Multiplicateur Diamants -->
+            <div id="dock-card-diamondBoost" class="dock-card">
+              <div class="dock-card-top">
+                <span class="dock-icon">💎</span>
+                <div class="dock-card-meta">
+                  <div class="dock-card-title">DIAMANTS</div>
+                  <div id="dock-tier-diamondBoost" class="dock-card-tier">PALIER 1</div>
+                </div>
+              </div>
+              <div id="dock-pips-diamondBoost" class="pip-gauge">
+                <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+              </div>
+              <button id="btn-dock-diamondBoost" class="btn-dock-action btn-track-diamondBoost">
+                <span>+ NIVEAU 1/5</span>
+                <span class="btn-cost-tag">💎 8</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game Over / Victory Modal -->
+        <div id="modal-gameover" class="modal-overlay hidden">
+          <div class="modal-card">
+            <div id="modal-status-badge" class="modal-badge victory">VICTOIRE ÉCLATANTE !</div>
+            <h2 id="modal-title" class="modal-title">MISSION ACCOMPLIE</h2>
+            
+            <div class="results-stats-box">
+              <div class="stat-row">
+                <span class="stat-label">Flotte survivante :</span>
+                <span id="stat-final-fleet" class="stat-value">1 vaisseau</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Ennemis détruits :</span>
+                <span id="stat-kills" class="stat-value">25</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Multiplicateur Gauntlet :</span>
+                <span id="stat-multiplier" class="stat-value highlight">x1.0</span>
+              </div>
+              <div class="stat-divider" id="gameover-top-divider" style="display: none;"></div>
+              <div id="gameover-top-rewards" class="results-rewards-row" style="display: none;">
+                <div class="reward-mini-box diamonds-box">
+                  <span class="reward-icon">💎</span>
+                  <span id="stat-earned-diamonds" class="reward-val">+0</span>
+                </div>
+                <div class="reward-mini-box crystals-box" title="Iridium">
+                  <span class="reward-icon"><span class="icon-iridium reward-iridium-img"></span></span>
+                  <span id="stat-earned-crystals" class="reward-val">+0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quêtes / Hauts-Faits de la mission -->
+            <div id="gameover-quests-box" class="gameover-quests-box" style="display: none;">
+              <div class="gameover-quests-title">🎯 HAUTS-FAITS DE LA MISSION</div>
+              <div id="gameover-quests-list" class="gameover-quests-list"></div>
+            </div>
+
+            <!-- Butin de la Mission : Inventaire avec cases (Iridium, Diamants, Trésor & Équipements) -->
+            <div id="gameover-loot-box" class="gameover-loot-box hidden">
+              <div class="gameover-loot-header">
+                <span class="loot-header-icon">🎒</span>
+                <span class="loot-header-title">BUTIN DE LA MISSION</span>
+              </div>
+              <div id="gameover-loot-grid" class="gameover-loot-grid"></div>
+              <div id="gameover-loot-details" class="gameover-loot-details"></div>
+              <button id="btn-gameover-to-hangar" class="btn-loot-to-hangar" type="button">
+                <span>🛸 HANGAR</span>
+              </button>
+            </div>
+
+            <div class="modal-actions-gameover">
+              <button id="btn-ad-double-diamonds" class="btn-ad-double">
+                <span class="ad-icon-big">🎬</span>
+                <span class="ad-label-big">x2 💎</span>
+              </button>
+              <div class="modal-actions-row">
+                <button id="btn-hangar-return" class="btn-secondary">MENU PRINCIPAL 🏠</button>
+                <button id="btn-retry-next" class="btn-primary">CONTINUER ▶</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pause Overlay -->
+        <div id="modal-pause" class="modal-overlay hidden">
+          <div class="modal-card pause-card">
+            <div class="modal-badge pause-badge">PAUSE TACTIQUE</div>
+            <h2 class="modal-title">HYPERESPACE EN PAUSE</h2>
+
+            <!-- Contrôles Audio Rapides dans la Pause -->
+            <div class="pause-audio-panel">
+              <div class="pause-audio-item">
+                <div class="pause-audio-info">
+                  <span class="audio-icon">🎵</span>
+                  <span class="audio-name">MUSIQUE</span>
+                </div>
+                <div class="pause-audio-actions">
+                  <button id="btn-pause-toggle-music" class="btn-audio-toggle-chip active">ON</button>
+                  <input id="slider-pause-music" type="range" min="0" max="100" value="50" class="mini-audio-slider" />
+                </div>
+              </div>
+
+              <div class="pause-audio-item">
+                <div class="pause-audio-info">
+                  <span class="audio-icon">🔊</span>
+                  <span class="audio-name">SONS & FX</span>
+                </div>
+                <div class="pause-audio-actions">
+                  <button id="btn-pause-toggle-sfx" class="btn-audio-toggle-chip active">ON</button>
+                  <input id="slider-pause-sfx" type="range" min="0" max="100" value="50" class="mini-audio-slider" />
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-actions-col">
+              <button id="btn-resume-game" class="btn-primary">REPRENDRE LE VOL ▶</button>
+              <button id="btn-restart-run" class="btn-secondary">RECOMMENCER LA MISSION 🔄</button>
+              <button id="btn-quit-hangar" class="btn-danger">QUITTER VERS LE HANGAR 🛸</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Paramètres Audio & Jeu (⚙️) -->
+        <div id="modal-settings" class="modal-overlay hidden">
+          <div class="modal-card settings-card">
+            <div class="modal-badge">⚙️ CONFIGURATION</div>
+            <h2 class="modal-title">PARAMÈTRES DU JEU</h2>
+
+            <div class="settings-list">
+              <!-- Item 1: Musique -->
+              <div class="settings-item-card">
+                <div class="settings-item-top">
+                  <div class="settings-item-left">
+                    <span class="settings-icon">🎵</span>
+                    <div class="settings-text">
+                      <span class="settings-title">VOLUME DE LA MUSIQUE</span>
+                      <span class="settings-subtitle">Arcade Groove, Chip Funk, Turbo Pixel...</span>
+                    </div>
+                  </div>
+                  <button id="btn-settings-toggle-music" class="btn-audio-toggle-chip active">ON</button>
+                </div>
+                <div class="settings-slider-row">
+                  <input id="slider-settings-music" type="range" min="0" max="100" value="50" class="settings-range-slider" />
+                  <span id="label-settings-music-pct" class="settings-pct">50%</span>
+                </div>
+              </div>
+
+              <!-- Item 2: Sons & Bruitages -->
+              <div class="settings-item-card">
+                <div class="settings-item-top">
+                  <div class="settings-item-left">
+                    <span class="settings-icon">🔊</span>
+                    <div class="settings-text">
+                      <span class="settings-title">VOLUME DES BRUITAGES</span>
+                      <span class="settings-subtitle">Lasers, explosions, portails, boss...</span>
+                    </div>
+                  </div>
+                  <button id="btn-settings-toggle-sfx" class="btn-audio-toggle-chip active">ON</button>
+                </div>
+                <div class="settings-slider-row">
+                  <input id="slider-settings-sfx" type="range" min="0" max="100" value="50" class="settings-range-slider" />
+                  <span id="label-settings-sfx-pct" class="settings-pct">50%</span>
+                </div>
+              </div>
+
+              <!-- Item 3: Mode Performance / Fluidité Mobile -->
+              <div class="settings-item-card">
+                <div class="settings-item-top">
+                  <div class="settings-item-left">
+                    <span class="settings-icon">⚡</span>
+                    <div class="settings-text">
+                      <span class="settings-title">MODE PERFORMANCE FLUIDE (60 FPS)</span>
+                      <span class="settings-subtitle">Désactive les flous lourds & optimise pour mobile</span>
+                    </div>
+                  </div>
+                  <button id="btn-settings-toggle-perf" class="btn-audio-toggle-chip active">ON</button>
+                </div>
+              </div>
+
+              <!-- Item 4: Réinitialiser la sauvegarde -->
+              <div class="settings-item-card" style="border-color: rgba(255, 0, 85, 0.4); background: rgba(255, 0, 85, 0.08);">
+                <div class="settings-item-top">
+                  <div class="settings-item-left">
+                    <span class="settings-icon">🗑️</span>
+                    <div class="settings-text">
+                      <span class="settings-title" style="color: #FF0055;">RÉINITIALISER LA RUN / SAUVEGARDE</span>
+                      <span class="settings-subtitle">Remet à zéro vaisseaux, équipements, quêtes et monnaies</span>
+                    </div>
+                  </div>
+                  <button id="btn-settings-reset-save" class="btn-danger" style="padding: 6px 14px; font-size: 0.72rem; white-space: nowrap;">RESET 🔄</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button id="btn-close-settings" class="btn-primary" style="width: 100%;">FERMER ✔</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation Iridium Modal -->
+        <div id="modal-confirm-crystal" class="modal-overlay hidden">
+          <div class="modal-card confirm-crystal-card">
+            <div class="modal-badge crystal-badge-head"><span class="icon-iridium"></span> IRIDIUM QUANTIQUE <span class="icon-iridium"></span></div>
+            <h2 id="crystal-confirm-title" class="modal-title">CONFIRMATION</h2>
+            <p id="crystal-confirm-desc" class="modal-desc">
+              Veux-tu vraiment utiliser 1 Iridium <span class="icon-iridium"></span> ?
+            </p>
+            <div class="modal-actions">
+              <button id="btn-cancel-crystal" class="btn-secondary">ANNULER</button>
+              <button id="btn-confirm-crystal" class="btn-primary crystal-btn">CONFIRMER (<span class="icon-iridium"></span> 1)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation Reset Save Modal -->
+        <div id="modal-confirm-reset" class="modal-overlay hidden">
+          <div class="modal-card confirm-crystal-card" style="border-color: #FF0055; box-shadow: 0 0 25px rgba(255, 0, 85, 0.35);">
+            <div class="modal-badge" style="background: rgba(255, 0, 85, 0.2); color: #FF0055; border: 1px solid #FF0055;">⚠️ ZONE DE DANGER</div>
+            <h2 class="modal-title" style="color: #FF0055;">RESET DE LA RUN</h2>
+            <p class="modal-desc" style="line-height: 1.5; margin: 12px 0 20px 0;">
+              Es-tu certain de vouloir <strong>réinitialiser toute la sauvegarde</strong> ?<br>
+              Tous les vaisseaux débloqués, pièces d'équipement, diamants, Iridium et quêtes seront remis à zéro pour repartir d'une run vierge.
+            </p>
+            <div class="modal-actions">
+              <button id="btn-cancel-reset" class="btn-secondary">ANNULER</button>
+              <button id="btn-confirm-reset" class="btn-danger" style="background: #FF0055; box-shadow: 0 0 16px rgba(255, 0, 85, 0.5);">OUI, TOUT RESET 🔄</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cyberpunk Shop Modal (Boutique Stellaire) -->
+        <div id="modal-shop" class="modal-overlay hidden">
+          <div class="modal-card shop-modal-card">
+            <div class="shop-header">
+              <div class="modal-badge shop-badge-head">🛒 BOUTIQUE STELLAIRE</div>
+              <button id="btn-close-shop" class="btn-shop-close" title="Fermer la boutique">✕</button>
+            </div>
+            
+            <h2 class="modal-title shop-main-title">APPROVISIONNEMENT QUANTIQUE</h2>
+            <p class="shop-subtitle">Offres quotidiennes gratuites, packs de ressources & Pass VIP Anti-Pub</p>
+
+            <div class="shop-sections-scroll">
+              <!-- Section 1 : Offres Quotidiennes (Pubs Gratuites - 5/jour) -->
+              <div class="shop-section">
+                <div class="shop-section-header">
+                  <span class="shop-section-title">🎁 RÉCOMPENSES QUOTIDIENNES (PUBS)</span>
+                  <span id="shop-daily-ad-count" class="shop-daily-count">5 / 5 restantes</span>
+                </div>
+                <div class="shop-cards-row">
+                  <div class="shop-item-card daily-ad-card">
+                    <div class="shop-item-icon">💎</div>
+                    <div class="shop-item-name">+50 DIAMANTS</div>
+                    <div class="shop-item-desc">Ravitaillement instantané</div>
+                    <button id="btn-shop-ad-diamonds" class="btn-shop-action btn-ad-claim">
+                      <span>🎬 REGARDER (GRATUIT)</span>
+                    </button>
+                  </div>
+                  <div class="shop-item-card daily-ad-card">
+                    <div class="shop-item-icon"><span class="icon-iridium shop-iridium-icon"></span></div>
+                    <div class="shop-item-name">+1 IRIDIUM</div>
+                    <div class="shop-item-desc">Métal rare & sauts de palier</div>
+                    <button id="btn-shop-ad-crystal" class="btn-shop-action btn-ad-claim">
+                      <span>🎬 REGARDER (GRATUIT)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 2 : Pass VIP Anti-Pub -->
+              <div class="shop-section">
+                <div class="shop-section-header">
+                  <span class="shop-section-title">🛡️ PASS VIP ANTI-PUB</span>
+                </div>
+                <div class="shop-item-card vip-card">
+                  <div class="vip-card-badge">PERMANENT</div>
+                  <div class="vip-card-content">
+                    <div class="shop-item-icon">🛡️</div>
+                    <div class="vip-info">
+                      <div class="vip-title">PASS DÉFINITIF NO-ADS</div>
+                      <div class="vip-desc">Supprime toutes les pubs obligatoires + accorde instantanément tous les bonus publicitaires sans visionnage !</div>
+                    </div>
+                  </div>
+                  <button id="btn-shop-buy-noads" class="btn-shop-action btn-buy-vip">
+                    <span>3,99 €</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Section 3 : Packs d'Iridium -->
+              <div class="shop-section">
+                <div class="shop-section-header">
+                  <span class="shop-section-title"><span class="icon-iridium"></span> PACKS D'IRIDIUM (SKINS & PALIERS)</span>
+                </div>
+                <div class="shop-cards-row">
+                  <div class="shop-item-card">
+                    <div class="shop-item-icon"><span class="icon-iridium shop-iridium-icon"></span></div>
+                    <div class="shop-item-amount">10 IRIDIUM</div>
+                    <button class="btn-shop-action btn-buy-crystals" data-amount="10">
+                      <span>1,99 €</span>
+                    </button>
+                  </div>
+                  <div class="shop-item-card popular-card">
+                    <div class="item-tag-hot">POPULAIRE</div>
+                    <div class="shop-item-icon"><span class="icon-iridium shop-iridium-icon"></span></div>
+                    <div class="shop-item-amount">35 IRIDIUM</div>
+                    <button class="btn-shop-action btn-buy-crystals" data-amount="35">
+                      <span>4,99 €</span>
+                    </button>
+                  </div>
+                  <div class="shop-item-card best-card">
+                    <div class="item-tag-best">MEILLEUR PRIX</div>
+                    <div class="shop-item-icon"><span class="icon-iridium shop-iridium-icon"></span></div>
+                    <div class="shop-item-amount">100 IRIDIUM</div>
+                    <button class="btn-shop-action btn-buy-crystals" data-amount="100">
+                      <span>11,99 €</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 4 : Packs de Diamants -->
+              <div class="shop-section">
+                <div class="shop-section-header">
+                  <span class="shop-section-title">💎 DIAMANTS D'AMÉLIORATION</span>
+                </div>
+                <div class="shop-cards-row">
+                  <div class="shop-item-card">
+                    <div class="shop-item-icon">💎</div>
+                    <div class="shop-item-amount">300 DIAMANTS</div>
+                    <button class="btn-shop-action btn-buy-diamonds" data-amount="300">
+                      <span>0,99 €</span>
+                    </button>
+                  </div>
+                  <div class="shop-item-card">
+                    <div class="shop-item-icon">💎</div>
+                    <div class="shop-item-amount">1 200 DIAMANTS</div>
+                    <button class="btn-shop-action btn-buy-diamonds" data-amount="1200">
+                      <span>2,99 €</span>
+                    </button>
+                  </div>
+                  <div class="shop-item-card">
+                    <div class="shop-item-icon">💎</div>
+                    <div class="shop-item-amount">5 000 DIAMANTS</div>
+                    <button class="btn-shop-action btn-buy-diamonds" data-amount="5000">
+                      <span>8,99 €</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulated Rewarded Ad Player Modal -->
+        <div id="modal-ad-player" class="modal-overlay hidden ad-player-overlay">
+          <div class="modal-card ad-player-card">
+            <div class="ad-player-top">
+              <div class="ad-sponsor-tag">SPONSOR // CYBER-COMMERCIAL</div>
+              <div id="ad-timer-countdown" class="ad-timer-countdown">Récompense dans 5s...</div>
+            </div>
+
+            <div class="ad-video-screen">
+              <div class="ad-holo-animation">
+                <div class="ad-core-ring"></div>
+                <div class="ad-logo-icon">⚡</div>
+                <div id="ad-sponsor-name" class="ad-sponsor-text">CYBER-CORE V2 // BOOSTER QUANTIQUE</div>
+                <div class="ad-reward-notice">RÉCOMPENSE À DÉBLOQUER : <span id="ad-reward-title" class="ad-reward-bold">BONUS</span></div>
+              </div>
+              <div class="ad-progress-track">
+                <div id="ad-progress-fill" class="ad-progress-fill"></div>
+              </div>
+            </div>
+
+            <div class="ad-player-bottom">
+              <button id="btn-ad-close" class="btn-primary disabled">PATIENTEZ (5s)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal d'Inspection & Gestion d'Équipement (Holographique) -->
+        <div id="modal-item-detail" class="modal-overlay hidden">
+          <div class="modal-card item-detail-modal-card">
+            <div class="item-detail-top">
+              <div class="item-detail-slot-icon-box">
+                <span id="item-modal-icon" class="item-modal-icon">💥</span>
+              </div>
+              <div class="item-detail-top-meta">
+                <div id="item-modal-name" class="item-modal-name">CANON PLASMA QUANTIQUE</div>
+                <div class="item-modal-badges-row">
+                  <span id="item-modal-rarity" class="item-badge-rarity rarity-rare">RARE</span>
+                  <span id="item-modal-slot-type" class="item-badge-slot">ARME</span>
+                  <span id="item-modal-level" class="item-badge-level">NIV. 1</span>
+                </div>
+              </div>
+              <button id="btn-close-item-detail" class="btn-shop-close" title="Fermer">✕</button>
+            </div>
+
+            <p id="item-modal-desc" class="item-modal-desc">
+              Un équipement d'armement forgé dans les forges d'Iridium stellaire.
+            </p>
+
+            <!-- Effet Spécial Unique -->
+            <div id="item-modal-special-effect-box" class="item-modal-special-effect-box">
+              <div class="special-effect-header">
+                <span id="item-modal-fx-icon" class="special-effect-badge-icon">⚡</span>
+                <span class="special-effect-badge-title">EFFET SPÉCIAL UNIQUE</span>
+              </div>
+              <div id="item-modal-fx-label" class="special-effect-label">★ Vaisseau amiral : +3 tirs</div>
+              <div id="item-modal-fx-desc" class="special-effect-desc">Description de l'effet spécial.</div>
+            </div>
+
+            <div class="item-modal-stats-card">
+              <div class="stats-card-header">PROPRIÉTÉS & BONUS ATTRIBUÉS :</div>
+              <div id="item-modal-affixes-list" class="stats-card-list">
+                <!-- Dynamic stat affixes -->
+              </div>
+            </div>
+
+            <!-- Section Amélioration de l'Objet (Poudre de Diamant & Barres d'Iridium) -->
+            <div class="item-modal-upgrade-box">
+              <div class="upgrade-box-meta">
+                <div class="upgrade-box-title">
+                  <span class="upgrade-icon">⚡</span>
+                  <span>AMÉLIORATION D'ÉQUIPEMENT</span>
+                </div>
+                <div class="upgrade-costs-row" style="display: flex; gap: 6px; align-items: center;">
+                  <div id="item-modal-upgrade-bars-cost" class="upgrade-cost-pill bars-cost hidden">
+                    <span class="icon-iridium-bar"></span>
+                    <span id="item-upgrade-bars-cost-val">10</span>
+                    <span class="upgrade-cost-label">Barres</span>
+                  </div>
+                  <div id="item-modal-upgrade-cost" class="upgrade-cost-pill">
+                    <span class="icon-diamond-dust"></span>
+                    <span id="item-upgrade-dust-cost-val">10</span>
+                    <span class="upgrade-cost-label">Poudre</span>
+                  </div>
+                </div>
+              </div>
+              <p id="item-modal-upgrade-desc" class="upgrade-box-desc">
+                Améliore le niveau de cet équipement (+12% aux statistiques passives et renforce son effet spécial unique).
+              </p>
+              <button id="btn-modal-upgrade-item" class="btn-modal-upgrade">
+                <span>⚡ AMÉLIORER AU NIVEAU <span id="item-next-level-val">2</span></span>
+              </button>
+            </div>
+
+            <div class="item-modal-recycle-row">
+              <span class="recycle-label">Recyclage en diamants :</span>
+              <span id="item-modal-recycle-val" class="recycle-amount">💎 +25 Diamants</span>
+            </div>
+
+            <div class="item-modal-actions-row">
+              <button id="btn-modal-equip-item" class="btn-primary btn-modal-equip">
+                <span>ÉQUIPER CE VAISSEAU</span>
+              </button>
+              <button id="btn-modal-unequip-item" class="btn-secondary btn-modal-unequip hidden">
+                <span>DÉSÉQUIPER</span>
+              </button>
+              <button id="btn-modal-recycle-item" class="btn-danger btn-modal-recycle">
+                <span>RECYCLER (💎)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Ouverture de Coffre / Trésor Spatial (Animation & Relance Pub) -->
+        <div id="modal-chest-opening" class="modal-overlay hidden">
+          <div class="modal-card chest-modal-card">
+            <button id="btn-close-chest-modal" class="btn-shop-close" title="Fermer">✕</button>
+
+            <!-- Étape 1 : Coffre Scellé & Déclenchement -->
+            <div id="chest-stage-sealed" class="chest-stage">
+              <div class="chest-banner-chip">TRÉSOR STELLAIRE SCELLÉ</div>
+              <h2 id="chest-modal-title" class="chest-modal-title">COFFRE NON IDENTIFIÉ</h2>
+              <div class="chest-visual-container">
+                <div class="chest-glow-ring"></div>
+                <div id="chest-interactive-box" class="chest-interactive-box">
+                  <span class="chest-big-emoji">📦</span>
+                  <div class="chest-sparkles"></div>
+                </div>
+              </div>
+              <p id="chest-modal-desc" class="chest-modal-hint">
+                Touchez le coffre ou appuyez sur Ouvrir pour révéler l'équipement mystère !
+              </p>
+              <button id="btn-open-chest-action" class="btn-primary btn-open-chest">
+                <span>🔓 OUVRIR LE COFFRE</span>
+              </button>
+            </div>
+
+            <!-- Étape 2 : Animation d'Ouverture Dynamique -->
+            <div id="chest-stage-opening" class="chest-stage hidden">
+              <div class="chest-visual-container opening-active">
+                <div class="chest-burst-light"></div>
+                <div class="chest-interactive-box chest-opening-anim">
+                  <span class="chest-big-emoji">📦</span>
+                </div>
+                <div class="chest-rays"></div>
+              </div>
+              <div class="chest-opening-label">DÉCRYPTAGE QUANTIQUE EN COURS...</div>
+            </div>
+
+            <!-- Étape 3 : Butin Révélé & Option Relancer (Pub) -->
+            <div id="chest-stage-reward" class="chest-stage hidden">
+              <div class="chest-reward-header">
+                <span class="chest-reward-pill">✨ ÉQUIPEMENT DÉCOUVERT</span>
+              </div>
+
+              <div id="chest-reward-card" class="chest-revealed-card">
+                <!-- Rendu dynamique de l'équipement révélé -->
+              </div>
+
+              <div class="chest-reward-actions">
+                <button id="btn-chest-reroll-ad" class="btn-action-small btn-chest-reroll">
+                  <span class="btn-ad-icon">🎬</span>
+                  <div class="btn-reroll-text">
+                    <span class="reroll-title">RELANCER LE BUTIN</span>
+                    <span class="reroll-sub">Regarder une pub pour un nouveau tirage</span>
+                  </div>
+                </button>
+                <button id="btn-chest-claim-item" class="btn-primary btn-chest-claim">
+                  <span>✅ RÉCUPÉRER L'OBJET</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Raffinerie & Fonderie Lunaire (Débloqué Niveau 5) -->
+        <div id="modal-refinery" class="modal-overlay hidden">
+          <div class="modal-card refinery-modal-card">
+            <div class="refinery-modal-header">
+              <div class="refinery-banner-box">
+                <img src="/bg-refinery-moon.jpg" alt="Raffinerie Lunaire" class="refinery-banner-img" />
+                <div class="refinery-banner-overlay"></div>
+                <div class="refinery-banner-caption">
+                  <span class="refinery-badge-chip">BASE MINIÈRE LUNAIRE</span>
+                  <h2 class="refinery-banner-title">🏭 RAFFINERIE & FONDERIE LUNAIRE</h2>
+                </div>
+              </div>
+              <button id="btn-close-refinery" class="btn-shop-close" title="Fermer">✕</button>
+            </div>
+
+            <div class="refinery-modal-body">
+              <p class="refinery-desc-text">
+                Traitez les ressources brutes de vos expéditions : fondez vos <strong>diamants résiduels</strong> (toutes missions confondues) en <strong>poudre de diamant</strong> pour perfectionner vos équipements, et raffinez votre <strong>minerai d'iridium</strong> en <strong>barres d'iridium</strong> pour acquérir de nouveaux vaisseaux !
+              </p>
+
+              <!-- Deux Ateliers Spécialisés de Fusion -->
+              <div class="refinery-workshops-container">
+
+                <!-- 1. Fonderie de Diamants -> Poudre de Diamant -->
+                <div class="refinery-workshop-card workshop-diamonds">
+                  <div class="workshop-header">
+                    <div class="workshop-title-wrap">
+                      <span class="workshop-icon"><span class="icon-diamond-dust" style="width: 1.4em; height: 1.4em;"></span></span>
+                      <div class="workshop-title-meta">
+                        <span class="workshop-name">FORGE DE POUDRE DE DIAMANT</span>
+                        <span class="workshop-sub">Monnaie d'amélioration des équipements</span>
+                      </div>
+                    </div>
+                    <div class="workshop-rate-badge">10 💎 = 1 <span class="icon-diamond-dust"></span></div>
+                  </div>
+
+                  <div class="refinery-conversion-panel">
+                    <div class="ref-bal-col diamonds">
+                      <div class="ref-bal-title">DIAMANTS (TOUTES MISSIONS)</div>
+                      <div class="ref-bal-number">
+                        <span class="ref-bal-emoji">💎</span>
+                        <span id="refinery-total-diamonds-val">0</span>
+                      </div>
+                    </div>
+
+                    <div class="ref-convert-badge">
+                      <span class="ref-convert-arrow">➔</span>
+                    </div>
+
+                    <div class="ref-bal-col dust">
+                      <div class="ref-bal-title">POUDRE DE DIAMANT</div>
+                      <div class="ref-bal-number">
+                        <span class="curr-emoji"><span class="icon-diamond-dust"></span></span>
+                        <span id="refinery-dust-val">0</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="workshop-actions-row">
+                    <button id="btn-smelt-diamonds-unit" class="btn-primary">
+                      <span>🔥 FONDRE 50 💎 (+5 <span class="icon-diamond-dust"></span>)</span>
+                    </button>
+                    <button id="btn-smelt-diamonds-all" class="btn-secondary">
+                      <span>⚡ TOUT FONDRE EN POUDRE</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Haut-Fourneau Iridium -> Barres d'Iridium -->
+                <div class="refinery-workshop-card workshop-iridium">
+                  <div class="workshop-header">
+                    <div class="workshop-title-wrap">
+                      <span class="workshop-icon"><span class="icon-iridium-bar"></span></span>
+                      <div class="workshop-title-meta">
+                        <span class="workshop-name">HAUT-FOURNEAU D'IRIDIUM</span>
+                        <span class="workshop-sub">Lingots requis pour débloquer les vaisseaux</span>
+                      </div>
+                    </div>
+                    <div class="workshop-rate-badge">2 <span class="icon-iridium"></span> = 1 <span class="icon-iridium-bar"></span></div>
+                  </div>
+
+                  <div class="refinery-conversion-panel">
+                    <div class="ref-bal-col crystals">
+                      <div class="ref-bal-title">MINERAI D'IRIDIUM BRUT</div>
+                      <div class="ref-bal-number">
+                        <span class="curr-emoji"><span class="icon-iridium"></span></span>
+                        <span id="refinery-iridium-ore-val">0</span>
+                      </div>
+                    </div>
+
+                    <div class="ref-convert-badge">
+                      <span class="ref-convert-arrow">➔</span>
+                    </div>
+
+                    <div class="ref-bal-col bars">
+                      <div class="ref-bal-title">BARRES D'IRIDIUM RAFFINÉ</div>
+                      <div class="ref-bal-number">
+                        <span class="curr-emoji"><span class="icon-iridium-bar"></span></span>
+                        <span id="refinery-iridium-bars-val">0</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="workshop-actions-row">
+                    <button id="btn-smelt-iridium-unit" class="btn-primary">
+                      <span>🔥 FONDRE 1 BARRE (2 <span class="icon-iridium"></span>)</span>
+                    </button>
+                    <button id="btn-smelt-iridium-all" class="btn-secondary">
+                      <span>⚡ TOUT FONDRE EN BARRES</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              <div id="refinery-feedback-msg" class="refinery-feedback hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notification Toast HUD Global -->
+        <div id="hud-toast-container" class="hud-toast-container hidden">
+          <div id="hud-toast-msg" class="hud-toast-msg"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

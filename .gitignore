@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Production web build (generated via npm run build during CI)
+dist/
+
+# Capacitor & Android Gradle build caches
+.gradle/
+build/
+android/.gradle/
+android/build/
+android/app/build/
+android/.idea/
+android/*.iml
+android/app/*.iml
+android/local.properties
+android/captures/
+android/.cxx/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# IDE & Editor
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
