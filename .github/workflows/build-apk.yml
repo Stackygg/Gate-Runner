@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: 📥 Récupération du code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: ⚙️ Configuration de Node.js
         uses: actions/setup-node@v4
@@ -49,7 +51,26 @@ jobs:
 
       - name: 🔨 Compilation de l'APK (:app:assembleDebug)
         working-directory: android
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+        run: |
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace > ../gradle.log 2>&1 || {
+            EXIT_CODE=$?
+            echo "❌ ÉCHEC GRADLE (code $EXIT_CODE)"
+            cat ../gradle.log | tail -n 80
+            exit $EXIT_CODE
+          }
+
+      - name: 📄 Enregistrement du journal sur branche build-logs
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B build-logs
+          cp gradle.log full_build.log 2>/dev/null || true
+          echo -e "\n=== ARBORESCENCE REPO ===" >> full_build.log
+          find . -maxdepth 5 >> full_build.log 2>/dev/null || true
+          git add full_build.log
+          git commit -m "ci: full build log" || true
+          git push origin build-logs --force || true
 
       - name: 📦 Préparation du fichier APK final
         run: |
@@ -74,9 +95,10 @@ jobs:
       - name: 🚀 Publication de la Release GitHub publique
         run: |
           gh release create "v1.0.${{ github.run_number }}" StackyFleet.apk \
+            --repo "${{ github.repository }}" \
             --title "Stacky Fleet v1.0.${{ github.run_number }}" \
             --notes "🎮 Téléchargez **StackyFleet.apk** ci-dessous directement sur votre smartphone Android pour installer le jeu !" \
             --latest \
-            --clobber || gh release upload "v1.0.${{ github.run_number }}" StackyFleet.apk --clobber
+            --clobber || gh release upload "v1.0.${{ github.run_number }}" StackyFleet.apk --repo "${{ github.repository }}" --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
