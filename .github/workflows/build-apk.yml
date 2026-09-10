@@ -48,21 +48,21 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: 🔨 Compilation de l'APK (assembleDebug)
-        run: |
-          cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle_build.log
-
-      - name: 📄 Affichage du journal d'erreur en cas d'échec
-        if: failure()
-        run: |
-          echo "## ❌ Erreur Gradle" >> $GITHUB_STEP_SUMMARY
-          echo '```text' >> $GITHUB_STEP_SUMMARY
-          tail -n 80 gradle_build.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: 📦 Préparation du fichier APK final
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk StackyFleet.apk
+          echo "=== Recherche du fichier APK généré ==="
+          find android -name "*.apk"
+          APK_PATH=$(find android -name "*.apk" -type f | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            echo "❌ ERREUR: Aucun fichier APK trouvé !"
+            exit 1
+          fi
+          echo "✅ Fichier APK trouvé : $APK_PATH"
+          cp "$APK_PATH" StackyFleet.apk
+          ls -lh StackyFleet.apk
 
       - name: 📤 Publication en tant qu'Artifact GitHub
         uses: actions/upload-artifact@v4
@@ -71,20 +71,12 @@ jobs:
           path: StackyFleet.apk
           retention-days: 30
 
-      - name: 🚀 Création / Mise à jour de la Release GitHub publique
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/heads/')
-        with:
-          tag_name: latest
-          name: "Stacky Fleet - Dernière version APK"
-          body: |
-            🎮 **Stacky Fleet : Gate Runner**
-            
-            Téléchargez le fichier `StackyFleet.apk` ci-dessous directement sur votre smartphone Android pour installer le jeu !
-            
-            *(Si Android affiche un avertissement de sécurité lors de l'installation, autorisez simplement l'installation depuis cette source).*
-          draft: false
-          prerelease: false
-          files: StackyFleet.apk
+      - name: 🚀 Publication de la Release GitHub publique
+        run: |
+          gh release create "v1.0.${{ github.run_number }}" StackyFleet.apk \
+            --title "Stacky Fleet v1.0.${{ github.run_number }}" \
+            --notes "🎮 Téléchargez **StackyFleet.apk** ci-dessous directement sur votre smartphone Android pour installer le jeu !" \
+            --latest \
+            --clobber || gh release upload "v1.0.${{ github.run_number }}" StackyFleet.apk --clobber
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
