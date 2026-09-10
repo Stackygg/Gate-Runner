@@ -30,19 +30,24 @@ jobs:
           distribution: 'zulu'
           java-version: 21
 
+      - name: 📱 Configuration du SDK Android & Licences
+        uses: android-actions/setup-android@v3
+
       - name: 📦 Installation des dépendances NPM
         run: npm install
 
       - name: 🏗️ Compilation du jeu Web (Vite)
         run: npm run build
 
-      - name: 📋 Copie des assets vers Android (Capacitor)
-        run: npx cap copy android
+      - name: 🔄 Synchronisation Capacitor vers Android
+        run: npx cap sync android
+
+      - name: 🔑 Droits d'exécution sur Gradle Wrapper
+        run: chmod +x android/gradlew
 
       - name: 🔨 Compilation de l'APK (assembleDebug)
         run: |
           cd android
-          chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: 📦 Préparation du fichier APK final
