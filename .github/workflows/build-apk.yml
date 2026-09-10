@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: 📥 Récupération du code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: ⚙️ Configuration de Node.js
         uses: actions/setup-node@v4
@@ -49,7 +51,27 @@ jobs:
 
       - name: 🔨 Compilation de l'APK (assembleDebug)
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo "❌ Gradle a échoué avec le code ${PIPESTATUS[0]}"
+            exit ${PIPESTATUS[0]}
+          fi
+
+      - name: 📄 Sauvegarde du journal d'erreur en cas d'échec
+        if: failure()
+        run: |
+          echo "## ❌ Erreur de compilation Gradle" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          tail -n 120 gradle.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B build-logs
+          cp gradle.log error.log
+          git add error.log
+          git commit -m "ci: capture gradle error log" || true
+          git push origin build-logs --force || true
 
       - name: 📦 Préparation du fichier APK final
         run: |
