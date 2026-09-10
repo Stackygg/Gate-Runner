@@ -78,10 +78,12 @@ export class SplashScreen {
         if (currentY <= logoRect.top) {
           this.elLogoOrangeWrap.style.clipPath = 'inset(0 0 100% 0)';
         } else if (currentY >= logoRect.bottom) {
-          this.elLogoOrangeWrap.style.clipPath = 'inset(0 0 0% 0)';
+          // Balayage du logo terminé : aucune découpe (la lueur rayonne librement dans l'espace)
+          this.elLogoOrangeWrap.style.clipPath = 'none';
         } else {
           const remainingPx = Math.max(0, logoRect.bottom - currentY);
-          this.elLogoOrangeWrap.style.clipPath = `inset(0 0 ${remainingPx.toFixed(1)}px 0)`;
+          // Marges négatives généreuses (-160px) sur les 3 côtés : aucune bordure rectangulaire de découpage !
+          this.elLogoOrangeWrap.style.clipPath = `inset(-160px -160px ${remainingPx.toFixed(1)}px -160px)`;
         }
       }
 
@@ -126,7 +128,7 @@ export class SplashScreen {
     this.elOverlay.style.pointerEvents = 'none';
 
     if (this.elLogoOrangeWrap) {
-      this.elLogoOrangeWrap.style.clipPath = 'inset(0 0 0% 0)';
+      this.elLogoOrangeWrap.style.clipPath = 'none';
     }
     if (!this.isStudioIgnited) {
       this.igniteStudio();

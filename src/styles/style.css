@@ -7836,7 +7836,7 @@ html, body {
   }
 }
 
-/* Boîte du Logo SVG */
+/* Boîte du Logo SVG Vectoriel (Totalement transparente, sans bordure ni découpage de lueur) */
 .splash-logo-box {
   position: relative;
   width: min(220px, 55vw);
@@ -7844,6 +7844,20 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+/* Propriétés communes aux Logos SVG Vectoriels */
+.splash-stacky-logo {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 /* Logo Fusée + STACKY : Couche de base en Blanc pur */
@@ -7851,7 +7865,8 @@ html, body {
   width: 100%;
   height: auto;
   display: block;
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.55)) drop-shadow(0 0 28px rgba(255, 107, 0, 0.2));
+  overflow: visible !important;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.55)) drop-shadow(0 0 24px rgba(255, 107, 0, 0.22));
 }
 
 .splash-logo-white,
@@ -7866,18 +7881,23 @@ html, body {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
   clip-path: inset(0 0 100% 0);
   will-change: clip-path;
 }
 
-/* Logo Fusée + STACKY : Couche Orange Incandescent */
+/* Logo Fusée + STACKY : Couche Orange Incandescent (Lueur cosmique pure sans découpage) */
 .splash-logo-orange {
   width: 100%;
   height: 100%;
   display: block;
-  filter: drop-shadow(0 0 14px rgba(255, 120, 0, 0.95)) 
-          drop-shadow(0 0 32px rgba(255, 60, 0, 0.75)) 
-          drop-shadow(0 0 5px #FFF4E5);
+  overflow: visible !important;
+  filter: drop-shadow(0 0 12px rgba(255, 135, 0, 0.95)) 
+          drop-shadow(0 0 28px rgba(255, 65, 0, 0.8)) 
+          drop-shadow(0 0 4px #FFF4E5);
 }
 
 .splash-logo-orange,
