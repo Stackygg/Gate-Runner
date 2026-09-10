@@ -7753,7 +7753,7 @@ html, body {
   }
 }
 
-/* Faisceau Laser Orange (Holographique chirurgical ultra-lumineux) */
+/* Faisceau Laser Orange Incandescent (Animé via SplashScreen.ts) */
 .splash-laser-beam {
   position: absolute;
   top: 0;
@@ -7762,24 +7762,28 @@ html, body {
   height: 3px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(255, 107, 0, 0.3) 10%, 
-    #FF6B00 28%, 
-    #FFF2E6 48%, 
+    rgba(255, 107, 0, 0.35) 10%, 
+    #FF5500 25%, 
+    #FF8800 40%, 
+    #FFF5E6 48%, 
     #FFFFFF 50%, 
-    #FFF2E6 52%, 
-    #FF6B00 72%, 
-    rgba(255, 107, 0, 0.3) 90%, 
+    #FFF5E6 52%, 
+    #FF8800 60%, 
+    #FF5500 75%, 
+    rgba(255, 107, 0, 0.35) 90%, 
     transparent 100%
   );
   box-shadow: 
     0 0 6px #FFFFFF, 
-    0 0 16px #FF6B00, 
-    0 0 35px rgba(255, 107, 0, 0.85), 
-    0 0 75px rgba(255, 80, 0, 0.5);
+    0 0 16px #FF8800, 
+    0 0 35px #FF5500, 
+    0 0 75px rgba(255, 60, 0, 0.75),
+    0 0 120px rgba(255, 40, 0, 0.45);
   z-index: 25;
   pointer-events: none;
   will-change: transform, opacity;
-  animation: splashLaserSweep 1.45s cubic-bezier(0.38, 0.05, 0.22, 1) forwards;
+  transform: translate3d(0, -80px, 0);
+  opacity: 0;
 }
 
 /* Traînée lumineuse vers le haut */
@@ -7789,8 +7793,8 @@ html, body {
   bottom: 100%;
   left: 0;
   width: 100%;
-  height: 60px;
-  background: linear-gradient(to top, rgba(255, 107, 0, 0.35) 0%, rgba(255, 107, 0, 0.06) 60%, transparent 100%);
+  height: 65px;
+  background: linear-gradient(to top, rgba(255, 90, 0, 0.38) 0%, rgba(255, 70, 0, 0.08) 55%, transparent 100%);
   pointer-events: none;
 }
 
@@ -7801,26 +7805,9 @@ html, body {
   top: 100%;
   left: 0;
   width: 100%;
-  height: 24px;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.45) 0%, rgba(255, 107, 0, 0.18) 50%, transparent 100%);
+  height: 28px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.5) 0%, rgba(255, 100, 0, 0.22) 50%, transparent 100%);
   pointer-events: none;
-}
-
-@keyframes splashLaserSweep {
-  0% {
-    transform: translateY(-80px);
-    opacity: 0;
-  }
-  6% {
-    opacity: 1;
-  }
-  88% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(105vh);
-    opacity: 0;
-  }
 }
 
 /* Contenu Central : Logo + "Studio" */
@@ -7872,54 +7859,133 @@ html, body {
 /* Conteneur STUDIO sous le Logo */
 .splash-studio-wrap {
   position: relative;
-  margin-top: 14px;
+  margin-top: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
+  height: 36px;
 }
 
-/* Texte STUDIO : Émerge avec un éclat néon orange au passage du laser */
+/* Halo thermique incandescent rayonnant derrière STUDIO */
+.splash-studio-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -14px -35px;
+  background: radial-gradient(ellipse at center, rgba(255, 110, 0, 0.55) 0%, rgba(255, 45, 0, 0.22) 50%, transparent 75%);
+  filter: blur(16px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.3s ease-out;
+}
+
+.splash-studio-wrap.ignited::before {
+  opacity: 1;
+  animation: incandescentAuraPulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes incandescentAuraPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+    filter: blur(14px);
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 1;
+    filter: blur(20px);
+  }
+}
+
+/* Texte STUDIO : Caché au départ, puis s'enflamme d'un orange incandescent PILE à l'impact du laser */
 .splash-studio-text {
   font-family: var(--font-display);
-  font-size: clamp(1.15rem, 4vw, 1.55rem);
+  font-size: clamp(1.2rem, 4.2vw, 1.6rem);
   font-weight: 900;
   letter-spacing: 0.55em;
   text-indent: 0.55em; /* Compense le letter-spacing pour un centrage géométrique parfait */
-  color: #FF6B00;
+  color: #FFF3E0;
   text-transform: uppercase;
   opacity: 0;
   will-change: opacity, transform, filter, text-shadow;
-  animation: splashStudioReveal 1.5s cubic-bezier(0.2, 0.8, 0.25, 1) 0.8s forwards;
 }
 
-@keyframes splashStudioReveal {
+.splash-studio-text.ignited {
+  animation: studioIncandescentBurn 1.6s cubic-bezier(0.18, 0.89, 0.32, 1) forwards,
+             studioIncandescentLoop 2.4s ease-in-out 1.6s infinite alternate;
+}
+
+@keyframes studioIncandescentBurn {
   0% {
     opacity: 0;
-    transform: translateY(6px) scale(0.92);
-    filter: blur(10px) brightness(3);
-    text-shadow: 0 0 35px #FFFFFF, 0 0 60px #FF6B00;
+    transform: translateY(4px) scale(0.94);
+    filter: brightness(4) blur(4px);
+    text-shadow: 
+      0 0 20px #FFFFFF, 
+      0 0 45px #FFF4D0, 
+      0 0 80px #FF7700, 
+      0 0 130px #FF3300;
   }
   15% {
     opacity: 1;
-    transform: translateY(0) scale(1.08);
-    filter: blur(0px) brightness(2.2);
-    text-shadow: 0 0 25px #FFFFFF, 0 0 50px #FF6B00, 0 0 75px #FF6B00;
+    transform: translateY(0) scale(1.07);
+    filter: brightness(3.0) blur(0px);
+    text-shadow: 
+      0 0 8px #FFFFFF, 
+      0 0 20px #FFF0B0, 
+      0 0 45px #FFAA00, 
+      0 0 75px #FF5500, 
+      0 0 110px #FF1100;
   }
   35% {
     transform: translateY(0) scale(1.0);
-    filter: brightness(1.4);
-    text-shadow: 0 0 16px #FFF2E6, 0 0 32px #FF6B00, 0 0 55px rgba(255, 107, 0, 0.8);
+    filter: brightness(1.6);
+    text-shadow: 
+      0 0 4px #FFFFFF, 
+      0 0 12px #FFE599, 
+      0 0 26px #FF8800, 
+      0 0 52px #FF4400, 
+      0 0 85px #E61E00;
   }
   100% {
     opacity: 1;
     transform: translateY(0) scale(1.0);
-    filter: brightness(1.1);
-    text-shadow: 0 0 10px #FF8822, 0 0 25px #FF6B00, 0 0 40px rgba(255, 107, 0, 0.55);
+    color: #FFF2DF;
+    filter: brightness(1.25);
+    text-shadow: 
+      0 0 3px #FFFFFF, 
+      0 0 10px #FFDF80, 
+      0 0 22px #FF7A00, 
+      0 0 42px #FF3D00, 
+      0 0 70px #D61A00,
+      0 0 100px rgba(255, 30, 0, 0.75);
   }
 }
 
-/* Trait néon holographique sous "STUDIO" */
+@keyframes studioIncandescentLoop {
+  0% {
+    filter: brightness(1.2) drop-shadow(0 0 12px rgba(255, 120, 0, 0.6));
+    text-shadow: 
+      0 0 3px #FFFFFF, 
+      0 0 10px #FFDF80, 
+      0 0 22px #FF7A00, 
+      0 0 42px #FF3D00, 
+      0 0 70px #D61A00,
+      0 0 100px rgba(255, 30, 0, 0.75);
+  }
+  100% {
+    filter: brightness(1.45) drop-shadow(0 0 20px rgba(255, 80, 0, 0.9));
+    text-shadow: 
+      0 0 4px #FFFFFF, 
+      0 0 14px #FFF0A0, 
+      0 0 30px #FF9000, 
+      0 0 55px #FF4D00, 
+      0 0 85px #FF1E00,
+      0 0 125px rgba(255, 50, 0, 0.9);
+  }
+}
+
+/* Ligne de plasma incandescent sous "STUDIO" */
 .splash-studio-wrap::after {
   content: '';
   position: absolute;
@@ -7928,94 +7994,35 @@ html, body {
   transform: translateX(-50%);
   height: 2px;
   width: 0;
-  background: linear-gradient(90deg, transparent 0%, #FF6B00 30%, #FFFFFF 50%, #FF6B00 70%, transparent 100%);
-  box-shadow: 0 0 12px #FF6B00, 0 0 24px #FF6B00;
+  background: linear-gradient(90deg, transparent 0%, #FF3D00 20%, #FF9000 40%, #FFFFFF 50%, #FF9000 60%, #FF3D00 80%, transparent 100%);
+  box-shadow: 0 0 10px #FF8800, 0 0 22px #FF3300, 0 0 35px rgba(255, 50, 0, 0.8);
   opacity: 0;
   border-radius: 99px;
-  animation: splashStudioUnderline 1.3s cubic-bezier(0.2, 0.8, 0.25, 1) 0.85s forwards;
 }
 
-@keyframes splashStudioUnderline {
+.splash-studio-wrap.ignited::after {
+  animation: studioIncandescentLine 1.4s cubic-bezier(0.2, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes studioIncandescentLine {
   0% {
     width: 0;
     opacity: 0;
   }
   20% {
-    width: 140px;
+    width: 150px;
     opacity: 1;
+    filter: brightness(2.5);
   }
   60% {
-    width: 110px;
-    opacity: 0.85;
+    width: 115px;
+    opacity: 0.9;
+    filter: brightness(1.4);
   }
   100% {
-    width: 80px;
-    opacity: 0.5;
+    width: 85px;
+    opacity: 0.65;
+    filter: brightness(1.1);
   }
 }
 
-/* Barre de chargement discrète en bas */
-.splash-bottom-loader {
-  position: absolute;
-  bottom: max(32px, env(safe-area-inset-bottom, 24px));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  z-index: 10;
-  pointer-events: none;
-  animation: splashLoaderEntrance 0.8s ease-out 0.2s both;
-}
-
-@keyframes splashLoaderEntrance {
-  0% {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  100% {
-    opacity: 0.85;
-    transform: translateY(0);
-  }
-}
-
-.splash-loader-progress {
-  width: 140px;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 99px;
-  overflow: hidden;
-  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.6);
-}
-
-.splash-loader-bar {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, #FF6B00 0%, #FFB066 50%, #00F0FF 100%);
-  border-radius: 99px;
-  transform-origin: left center;
-  animation: splashLoaderFill 2.2s cubic-bezier(0.25, 0.4, 0.25, 1) forwards;
-}
-
-@keyframes splashLoaderFill {
-  0% {
-    transform: scaleX(0);
-  }
-  40% {
-    transform: scaleX(0.45);
-  }
-  75% {
-    transform: scaleX(0.85);
-  }
-  100% {
-    transform: scaleX(1);
-  }
-}
-
-.splash-loader-text {
-  font-family: var(--font-display);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.25em;
-  color: rgba(240, 244, 252, 0.6);
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
-}
