@@ -13,6 +13,9 @@ export class SplashScreen {
   private animFrameId: number | null = null;
   private timerDismiss: any = null;
 
+  private isLogoClipHidden: boolean = false;
+  private isLogoClipNone: boolean = false;
+
   // Durée du balayage laser : 3.8 secondes (entre 3 et 5 secondes)
   private readonly SWEEP_DURATION_MS: number = 3800;
   // Temps de contemplation après fin du balayage avant transition : 1.1s
@@ -41,11 +44,23 @@ export class SplashScreen {
     this.startLaserAnimation();
   }
 
+  public getIsDismissed(): boolean {
+    return this.isDismissed;
+  }
+
   private startLaserAnimation() {
     if (!this.elLaser) return;
 
+    // Mesure unique des coordonnées hors de la boucle pour ÉLIMINER tout layout thrashing / reflow synchrone (anti-freeze mobile)
+    const logoRect = this.elLogoBox ? this.elLogoBox.getBoundingClientRect() : null;
+    const studioRect = this.elStudioWrap ? this.elStudioWrap.getBoundingClientRect() : null;
+    const logoTop = logoRect ? logoRect.top : 0;
+    const logoBottom = logoRect ? logoRect.bottom : 0;
+    const studioTop = studioRect ? studioRect.top : 0;
+
     const startTime = performance.now();
     const startY = -80;
+    const endY = (window.innerHeight || 800) + 80;
 
     const step = (now: number) => {
       if (this.isDismissed) return;
@@ -55,50 +70,49 @@ export class SplashScreen {
 
       // Easing cinématique doux et fluide
       const eased = this.easeCubic(progress);
-
-      const endY = window.innerHeight + 80;
       const currentY = startY + (endY - startY) * eased;
 
       if (this.elLaser) {
-        this.elLaser.style.transform = `translate3d(0, ${currentY}px, 0)`;
+        this.elLaser.style.transform = `translate3d(0, ${currentY.toFixed(1)}px, 0)`;
 
         // Fondu progressif d'entrée et de sortie du faisceau
         if (progress < 0.04) {
-          this.elLaser.style.opacity = `${progress / 0.04}`;
+          this.elLaser.style.opacity = `${(progress / 0.04).toFixed(2)}`;
         } else if (progress > 0.94) {
-          this.elLaser.style.opacity = `${Math.max(0, (1 - progress) / 0.06)}`;
+          this.elLaser.style.opacity = `${Math.max(0, (1 - progress) / 0.06).toFixed(2)}`;
         } else {
           this.elLaser.style.opacity = '1';
         }
       }
 
-      // Révélation progressive du Logo Orange de haut en bas calée au pixel près sur le passage du faisceau laser
-      if (this.elLogoOrangeWrap && this.elLogoBox) {
-        const logoRect = this.elLogoBox.getBoundingClientRect();
-        if (currentY <= logoRect.top) {
-          this.elLogoOrangeWrap.style.clipPath = 'inset(0 0 100% 0)';
-        } else if (currentY >= logoRect.bottom) {
-          // Balayage du logo terminé : aucune découpe (la lueur rayonne librement dans l'espace)
-          this.elLogoOrangeWrap.style.clipPath = 'none';
+      // Révélation progressive du Logo Orange de haut en bas sans aucun reflow DOM
+      if (this.elLogoOrangeWrap && logoBottom > 0) {
+        if (currentY <= logoTop) {
+          if (!this.isLogoClipHidden) {
+            this.elLogoOrangeWrap.style.clipPath = 'inset(0 0 100% 0)';
+            this.isLogoClipHidden = true;
+          }
+        } else if (currentY >= logoBottom) {
+          if (!this.isLogoClipNone) {
+            this.elLogoOrangeWrap.style.clipPath = 'none';
+            this.isLogoClipNone = true;
+          }
         } else {
-          const remainingPx = Math.max(0, logoRect.bottom - currentY);
-          // Marges négatives généreuses (-160px) sur les 3 côtés : aucune bordure rectangulaire de découpage !
+          this.isLogoClipHidden = false;
+          this.isLogoClipNone = false;
+          const remainingPx = Math.max(0, logoBottom - currentY);
           this.elLogoOrangeWrap.style.clipPath = `inset(-160px -160px ${remainingPx.toFixed(1)}px -160px)`;
         }
       }
 
-      // Déclenchement PILE quand le laser touche le mot "STUDIO"
-      if (!this.isStudioIgnited && this.elStudioWrap) {
-        const studioRect = this.elStudioWrap.getBoundingClientRect();
-        if (currentY >= studioRect.top) {
-          this.igniteStudio();
-        }
+      // Déclenchement PILE quand le laser touche le mot "STUDIO" (calcul numérique direct)
+      if (!this.isStudioIgnited && studioTop > 0 && currentY >= studioTop) {
+        this.igniteStudio();
       }
 
       if (progress < 1) {
         this.animFrameId = requestAnimationFrame(step);
       } else {
-        // Balayage terminé : laisser briller le logo et STUDIO incandescent
         this.timerDismiss = setTimeout(() => {
           this.dismiss(false);
         }, this.HOLD_DURATION_MS);

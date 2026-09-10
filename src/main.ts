@@ -564,6 +564,12 @@ export class GameApp {
 
   // --- BOUCLE DE JEU PRINCIPALE (60 FPS) ---
   private gameLoop(currentTime: number) {
+    // Si l'écran d'introduction (Splash Screen) est en cours, suspendre le rendu canvas pour libérer 100% du CPU/GPU mobile
+    if (this.splashScreen && !this.splashScreen.getIsDismissed()) {
+      requestAnimationFrame((t) => this.gameLoop(t));
+      return;
+    }
+
     const dt = Math.min(0.1, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
 

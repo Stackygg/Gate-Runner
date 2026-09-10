@@ -7900,6 +7900,8 @@ html, body {
   overflow: hidden;
   pointer-events: auto;
   cursor: pointer;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Dissolution fluide lors de la fin de l'intro */
@@ -7919,31 +7921,31 @@ html, body {
   pointer-events: none !important;
 }
 
-/* Lueur néon ambiante en arrière-plan */
+/* Lueur néon ambiante en arrière-plan (Optimisée : gradient naturel sans filter:blur pour 0 freeze GPU) */
 .splash-bg-glow {
   position: absolute;
   width: min(520px, 85vw);
   height: min(520px, 85vw);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 107, 0, 0.18) 0%, rgba(255, 107, 0, 0.04) 50%, transparent 75%);
+  background: radial-gradient(circle, rgba(255, 110, 0, 0.22) 0%, rgba(255, 90, 0, 0.1) 35%, rgba(255, 70, 0, 0.02) 60%, transparent 75%);
   pointer-events: none;
-  filter: blur(45px);
   z-index: 2;
+  transform: translateZ(0);
   animation: splashGlowBreathe 3s ease-in-out infinite alternate;
 }
 
 @keyframes splashGlowBreathe {
   0% {
-    transform: scale(0.92);
-    opacity: 0.65;
+    transform: translateZ(0) scale(0.92);
+    opacity: 0.7;
   }
   100% {
-    transform: scale(1.15);
+    transform: translateZ(0) scale(1.12);
     opacity: 1;
   }
 }
 
-/* Faisceau Laser Orange Incandescent (Animé via SplashScreen.ts) */
+/* Faisceau Laser Orange Incandescent (Optimisé 60/120 FPS sur mobile) */
 .splash-laser-beam {
   position: absolute;
   top: 0;
@@ -7966,13 +7968,13 @@ html, body {
   box-shadow: 
     0 0 6px #FFFFFF, 
     0 0 16px #FF8800, 
-    0 0 35px #FF5500, 
-    0 0 75px rgba(255, 60, 0, 0.75),
-    0 0 120px rgba(255, 40, 0, 0.45);
+    0 0 32px rgba(255, 60, 0, 0.75);
   z-index: 25;
   pointer-events: none;
   will-change: transform, opacity;
   transform: translate3d(0, -80px, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   opacity: 0;
 }
 
@@ -8008,18 +8010,18 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transform: translateY(-24px);
+  transform: translateY(-24px) translateZ(0);
   animation: splashContentEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes splashContentEntrance {
   0% {
     opacity: 0;
-    transform: translateY(4px) scale(0.95);
+    transform: translateY(4px) translateZ(0) scale(0.95);
   }
   100% {
     opacity: 1;
-    transform: translateY(-24px) scale(1);
+    transform: translateY(-24px) translateZ(0) scale(1);
   }
 }
 
@@ -8035,6 +8037,7 @@ html, body {
   border: none !important;
   box-shadow: none !important;
   overflow: visible !important;
+  transform: translateZ(0);
 }
 
 /* Propriétés communes aux Logos SVG Vectoriels */
@@ -8045,6 +8048,7 @@ html, body {
   overflow: visible !important;
   background: transparent !important;
   border: none !important;
+  transform: translateZ(0);
 }
 
 /* Logo Fusée + STACKY : Couche de base en Blanc pur */
@@ -8053,7 +8057,8 @@ html, body {
   height: auto;
   display: block;
   overflow: visible !important;
-  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.55)) drop-shadow(0 0 24px rgba(255, 107, 0, 0.22));
+  transform: translateZ(0);
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6)) drop-shadow(0 0 16px rgba(255, 107, 0, 0.25));
 }
 
 .splash-logo-white,
@@ -8074,6 +8079,7 @@ html, body {
   overflow: visible !important;
   clip-path: inset(0 0 100% 0);
   will-change: clip-path;
+  transform: translateZ(0);
 }
 
 /* Logo Fusée + STACKY : Couche Orange Incandescent (Lueur cosmique pure sans découpage) */
@@ -8082,9 +8088,9 @@ html, body {
   height: 100%;
   display: block;
   overflow: visible !important;
-  filter: drop-shadow(0 0 12px rgba(255, 135, 0, 0.95)) 
-          drop-shadow(0 0 28px rgba(255, 65, 0, 0.8)) 
-          drop-shadow(0 0 4px #FFF4E5);
+  transform: translateZ(0);
+  filter: drop-shadow(0 0 10px rgba(255, 140, 0, 0.95)) 
+          drop-shadow(0 0 22px rgba(255, 60, 0, 0.75));
 }
 
 .splash-logo-orange,
