@@ -303,7 +303,7 @@ export class MenuHangar {
     // Recyclage des diamants de la mission active en Poudre de Diamant
     this.elBtnRecycleMissionDiamonds?.addEventListener('click', () => {
       if (!SectorSystem.isFeatureUnlocked('refinery', this.store.data.maxUnlockedMission)) {
-        this.showHudToast('🔒 RAFFINERIE REQUISE : Le recyclage en Poudre de Diamant est disponible au Secteur 4 !', true);
+        this.showHudToast('🔒 RAFFINERIE REQUISE : Le recyclage en Poudre de Diamant est disponible au Secteur Delta !', true);
         return;
       }
       const curMission = this.store.data.selectedMission;
@@ -318,7 +318,7 @@ export class MenuHangar {
 
     // Clic sur l'overlay de verrouillage du recyclage (Raffinerie requise)
     this.elRecycleDiamondsLockedOverlay?.addEventListener('click', () => {
-      this.showHudToast('🔒 RAFFINERIE REQUISE : Le recyclage en Poudre de Diamant est disponible au Secteur 4 !', true);
+      this.showHudToast('🔒 RAFFINERIE REQUISE : Le recyclage en Poudre de Diamant est disponible au Secteur Delta !', true);
     });
 
     // Réinitialisation des améliorations de la mission active & remboursement des diamants
@@ -337,7 +337,7 @@ export class MenuHangar {
     document.querySelectorAll('.btn-challenge-launch').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!SectorSystem.isFeatureUnlocked('events', this.store.data.maxUnlockedMission)) {
-          this.showHudToast('🔒 ÉVÉNEMENTS VERROUILLÉS : Disponibles au Secteur 5 !', true);
+          this.showHudToast('🔒 ÉVÉNEMENTS VERROUILLÉS : Disponibles au Secteur Epsilon !', true);
           return;
         }
         this.hide();
@@ -345,39 +345,39 @@ export class MenuHangar {
       });
     });
 
-    // Clic sur la station Hangar (Débloqué Secteur 2)
+    // Clic sur la station Hangar (Débloqué Secteur Beta)
     this.elBtnMainHangar?.addEventListener('click', () => {
       if (SectorSystem.isFeatureUnlocked('hangar', this.store.data.maxUnlockedMission)) {
         this.showHangar();
       } else {
-        this.showHudToast('🔒 HANGAR VERROUILLÉ : Disponible au Secteur 2. Terminez le Secteur 1 pour y accéder !', true);
+        this.showHudToast('🔒 HANGAR VERROUILLÉ : Disponible au Secteur Beta. Terminez le Secteur Alpha pour y accéder !', true);
       }
     });
 
-    // Clic sur la station Défis (Débloqué Secteur 2)
+    // Clic sur la station Défis (Débloqué Secteur Beta)
     this.elBtnMainChallenges?.addEventListener('click', () => {
       if (SectorSystem.isFeatureUnlocked('challenges', this.store.data.maxUnlockedMission)) {
         this.showChallenges();
       } else {
-        this.showHudToast('🔒 DÉFIS VERROUILLÉS : Disponibles au Secteur 2. Terminez le Secteur 1 pour y accéder !', true);
+        this.showHudToast('🔒 DÉFIS VERROUILLÉS : Disponibles au Secteur Beta. Terminez le Secteur Alpha pour y accéder !', true);
       }
     });
 
-    // Clic sur la station Raffinerie (Débloqué Secteur 4)
+    // Clic sur la station Raffinerie (Débloqué Secteur Delta)
     this.elBtnMainRefinery?.addEventListener('click', () => {
       if (SectorSystem.isFeatureUnlocked('refinery', this.store.data.maxUnlockedMission)) {
         this.openRefineryModal();
       } else {
-        this.showHudToast('🔒 RAFFINERIE VERROUILLÉE : Disponible au Secteur 4. Atteignez le Secteur 4 pour exploiter la forge lunaire !', true);
+        this.showHudToast('🔒 RAFFINERIE VERROUILLÉE : Disponible au Secteur Delta. Atteignez le Secteur Delta pour exploiter la forge lunaire !', true);
       }
     });
 
-    // Clic sur la station Événements (Débloqué Secteur 5)
+    // Clic sur la station Événements (Débloqué Secteur Epsilon)
     this.elBtnMainEvents?.addEventListener('click', () => {
       this.showMissions();
       this.switchMissionsMode('events');
       if (!SectorSystem.isFeatureUnlocked('events', this.store.data.maxUnlockedMission)) {
-        this.showHudToast('🔒 ÉVÉNEMENTS VERROUILLÉS : Disponibles au Secteur 5. Atteignez le Secteur 5 pour y accéder !', true);
+        this.showHudToast('🔒 ÉVÉNEMENTS VERROUILLÉS : Disponibles au Secteur Epsilon. Atteignez le Secteur Epsilon pour y accéder !', true);
       }
     });
 
@@ -446,7 +446,7 @@ export class MenuHangar {
     // Éventuel bouton Hangar secondaire (si présent)
     document.getElementById('btn-open-hangar')?.addEventListener('click', () => {
       if (SectorSystem.isFeatureUnlocked('hangar', this.store.data.maxUnlockedMission)) this.showHangar();
-      else this.showHudToast('🔒 HANGAR VERROUILLÉ : Disponible au Secteur 2 !', true);
+      else this.showHudToast('🔒 HANGAR VERROUILLÉ : Disponible au Secteur Beta !', true);
     });
 
     // Bouton Retour depuis le Hangar
@@ -878,25 +878,26 @@ export class MenuHangar {
     // Missions & Secteurs
     const mission = this.store.data.selectedMission;
     const sectorInfo = SectorSystem.getSectorInfo(mission);
+    const sectorGreek = SectorSystem.getSectorName(sectorInfo.sector).toUpperCase();
 
     if (this.elLevelNum) this.elLevelNum.textContent = `${sectorInfo.levelInSector}`;
     if (this.elMissionsScreenLevelNum) this.elMissionsScreenLevelNum.textContent = `${mission}`;
     if (this.elMissionsQuickBadge) {
-      this.elMissionsQuickBadge.textContent = `SECTEUR ${sectorInfo.sector} • NIVEAU ${sectorInfo.levelInSector}`;
+      this.elMissionsQuickBadge.textContent = `SECTEUR ${sectorGreek} • NIVEAU ${sectorInfo.levelInSector}`;
     }
     if (this.elMissionLabel) {
-      this.elMissionLabel.textContent = `SECTEUR ${sectorInfo.sector} // NIVEAU ${sectorInfo.levelInSector}`;
+      this.elMissionLabel.textContent = `SECTEUR ${sectorGreek} // NIVEAU ${sectorInfo.levelInSector}`;
     }
 
     const homeMissionBadge = document.getElementById('home-mission-badge');
     if (homeMissionBadge) {
-      homeMissionBadge.textContent = `SECTEUR ${sectorInfo.sector} • NIVEAU ${sectorInfo.levelInSector}`;
+      homeMissionBadge.textContent = `SECTEUR ${sectorGreek} • NIVEAU ${sectorInfo.levelInSector}`;
     }
 
     const launchBtn = document.getElementById('btn-missions-launch');
     const launchText = launchBtn?.querySelector('.launch-text');
     if (launchText) {
-      launchText.textContent = `DÉCOLLER (SECTEUR ${sectorInfo.sector} • NIVEAU ${sectorInfo.levelInSector})`;
+      launchText.textContent = `DÉCOLLER (SECTEUR ${sectorGreek} • NIVEAU ${sectorInfo.levelInSector})`;
     }
 
     if (this.elMissionStatus) {
@@ -2112,8 +2113,9 @@ export class MenuHangar {
       this.elEventsLockedState?.classList.remove('hidden');
       this.elEventsUnlockedState?.classList.add('hidden');
       const curSector = SectorSystem.getSectorForMission(this.store.data.maxUnlockedMission);
+      const curSectorName = SectorSystem.getSectorName(curSector);
       if (this.elEventsUnlockProgressText) {
-        this.elEventsUnlockProgressText.textContent = `Secteur ${Math.min(4, curSector)} / 5`;
+        this.elEventsUnlockProgressText.textContent = `Secteur ${curSectorName} / Epsilon`;
       }
       if (this.elEventsUnlockProgressFill) {
         this.elEventsUnlockProgressFill.style.width = `${Math.min(100, (curSector / 5) * 100)}%`;
@@ -2303,7 +2305,7 @@ export class MenuHangar {
 
   private handleLaunchEvent() {
     if (!SectorSystem.isFeatureUnlocked('events', this.store.data.maxUnlockedMission)) {
-      this.showHudToast('🔒 ÉVÉNEMENT VERROUILLÉ : Disponible au Secteur 5 !', true);
+      this.showHudToast('🔒 ÉVÉNEMENT VERROUILLÉ : Disponible au Secteur Epsilon !', true);
       return;
     }
     this.showHudToast('⏳ ÉVÉNEMENT EN ATTENTE : Prochain tournoi dans 21 jours !', true);

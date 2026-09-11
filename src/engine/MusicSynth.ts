@@ -39,11 +39,11 @@ export class MusicSynth {
   };
 
   public readonly tracks: Record<string, TrackDefinition> = {
-    // 🕹️ 1. MUSIQUE PRINCIPALE (ACCUEIL & HANGAR) : ARCADE GROOVE
+    // 🕹️ 1. MUSIQUE PRINCIPALE (ACCUEIL & HANGAR) : MAIN MENU
     main: {
       id: 'main',
-      name: '🕹️ ARCADE GROOVE',
-      url: './music/main.mp3'
+      name: '🕹️ MAIN MENU',
+      url: './music/Main Menu.mp3'
     },
     // ⚡ 2. MUSIQUE DE NIVEAU : CHIP FUNK PULSE
     music1: {
@@ -416,7 +416,7 @@ export class MusicSynth {
     // Si c'est un fichier MP3/audio
     if (track.url) {
       try {
-        this.audioPlayer = new Audio(track.url);
+        this.audioPlayer = new Audio(encodeURI(track.url));
         this.audioPlayer.loop = true;
         this.audioPlayer.volume = this.isMuted ? 0 : this.volume;
         this.audioPlayer.play().catch(() => {});

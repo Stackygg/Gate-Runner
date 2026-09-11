@@ -1,5 +1,5 @@
 // Système de Secteurs & Progression Modulaire
-// Regroupe les missions en Secteurs configurables (ex: Secteur 1 = Niveaux 1, 2, 3)
+// Nommage des secteurs en alphabet grec : Secteur Alpha, Secteur Beta, Secteur Gamma...
 
 export interface SectorConfig {
   sector: number;
@@ -17,46 +17,86 @@ export interface SectorInfo {
 
 export type GalacticFeature = 'hangar' | 'challenges' | 'refinery' | 'events';
 
+// Alphabet Grec pour la dénomination des Secteurs
+export const GREEK_SECTOR_NAMES = [
+  'Alpha',
+  'Beta',
+  'Gamma',
+  'Delta',
+  'Epsilon',
+  'Zeta',
+  'Eta',
+  'Theta',
+  'Iota',
+  'Kappa',
+  'Lambda',
+  'Mu',
+  'Nu',
+  'Xi',
+  'Omicron',
+  'Pi',
+  'Rho',
+  'Sigma',
+  'Tau',
+  'Upsilon',
+  'Phi',
+  'Chi',
+  'Psi',
+  'Omega'
+];
+
+export function getGreekSectorName(sector: number): string {
+  if (sector >= 1 && sector <= GREEK_SECTOR_NAMES.length) {
+    return GREEK_SECTOR_NAMES[sector - 1];
+  }
+  return `Secteur ${sector}`;
+}
+
 // Configuration extensible des Secteurs
-// Chaque secteur regroupe un ensemble de niveaux (3 niveaux initiaux : Expédition, Raid, Escorte)
-// De nouveaux niveaux peuvent être ajoutés pour agrandir les secteurs existants ou en créer de nouveaux.
 export const SECTORS_CONFIG: SectorConfig[] = [
   {
     sector: 1,
-    name: 'Ceinture Initiale',
+    name: 'Secteur Alpha',
     missions: [1, 2, 3]
   },
   {
     sector: 2,
-    name: 'Nébuleuse Pourpre',
+    name: 'Secteur Beta',
     missions: [4, 5, 6]
   },
   {
     sector: 3,
-    name: 'Faille Quantique',
+    name: 'Secteur Gamma',
     missions: [7, 8, 9]
   },
   {
     sector: 4,
-    name: 'Forge Lunaire',
+    name: 'Secteur Delta',
     missions: [10, 11, 12]
   },
   {
     sector: 5,
-    name: 'Cœur Galactique',
+    name: 'Secteur Epsilon',
     missions: [13, 14, 15]
   }
 ];
 
 // Paliers de déblocage des fonctionnalités par Secteur
 export const FEATURE_UNLOCK_SECTORS: Record<GalacticFeature, number> = {
-  hangar: 2,      // Débloqué au Secteur 2 (atteinte du niveau 4 ou 5)
-  challenges: 2,  // Débloqué au Secteur 2
-  refinery: 4,    // Débloqué au Secteur 4 (atteinte du niveau 10)
-  events: 5       // Débloqué au Secteur 5 (atteinte du niveau 15)
+  hangar: 2,      // Débloqué au Secteur Beta (atteinte du niveau 4 ou 5)
+  challenges: 2,  // Débloqué au Secteur Beta
+  refinery: 4,    // Débloqué au Secteur Delta (atteinte du niveau 10)
+  events: 5       // Débloqué au Secteur Epsilon (atteinte du niveau 15)
 };
 
 export class SectorSystem {
+  /**
+   * Retourne le nom grec du secteur (ex: "Alpha", "Beta", "Delta"...)
+   */
+  public static getSectorName(sector: number): string {
+    return getGreekSectorName(sector);
+  }
+
   /**
    * Retourne le numéro de secteur correspondant à une mission globale (1, 2, 3...)
    */
@@ -107,7 +147,8 @@ export class SectorSystem {
 
     const config = SECTORS_CONFIG.find(s => s.sector === sectorNum);
     const totalLevels = config ? config.missions.length : 3;
-    const name = config ? config.name : `Secteur ${sectorNum}`;
+    const greekName = getGreekSectorName(sectorNum);
+    const name = config ? config.name : `Secteur ${greekName}`;
 
     return {
       sector: sectorNum,
@@ -132,18 +173,17 @@ export class SectorSystem {
     const currentSector = this.getSectorForMission(maxUnlockedMission);
     const requiredSector = this.getFeatureUnlockSector(feature);
 
-    // Si le joueur a atteint ou dépassé le secteur requis
     if (currentSector > requiredSector) return true;
     if (currentSector === requiredSector) {
-      // Pour le Hangar et Défis (Secteur 2) : débloqué dès l'entrée au Secteur 2 (Mission >= 4 ou 5)
+      // Pour le Hangar et Défis (Secteur Beta / 2) : débloqué dès l'entrée au Secteur Beta (Mission >= 4 ou 5)
       if (feature === 'hangar' || feature === 'challenges') {
         return maxUnlockedMission >= 4;
       }
-      // Pour la Raffinerie (Secteur 4) : débloqué dès la Mission 10 (début du Secteur 4)
+      // Pour la Raffinerie (Secteur Delta / 4) : débloqué dès la Mission 10 (début du Secteur Delta)
       if (feature === 'refinery') {
         return maxUnlockedMission >= 10;
       }
-      // Pour les Événements (Secteur 5) : débloqué dès la Mission 15 (apogée du Secteur 5)
+      // Pour les Événements (Secteur Epsilon / 5) : débloqué dès la Mission 15 (apogée du Secteur Epsilon)
       if (feature === 'events') {
         return maxUnlockedMission >= 15;
       }
@@ -154,11 +194,12 @@ export class SectorSystem {
   }
 
   /**
-   * Formate l'affichage Secteur / Niveau
-   * Ex: "SECTEUR 1 • NIVEAU 2" ou "SECTEUR 1 // NIVEAU 2"
+   * Formate l'affichage Secteur / Niveau avec les noms grecs
+   * Ex: "SECTEUR ALPHA • NIVEAU 2" ou "SECTEUR BETA // NIVEAU 1"
    */
   public static formatSectorLevel(mission: number, separator: string = ' • '): string {
     const info = this.getSectorInfo(mission);
-    return `SECTEUR ${info.sector}${separator}NIVEAU ${info.levelInSector}`;
+    const greek = this.getSectorName(info.sector).toUpperCase();
+    return `SECTEUR ${greek}${separator}NIVEAU ${info.levelInSector}`;
   }
 }

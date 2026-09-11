@@ -136,7 +136,8 @@ export class GameOverModal {
       }
       if (this.elTitle) this.elTitle.textContent = 'MISSION ACCOMPLIE';
       const nextSecInfo = SectorSystem.getSectorInfo(stats.nextLevelNum);
-      if (this.elBtnNext) this.elBtnNext.textContent = `CONTINUER (SECTEUR ${nextSecInfo.sector} • NIVEAU ${nextSecInfo.levelInSector}) ▶`;
+      const nextSecGreek = SectorSystem.getSectorName(nextSecInfo.sector).toUpperCase();
+      if (this.elBtnNext) this.elBtnNext.textContent = `CONTINUER (SECTEUR ${nextSecGreek} • NIVEAU ${nextSecInfo.levelInSector}) ▶`;
 
       // Explosion de confettis cyberpunk
       try {
