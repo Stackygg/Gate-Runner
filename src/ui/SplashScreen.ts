@@ -12,6 +12,7 @@ export class SplashScreen {
   private isStudioIgnited: boolean = false;
   private animFrameId: number | null = null;
   private timerDismiss: any = null;
+  private onDismissCallback?: () => void;
 
   private isLogoClipHidden: boolean = false;
   private isLogoClipNone: boolean = false;
@@ -21,7 +22,8 @@ export class SplashScreen {
   // Temps de contemplation après fin du balayage avant transition : 1.1s
   private readonly HOLD_DURATION_MS: number = 1100;
 
-  constructor() {
+  constructor(onDismiss?: () => void) {
+    this.onDismissCallback = onDismiss;
     this.elOverlay = document.getElementById('app-splash-screen');
     if (!this.elOverlay) return;
 
@@ -140,6 +142,12 @@ export class SplashScreen {
     if (this.isDismissed || !this.elOverlay) return;
     this.isDismissed = true;
     this.elOverlay.style.pointerEvents = 'none';
+
+    if (this.onDismissCallback) {
+      const cb = this.onDismissCallback;
+      this.onDismissCallback = undefined;
+      cb();
+    }
 
     if (this.elLogoOrangeWrap) {
       this.elLogoOrangeWrap.style.clipPath = 'none';

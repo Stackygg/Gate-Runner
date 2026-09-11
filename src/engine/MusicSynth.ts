@@ -248,7 +248,7 @@ export class MusicSynth {
     }
   };
 
-  private volume: number = 0.2;
+  private volume: number = 0.1;
 
   private initContext() {
     if (!this.ctx) {

@@ -81,7 +81,12 @@ export class GameApp {
     this.particles = new ParticleSystem();
     this.store = new UpgradeStore();
     this.hud = new HUD();
-    this.splashScreen = new SplashScreen();
+    this.splashScreen = new SplashScreen(() => {
+      // Synchronisation : Démarrer la musique principale seulement à l'arrivée sur le menu (après l'animation Stacky)
+      if (this.state === 'MENU') {
+        this.music.playTrack('main');
+      }
+    });
 
     // Initialisation du Service de Publicités Récompensées
     AdService.init(this.store);
@@ -355,7 +360,9 @@ export class GameApp {
 
   public showHangar(openDedicatedHangar: boolean = false) {
     this.state = 'MENU';
-    this.music.playTrack('main');
+    if (!this.splashScreen || this.splashScreen.getIsDismissed()) {
+      this.music.playTrack('main');
+    }
     this.hud.hide();
     this.hud.hideMothership();
     this.bottomUpgradeDock.hide();
