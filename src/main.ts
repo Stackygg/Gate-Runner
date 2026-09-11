@@ -824,23 +824,18 @@ export class GameApp {
         this.renderer.addScreenShake(10);
         this.particles.spawnFloatingText(GAME_CONFIG.WORLD_WIDTH / 2, 180, '💥 CHAMP DE FORCE LIBÉRÉ !', '#FFE600', 26);
       }
-      // Rétention propre des astéroïdes au-dessus du champ de force sans empilement
-      const midAsteroids = this.enemies
-        .filter(e => e.type === 'block' && !e.isDead && e.x > 150 && e.x < 390 && e.y >= 40)
-        .sort((a, b) => b.y - a.y);
-
-      for (let i = 0; i < midAsteroids.length; i++) {
-        const ast = midAsteroids[i];
-        const maxAllowed = 150 - i * 36;
-        if (ast.y > maxAllowed) {
-          ast.y = maxAllowed;
+      // Rétention fluide des astéroïdes au niveau du champ de force avec superposition naturelle (sans glitch ni file indienne)
+      for (let i = 0; i < this.enemies.length; i++) {
+        const e = this.enemies[i];
+        if (e.type === 'block' && !e.isDead && e.x > 150 && e.x < 390 && e.y > 150) {
+          e.y = 150;
         }
       }
     }
 
-    // Positionnement échelonné des boss (évite les superpositions tout en maintenant la routine de combat)
+    // Positionnement échelonné des boss dès leur apparition à l'horizon (maintien de la routine et des slots)
     const activeBosses = this.enemies
-      .filter(e => e.isBossType() && !e.isDead && e.y >= -250)
+      .filter(e => e.isBossType() && !e.isDead && e.y >= -1200)
       .sort((a, b) => b.y - a.y); // Du plus avancé (plus proche du joueur) au plus en retrait
 
     const bossSlotY = [200, 90, -20, -130];
@@ -1004,20 +999,28 @@ export class GameApp {
     // 4.1 Hyperpropulsion Fluide entre les vagues (Expédition & Raid) :
     // Dès qu'aucun obstacle/trou noir/portail/boss n'est présent sur la zone de combat,
     // la vitesse de défilement accélère pour faire glisser la vague suivante et l'apparition du boss sans attente !
-    // RÈGLE : Les astéroïdes accélèrent et l'apparition du boss accélère, mais le boss lui-même n'accélère JAMAIS en combat !
+    // RÈGLE : Les astéroïdes accélèrent jusqu'au joueur. L'apparition du boss au loin accélère, mais dès qu'il entre sur l'écran, le boss n'accélère JAMAIS vers le joueur !
     const playerY = this.fleet ? this.fleet.centerY : GAME_CONFIG.PLAYER_BASE_Y;
-    const hasActiveBoss = this.enemies.some(e => e.isBossType() && !e.isDead && e.y >= -300 && e.y < playerY + 50);
-    const hasActiveBlackHole = this.enemies.some(e => e.type === 'black_hole' && !e.isDead && e.y >= -150 && e.y < playerY + 50);
-    const hasActiveGate = this.gates.some(g => !g.isPassed && g.y >= -150 && g.y < playerY + 25);
-    const hasActiveAsteroids = this.enemies.some(e => e.type === 'block' && !e.isDead && e.y >= -100 && e.y < playerY + 40);
+    const isExpedition = (this.currentLevelData?.missionType === 'expedition');
+
+    // Distances de proximité du joueur adaptées au mode Expédition pour que les astéroïdes accélèrent jusqu'au joueur
+    const bhProximityY = isExpedition ? (playerY - 320) : -150;
+    const gateProximityY = isExpedition ? (playerY - 240) : -150;
+    const asteroidProximityY = isExpedition ? (playerY - 220) : -100;
+    const bossHorizonY = -1200; // Horizon visible où le boss apparaît à l'écran
+
+    const hasActiveBoss = this.enemies.some(e => e.isBossType() && !e.isDead && e.y >= bossHorizonY && e.y < playerY + 50);
+    const hasActiveBlackHole = this.enemies.some(e => e.type === 'black_hole' && !e.isDead && e.y >= bhProximityY && e.y < playerY + 50);
+    const hasActiveGate = this.gates.some(g => !g.isPassed && g.y >= gateProximityY && g.y < playerY + 25);
+    const hasActiveAsteroids = this.enemies.some(e => e.type === 'block' && !e.isDead && e.y >= asteroidProximityY && e.y < playerY + 40);
 
     const hasScreenObstacles = hasActiveBoss || hasActiveBlackHole || hasActiveGate || hasActiveAsteroids;
-    const hasUpcomingContent = this.enemies.some(e => !e.isDead && e.y < -150) || this.gates.some(g => !g.isPassed && g.y < -150);
+    const hasUpcomingContent = this.enemies.some(e => !e.isDead && e.y < asteroidProximityY) || this.gates.some(g => !g.isPassed && g.y < gateProximityY);
     const allowHyperdrive = (this.currentLevelData?.missionType !== 'escort');
 
     if (allowHyperdrive && !hasScreenObstacles && hasUpcomingContent && this.state !== 'BOSS' && this.state !== 'GAMEOVER' && this.state !== 'PAUSED') {
-      // Hyperdrive fluide : fait glisser la vague d'astéroïdes et l'approche du boss sans saccade
-      this.scrollSpeed = Math.min(GAME_CONFIG.BASE_SCROLL_SPEED * 2.6, this.scrollSpeed + dt * 1000);
+      // Hyperdrive fluide : fait glisser la vague d'astéroïdes jusqu'au joueur et l'apparition du boss sans attente
+      this.scrollSpeed = Math.min(GAME_CONFIG.BASE_SCROLL_SPEED * 2.8, this.scrollSpeed + dt * 1000);
     } else {
       // Décélération fluide et naturelle vers la vitesse nominale dès qu'un boss ou obstacle est présent
       const decelSpeed = hasActiveBoss ? 2800 : 1800;
@@ -1025,7 +1028,7 @@ export class GameApp {
     }
 
     // 5. État et Affichage des Boss de Vagues & Timer Dégressif (30s de x5.0 à x1.0)
-    const activeBoss = this.enemies.find(e => e.isBossType() && !e.isDead && e.y >= 0 && e.y < 750);
+    const activeBoss = this.enemies.find(e => e.isBossType() && !e.isDead && e.y >= bossHorizonY && e.y < 750);
     if (activeBoss) {
       if (this.state !== 'BOSS') {
         this.state = 'BOSS';
@@ -1035,7 +1038,10 @@ export class GameApp {
       this.hud.showBoss(activeBoss.bossName, activeBoss.hp, activeBoss.maxHp, isFinal);
 
       if (isFinal) {
-        this.finalBossTimer = Math.max(0, this.finalBossTimer - dt);
+        // Le timer dégressif du boss final ne s'enclenche que lorsque le combat commence réellement en position
+        if (activeBoss.combatTimer > 0) {
+          this.finalBossTimer = Math.max(0, this.finalBossTimer - dt);
+        }
         // Multiplicateur dégressif : démarre à x5.0 à 30s et descend progressivement jusqu'à x1.0 à 0s
         this.finalBossMultiplier = 1.0 + 4.0 * (this.finalBossTimer / 30.0);
         this.maxMultiplierAchieved = this.finalBossMultiplier;

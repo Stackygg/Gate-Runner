@@ -110,12 +110,12 @@ export class Enemy {
       }
     } else if (this.isBossType()) {
       // Défilement du boss :
-      // 1. Au loin (hors écran, y < -400) : l'apparition du boss accélère avec le défilement général.
-      // 2. Dès qu'il approche ou entre sur l'écran (y >= -400) et descend vers son point d'ancrage targetCombatY :
+      // 1. Au loin (hors écran, y < -1200) : l'apparition du boss accélère avec le défilement général.
+      // 2. Dès qu'il apparaît à l'horizon / entre sur l'écran (y >= -1200) et descend vers son ancrage targetCombatY :
       //    sa vitesse de descente est STRICTEMENT plafonnée à BASE_SCROLL_SPEED (135 px/s).
-      //    LE BOSS N'ACCÉLÈRE JAMAIS SUR LE JOUEUR NI EN COMBAT !
+      //    LE BOSS N'ACCÉLÈRE JAMAIS VERS LE JOUEUR NI EN COMBAT !
       if (this.y < targetCombatY) {
-        const bossSpeed = (this.y < -400) ? scrollSpeed : Math.min(GAME_CONFIG.BASE_SCROLL_SPEED, scrollSpeed);
+        const bossSpeed = (this.y < -1200) ? scrollSpeed : Math.min(GAME_CONFIG.BASE_SCROLL_SPEED, scrollSpeed);
         this.y += bossSpeed * dt;
         this.x = 330;
       } else {
@@ -142,8 +142,9 @@ export class Enemy {
       this.hitBlinkTimer -= dt;
     }
 
-    // Tirs de Boss : Salves rythmées avec patterns uniques (actif pour tous les boss en formation de combat)
-    if (this.isBossType() && this.y >= -250 && this.y < 680) {
+    // Tirs de Boss : Salves rythmées avec patterns uniques (actif UNIQUEMENT une fois arrivé en position de combat targetCombatY)
+    // Cela garantit que le joueur a tout le temps de tirer sur le boss pendant son approche depuis l'horizon avant qu'il n'attaque
+    if (this.isBossType() && this.y >= targetCombatY - 5 && this.y < 680) {
       this.combatTimer += dt;
 
       // Calcul de la cadence de tir :
