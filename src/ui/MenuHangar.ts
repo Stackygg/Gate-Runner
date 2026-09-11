@@ -5,6 +5,7 @@ import { SKINS_CONFIG, ShipSkin } from '../config';
 import { ModalConfirmCrystal } from './ModalConfirmCrystal';
 import { Renderer } from '../engine/Renderer';
 import { LevelGenerator } from '../systems/LevelGenerator';
+import { SectorSystem } from '../systems/SectorSystem';
 import { EquipmentItem, EquipmentSlotType, EquipmentSystem, RARITY_CONFIGS, SLOT_INFO } from '../systems/EquipmentSystem';
 import { AdService } from '../services/AdService';
 import { SoundSynth } from '../engine/SoundSynth';
@@ -93,6 +94,7 @@ export class MenuHangar {
   private elTrackDiamondStepLabel = document.getElementById('track-diamond-step-label');
   private elBtnRecycleMissionDiamonds = document.getElementById('btn-recycle-mission-diamonds');
   private elBtnRefundMissionUpgrades = document.getElementById('btn-refund-mission-upgrades');
+  private elRecycleDiamondsLockedOverlay = document.getElementById('recycle-diamonds-locked-overlay');
 
   // Événements Saisonniers & Classement 100 Joueurs
   private elEventsLockedState = document.getElementById('events-locked-state');
@@ -300,6 +302,10 @@ export class MenuHangar {
 
     // Recyclage des diamants de la mission active en Poudre de Diamant
     this.elBtnRecycleMissionDiamonds?.addEventListener('click', () => {
+      if (!SectorSystem.isFeatureUnlocked('refinery', this.store.data.maxUnlockedMission)) {
+        this.showHudToast('🔒 RAFFINERIE REQUISE : Le recyclage en Poudre de Diamant est disponible au Secteur 4 !', true);
+        return;
+      }
       const curMission = this.store.data.selectedMission;
       const res = this.store.smeltMissionDiamonds(curMission);
       if (res.success && res.dustGained > 0) {
@@ -308,6 +314,11 @@ export class MenuHangar {
       } else {
         this.showHudToast(`💎 Solde insuffisant : il faut au moins 10 diamants sur cette mission pour recycler.`, true);
       }
+    });
+
+    // Clic sur l'overlay de verrouillage du recyclage (Raffinerie requise)
+    this.elRecycleDiamondsLockedOverlay?.addEventListener('click', () => {
+      this.showHudToast('🔒 RAFFINERIE REQUISE : Le recyclage en Poudre de Diamant est disponible au Secteur 4 !', true);
     });
 
     // Réinitialisation des améliorations de la mission active & remboursement des diamants
@@ -325,8 +336,8 @@ export class MenuHangar {
     // Boutons de lancement des Défis
     document.querySelectorAll('.btn-challenge-launch').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (this.store.data.maxUnlockedMission < 15) {
-          this.showHudToast('🔒 DÉFIS VERROUILLÉS : Atteignez le Niveau 15 pour débloquer ces modes !', true);
+        if (!SectorSystem.isFeatureUnlocked('events', this.store.data.maxUnlockedMission)) {
+          this.showHudToast('🔒 ÉVÉNEMENTS VERROUILLÉS : Disponibles au Secteur 5 !', true);
           return;
         }
         this.hide();
@@ -334,39 +345,39 @@ export class MenuHangar {
       });
     });
 
-    // Clic sur la station Hangar (Débloqué Niveau 5)
+    // Clic sur la station Hangar (Débloqué Secteur 2)
     this.elBtnMainHangar?.addEventListener('click', () => {
-      if (this.store.data.maxUnlockedMission >= 5) {
+      if (SectorSystem.isFeatureUnlocked('hangar', this.store.data.maxUnlockedMission)) {
         this.showHangar();
       } else {
-        this.showHudToast('🔒 HANGAR VERROUILLÉ : Débloqué au Niveau 5. Atteignez la Mission 5 pour y accéder !', true);
+        this.showHudToast('🔒 HANGAR VERROUILLÉ : Disponible au Secteur 2. Terminez le Secteur 1 pour y accéder !', true);
       }
     });
 
-    // Clic sur la station Défis (Débloqué Niveau 5)
+    // Clic sur la station Défis (Débloqué Secteur 2)
     this.elBtnMainChallenges?.addEventListener('click', () => {
-      if (this.store.data.maxUnlockedMission >= 5) {
+      if (SectorSystem.isFeatureUnlocked('challenges', this.store.data.maxUnlockedMission)) {
         this.showChallenges();
       } else {
-        this.showHudToast('🔒 DÉFIS VERROUILLÉS : Débloqués au Niveau 5. Atteignez la Mission 5 pour y accéder !', true);
+        this.showHudToast('🔒 DÉFIS VERROUILLÉS : Disponibles au Secteur 2. Terminez le Secteur 1 pour y accéder !', true);
       }
     });
 
-    // Clic sur la station Raffinerie (Débloqué Niveau 10)
+    // Clic sur la station Raffinerie (Débloqué Secteur 4)
     this.elBtnMainRefinery?.addEventListener('click', () => {
-      if (this.store.data.maxUnlockedMission >= 10) {
+      if (SectorSystem.isFeatureUnlocked('refinery', this.store.data.maxUnlockedMission)) {
         this.openRefineryModal();
       } else {
-        this.showHudToast('🔒 RAFFINERIE VERROUILLÉE : Débloquée au Niveau 10. Atteignez la Mission 10 pour exploiter la forge lunaire !', true);
+        this.showHudToast('🔒 RAFFINERIE VERROUILLÉE : Disponible au Secteur 4. Atteignez le Secteur 4 pour exploiter la forge lunaire !', true);
       }
     });
 
-    // Clic sur la station Événements (Débloqué Niveau 15)
+    // Clic sur la station Événements (Débloqué Secteur 5)
     this.elBtnMainEvents?.addEventListener('click', () => {
       this.showMissions();
       this.switchMissionsMode('events');
-      if (this.store.data.maxUnlockedMission < 15) {
-        this.showHudToast('🔒 ÉVÉNEMENTS VERROUILLÉS : Débloqués au Niveau 15. Atteignez la Mission 15 pour y accéder !', true);
+      if (!SectorSystem.isFeatureUnlocked('events', this.store.data.maxUnlockedMission)) {
+        this.showHudToast('🔒 ÉVÉNEMENTS VERROUILLÉS : Disponibles au Secteur 5. Atteignez le Secteur 5 pour y accéder !', true);
       }
     });
 
@@ -434,8 +445,8 @@ export class MenuHangar {
 
     // Éventuel bouton Hangar secondaire (si présent)
     document.getElementById('btn-open-hangar')?.addEventListener('click', () => {
-      if (this.store.data.maxUnlockedMission >= 5) this.showHangar();
-      else this.showHudToast('🔒 HANGAR VERROUILLÉ : Débloqué au Niveau 5 !', true);
+      if (SectorSystem.isFeatureUnlocked('hangar', this.store.data.maxUnlockedMission)) this.showHangar();
+      else this.showHudToast('🔒 HANGAR VERROUILLÉ : Disponible au Secteur 2 !', true);
     });
 
     // Bouton Retour depuis le Hangar
@@ -792,16 +803,16 @@ export class MenuHangar {
 
     // Paliers de déblocage des stations galactiques
     const maxUnlocked = this.store.data.maxUnlockedMission;
-    const isHangarUnlocked = maxUnlocked >= 5;
-    const isChallengesUnlocked = maxUnlocked >= 5;
-    const isRefineryUnlocked = maxUnlocked >= 10;
-    const isEventsUnlocked = maxUnlocked >= 15;
+    const isHangarUnlocked = SectorSystem.isFeatureUnlocked('hangar', maxUnlocked);
+    const isChallengesUnlocked = SectorSystem.isFeatureUnlocked('challenges', maxUnlocked);
+    const isRefineryUnlocked = SectorSystem.isFeatureUnlocked('refinery', maxUnlocked);
+    const isEventsUnlocked = SectorSystem.isFeatureUnlocked('events', maxUnlocked);
 
     if (this.elTabEventsLockBadge) {
       this.elTabEventsLockBadge.style.display = isEventsUnlocked ? 'none' : 'inline-block';
     }
 
-    // 1. Station Hangar (Niv 5)
+    // 1. Station Hangar (Secteur 2)
     if (this.elBtnMainHangar) {
       if (isHangarUnlocked) {
         this.elBtnMainHangar.classList.remove('station-locked');
@@ -814,7 +825,7 @@ export class MenuHangar {
       }
     }
 
-    // 2. Station Défis (Niv 5)
+    // 2. Station Défis (Secteur 2)
     if (this.elBtnMainChallenges) {
       if (isChallengesUnlocked) {
         this.elBtnMainChallenges.classList.remove('station-locked');
@@ -827,7 +838,7 @@ export class MenuHangar {
       }
     }
 
-    // 3. Station Raffinerie (Niv 10)
+    // 3. Station Raffinerie (Secteur 4)
     if (this.elBtnMainRefinery) {
       if (isRefineryUnlocked) {
         this.elBtnMainRefinery.classList.remove('station-locked');
@@ -840,7 +851,7 @@ export class MenuHangar {
       }
     }
 
-    // 4. Station Événements (Niv 15)
+    // 4. Station Événements (Secteur 5)
     if (this.elBtnMainEvents) {
       if (isEventsUnlocked) {
         this.elBtnMainEvents.classList.remove('station-locked');
@@ -864,15 +875,28 @@ export class MenuHangar {
       else this.elHangarNotifDot.classList.add('hidden');
     }
 
-    // Missions
+    // Missions & Secteurs
     const mission = this.store.data.selectedMission;
-    if (this.elLevelNum) this.elLevelNum.textContent = `${mission}`;
+    const sectorInfo = SectorSystem.getSectorInfo(mission);
+
+    if (this.elLevelNum) this.elLevelNum.textContent = `${sectorInfo.levelInSector}`;
     if (this.elMissionsScreenLevelNum) this.elMissionsScreenLevelNum.textContent = `${mission}`;
     if (this.elMissionsQuickBadge) {
-      this.elMissionsQuickBadge.textContent = `MISSION ${mission < 10 ? '0' + mission : mission}`;
+      this.elMissionsQuickBadge.textContent = `SECTEUR ${sectorInfo.sector} • NIVEAU ${sectorInfo.levelInSector}`;
     }
     if (this.elMissionLabel) {
-      this.elMissionLabel.textContent = `MISSION ${mission < 10 ? '0' + mission : mission}`;
+      this.elMissionLabel.textContent = `SECTEUR ${sectorInfo.sector} // NIVEAU ${sectorInfo.levelInSector}`;
+    }
+
+    const homeMissionBadge = document.getElementById('home-mission-badge');
+    if (homeMissionBadge) {
+      homeMissionBadge.textContent = `SECTEUR ${sectorInfo.sector} • NIVEAU ${sectorInfo.levelInSector}`;
+    }
+
+    const launchBtn = document.getElementById('btn-missions-launch');
+    const launchText = launchBtn?.querySelector('.launch-text');
+    if (launchText) {
+      launchText.textContent = `DÉCOLLER (SECTEUR ${sectorInfo.sector} • NIVEAU ${sectorInfo.levelInSector})`;
     }
 
     if (this.elMissionStatus) {
@@ -934,19 +958,35 @@ export class MenuHangar {
     if (this.elTrackDiamondStepLabel) this.elTrackDiamondStepLabel.textContent = `${dia.step}/5`;
     renderPips(this.elTrackDiamondPips, dia.step);
 
-    // Boutons de recyclage & réinitialisation
+    // Boutons de recyclage & réinitialisation (Raffinerie requise au Secteur 4)
+    const isRefineryUnlocked = SectorSystem.isFeatureUnlocked('refinery', this.store.data.maxUnlockedMission);
     const diamondsAvailable = lvl.diamonds || 0;
-    const canRecycle = diamondsAvailable >= 10;
+    const canRecycle = diamondsAvailable >= 10 && isRefineryUnlocked;
+
     if (this.elBtnRecycleMissionDiamonds) {
-      (this.elBtnRecycleMissionDiamonds as HTMLButtonElement).disabled = !canRecycle;
-      this.elBtnRecycleMissionDiamonds.style.opacity = canRecycle ? '1' : '0.45';
-      const dustWillGain = Math.floor(diamondsAvailable / 10);
-      const subEl = this.elBtnRecycleMissionDiamonds.querySelector('.recycle-btn-sub');
-      if (subEl) {
-        if (canRecycle) {
-          subEl.innerHTML = `Convertit ${diamondsAvailable - (diamondsAvailable % 10)} 💎 ➔ +${dustWillGain} <span class="icon-diamond-dust"></span> Poudre`;
-        } else {
-          subEl.textContent = `Nécessite au moins 10 💎 sur cette mission (Actuel: ${diamondsAvailable})`;
+      if (!isRefineryUnlocked) {
+        // Bloqué & flouté avec overlay "Disponible au Secteur 4"
+        this.elBtnRecycleMissionDiamonds.classList.add('btn-locked-blur');
+        (this.elBtnRecycleMissionDiamonds as HTMLButtonElement).disabled = true;
+        if (this.elRecycleDiamondsLockedOverlay) {
+          this.elRecycleDiamondsLockedOverlay.classList.remove('hidden');
+        }
+      } else {
+        // Raffinerie débloquée : affichage net et actif si assez de diamants
+        this.elBtnRecycleMissionDiamonds.classList.remove('btn-locked-blur');
+        (this.elBtnRecycleMissionDiamonds as HTMLButtonElement).disabled = !canRecycle;
+        this.elBtnRecycleMissionDiamonds.style.opacity = canRecycle ? '1' : '0.45';
+        if (this.elRecycleDiamondsLockedOverlay) {
+          this.elRecycleDiamondsLockedOverlay.classList.add('hidden');
+        }
+        const dustWillGain = Math.floor(diamondsAvailable / 10);
+        const subEl = this.elBtnRecycleMissionDiamonds.querySelector('.recycle-btn-sub');
+        if (subEl) {
+          if (canRecycle) {
+            subEl.innerHTML = `Convertit ${diamondsAvailable - (diamondsAvailable % 10)} 💎 ➔ +${dustWillGain} <span class="icon-diamond-dust"></span> Poudre`;
+          } else {
+            subEl.textContent = `Nécessite au moins 10 💎 sur cette mission (Actuel: ${diamondsAvailable})`;
+          }
         }
       }
     }
@@ -2067,16 +2107,16 @@ export class MenuHangar {
   }
 
   private updateEventsDisplay() {
-    const isUnlocked = this.store.data.maxUnlockedMission >= 15;
+    const isUnlocked = SectorSystem.isFeatureUnlocked('events', this.store.data.maxUnlockedMission);
     if (!isUnlocked) {
       this.elEventsLockedState?.classList.remove('hidden');
       this.elEventsUnlockedState?.classList.add('hidden');
-      const curLvl = Math.min(14, this.store.data.maxUnlockedMission);
+      const curSector = SectorSystem.getSectorForMission(this.store.data.maxUnlockedMission);
       if (this.elEventsUnlockProgressText) {
-        this.elEventsUnlockProgressText.textContent = `Mission ${curLvl} / 15`;
+        this.elEventsUnlockProgressText.textContent = `Secteur ${Math.min(4, curSector)} / 5`;
       }
       if (this.elEventsUnlockProgressFill) {
-        this.elEventsUnlockProgressFill.style.width = `${Math.min(100, (curLvl / 15) * 100)}%`;
+        this.elEventsUnlockProgressFill.style.width = `${Math.min(100, (curSector / 5) * 100)}%`;
       }
       return;
     }
@@ -2262,8 +2302,8 @@ export class MenuHangar {
   }
 
   private handleLaunchEvent() {
-    if (this.store.data.maxUnlockedMission < 15) {
-      this.showHudToast('🔒 ÉVÉNEMENT VERROUILLÉ : Débloqué au Niveau 15 !', true);
+    if (!SectorSystem.isFeatureUnlocked('events', this.store.data.maxUnlockedMission)) {
+      this.showHudToast('🔒 ÉVÉNEMENT VERROUILLÉ : Disponible au Secteur 5 !', true);
       return;
     }
     this.showHudToast('⏳ ÉVÉNEMENT EN ATTENTE : Prochain tournoi dans 21 jours !', true);

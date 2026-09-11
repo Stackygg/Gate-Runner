@@ -234,7 +234,7 @@
                     <div class="station-card-overlay hangar-overlay"></div>
                     <div id="hangar-locked-overlay" class="station-locked-center hidden">
                       <span class="lock-center-icon">🔒</span>
-                      <span class="lock-center-text">Déverrouillé au niveau 5</span>
+                      <span class="lock-center-text">Disponible au Secteur 2</span>
                     </div>
                     <div class="station-card-content">
                       <div class="station-header-row">
@@ -250,13 +250,13 @@
                     </div>
                   </div>
 
-                  <!-- 4. DÉFIS (Débloqué Niveau 5) -->
+                  <!-- 4. DÉFIS (Débloqué Secteur 2) -->
                   <div id="btn-main-challenges" class="station-button-card challenges-card-btn" role="button" tabindex="0" title="Accéder aux Défis Quotidiens">
                     <div class="station-card-bg challenges-bg"></div>
                     <div class="station-card-overlay challenges-overlay"></div>
                     <div id="challenges-locked-overlay" class="station-locked-center hidden">
                       <span class="lock-center-icon">🔒</span>
-                      <span class="lock-center-text">Déverrouillé au niveau 5</span>
+                      <span class="lock-center-text">Disponible au Secteur 2</span>
                     </div>
                     <div class="station-card-content">
                       <div class="station-header-row">
@@ -272,13 +272,13 @@
                     </div>
                   </div>
 
-                  <!-- 5. RAFFINERIE (Débloqué Niveau 10) -->
+                  <!-- 5. RAFFINERIE (Débloqué Secteur 4) -->
                   <div id="btn-main-refinery" class="station-button-card refinery-card-btn" role="button" tabindex="0" title="Accéder à la Raffinerie & Fonderie">
                     <div class="station-card-bg refinery-bg"></div>
                     <div class="station-card-overlay refinery-overlay"></div>
                     <div id="refinery-locked-overlay" class="station-locked-center hidden">
                       <span class="lock-center-icon">🔒</span>
-                      <span class="lock-center-text">Déverrouillé au niveau 10</span>
+                      <span class="lock-center-text">Disponible au Secteur 4</span>
                     </div>
                     <div class="station-card-content">
                       <div class="station-header-row">
@@ -293,13 +293,13 @@
                     </div>
                   </div>
 
-                  <!-- 6. ÉVÉNEMENTS (Débloqué Niveau 15) -->
+                  <!-- 6. ÉVÉNEMENTS (Débloqué Secteur 5) -->
                   <div id="btn-main-events" class="station-button-card events-card-btn" role="button" tabindex="0" title="Accéder aux Événements Saisonniers & Classement">
                     <div class="station-card-bg events-bg"></div>
                     <div class="station-card-overlay events-overlay"></div>
                     <div id="events-main-locked-overlay" class="station-locked-center hidden">
                       <span class="lock-center-icon">🔒</span>
-                      <span class="lock-center-text">Déverrouillé au niveau 15</span>
+                      <span class="lock-center-text">Disponible au Secteur 5</span>
                     </div>
                     <div class="station-card-content">
                       <div class="station-header-row">
@@ -467,13 +467,19 @@
 
                     <!-- Actions Recyclage Diamants en Poudre & Remboursement -->
                     <div class="mission-recycling-actions">
-                      <button id="btn-recycle-mission-diamonds" class="btn-mission-recycle" title="Convertir les diamants de cette mission en Poudre de Diamant (10 💎 = 1 Poudre)">
-                        <span class="recycle-btn-icon"><span class="icon-diamond-dust"></span></span>
-                        <div class="recycle-btn-text">
-                          <span class="recycle-btn-title">RECYCLER EN POUDRE DE DIAMANT</span>
-                          <span class="recycle-btn-sub">Convertit le solde de la mission (10 💎 ➔ 1 <span class="icon-diamond-dust"></span>)</span>
+                      <div class="recycle-btn-wrapper">
+                        <button id="btn-recycle-mission-diamonds" class="btn-mission-recycle" title="Convertir les diamants de cette mission en Poudre de Diamant (10 💎 = 1 Poudre)">
+                          <span class="recycle-btn-icon"><span class="icon-diamond-dust"></span></span>
+                          <div class="recycle-btn-text">
+                            <span class="recycle-btn-title">RECYCLER EN POUDRE DE DIAMANT</span>
+                            <span class="recycle-btn-sub">Convertit le solde de la mission (10 💎 ➔ 1 <span class="icon-diamond-dust"></span>)</span>
+                          </div>
+                        </button>
+                        <div id="recycle-diamonds-locked-overlay" class="recycle-locked-overlay hidden">
+                          <span class="recycle-lock-icon">🔒</span>
+                          <span class="recycle-lock-text">DISPONIBLE AU SECTEUR 4</span>
                         </div>
-                      </button>
+                      </div>
                       <button id="btn-refund-mission-upgrades" class="btn-mission-refund" title="Réinitialiser les 3 voies d'améliorations et récupérer l'intégralité des diamants investis">
                         <span class="refund-btn-icon">🔄</span>
                         <div class="refund-btn-text">
@@ -505,18 +511,18 @@
 
               <!-- VUE 2 : ÉVÉNEMENTS (À DROITE) -->
               <div id="view-mode-events" class="mode-subview hidden">
-                <!-- État Verrouillé (< Niveau 15) -->
+                <!-- État Verrouillé (< Secteur 5) -->
                 <div id="events-locked-state" class="events-locked-card">
                   <div class="locked-holo-icon">🔒</div>
-                  <div class="locked-badge-pill">DÉVERROUILLÉ AU NIVEAU 15</div>
+                  <div class="locked-badge-pill">DISPONIBLE AU SECTEUR 5</div>
                   <div class="locked-card-title">ÉVÉNEMENTS & CLASSEMENTS SAISONNIERS</div>
                   <p class="locked-card-desc">
-                    Terminez la Mission 14 de la campagne pour rejoindre la Division Galactique, défier 100 pilotes au chrono et remporter les récompenses saisonnières exclusives !
+                    Terminez le Secteur 4 de la campagne pour rejoindre la Division Galactique, défier 100 pilotes au chrono et remporter les récompenses saisonnières exclusives !
                   </p>
                   <div class="locked-progress-bar-wrap">
                     <div class="locked-prog-label">
                       <span>Progression Campagne</span>
-                      <span id="events-unlock-progress-text">Mission 1 / 15</span>
+                      <span id="events-unlock-progress-text">Secteur 1 / 5</span>
                     </div>
                     <div class="locked-prog-track">
                       <div id="events-unlock-progress-fill" class="locked-prog-fill" style="width: 6.6%;"></div>

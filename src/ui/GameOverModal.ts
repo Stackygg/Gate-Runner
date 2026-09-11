@@ -3,6 +3,7 @@
 import confetti from 'canvas-confetti';
 import { AdService } from '../services/AdService';
 import { MissionQuest } from '../systems/UpgradeStore';
+import { SectorSystem } from '../systems/SectorSystem';
 import { EquipmentItem, EquipmentSystem, RARITY_CONFIGS, SLOT_INFO } from '../systems/EquipmentSystem';
 
 export interface GameOverStats {
@@ -134,7 +135,8 @@ export class GameOverModal {
         this.elBadge.textContent = 'VICTOIRE ÉCLATANTE !';
       }
       if (this.elTitle) this.elTitle.textContent = 'MISSION ACCOMPLIE';
-      if (this.elBtnNext) this.elBtnNext.textContent = `CONTINUER (MISSION ${stats.nextLevelNum}) ▶`;
+      const nextSecInfo = SectorSystem.getSectorInfo(stats.nextLevelNum);
+      if (this.elBtnNext) this.elBtnNext.textContent = `CONTINUER (SECTEUR ${nextSecInfo.sector} • NIVEAU ${nextSecInfo.levelInSector}) ▶`;
 
       // Explosion de confettis cyberpunk
       try {
