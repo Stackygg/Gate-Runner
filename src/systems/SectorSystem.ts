@@ -139,6 +139,36 @@ export class SectorSystem {
   }
 
   /**
+   * Retourne la liste des missions/niveaux appartenant à un secteur
+   */
+  public static getMissionsForSector(sector: number): number[] {
+    if (sector <= 0) return [1, 2, 3];
+    const config = SECTORS_CONFIG.find(s => s.sector === sector);
+    if (config) {
+      return [...config.missions];
+    }
+    // Fallback procédural : 3 missions par secteur
+    const start = 1 + (sector - 1) * 3;
+    return [start, start + 1, start + 2];
+  }
+
+  /**
+   * Retourne le numéro global de mission pour un secteur et un niveau dans ce secteur
+   */
+  public static getMissionForSectorAndLevel(sector: number, levelInSector: number): number {
+    const missions = this.getMissionsForSector(sector);
+    const clampedLevel = Math.max(1, Math.min(levelInSector, missions.length));
+    return missions[clampedLevel - 1];
+  }
+
+  /**
+   * Retourne le nombre total de secteurs configurés
+   */
+  public static getMaxSectors(): number {
+    return SECTORS_CONFIG.length;
+  }
+
+  /**
    * Retourne les informations complètes du secteur pour une mission donnée
    */
   public static getSectorInfo(mission: number): SectorInfo {

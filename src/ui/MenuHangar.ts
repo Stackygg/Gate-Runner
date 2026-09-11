@@ -45,6 +45,11 @@ export class MenuHangar {
   private elHangarAlertBadge = document.getElementById('hangar-alert-badge');
   private elHangarNotifDot = document.getElementById('hangar-notification-dot');
   private elLevelNum = document.getElementById('hangar-level-num');
+  private elBtnPrevSector = document.getElementById('btn-prev-sector');
+  private elBtnNextSector = document.getElementById('btn-next-sector');
+  private elSectorNameLabel = document.getElementById('hangar-sector-name-label');
+  private elBtnPrevMission = document.getElementById('btn-hangar-prev-mission');
+  private elBtnNextMission = document.getElementById('btn-hangar-next-mission');
   private elMissionLabel = document.getElementById('hangar-selected-mission-label');
   private elMissionStatus = document.getElementById('hangar-mission-status');
   private elMissionQuestsList = document.getElementById('hangar-mission-quests-list');
@@ -454,18 +459,80 @@ export class MenuHangar {
       this.showMainMenu();
     });
 
-    // Navigation des missions
-    document.getElementById('btn-hangar-prev-mission')?.addEventListener('click', () => {
-      if (this.store.data.selectedMission > 1) {
-        this.store.selectMission(this.store.data.selectedMission - 1);
+    // Navigation des Secteurs (Flèches du Haut)
+    this.elBtnPrevSector?.addEventListener('click', () => {
+      const currentMission = this.store.data.selectedMission;
+      const currentSector = SectorSystem.getSectorForMission(currentMission);
+
+      if (currentSector > 1) {
+        const targetSector = currentSector - 1;
+        const currentLevel = SectorSystem.getLevelInSector(currentMission);
+        const targetMissions = SectorSystem.getMissionsForSector(targetSector);
+        const targetLevel = Math.min(currentLevel, targetMissions.length);
+        const newMission = targetMissions[targetLevel - 1] || targetMissions[0];
+
+        this.store.selectMission(newMission);
         this.refreshAll();
       }
     });
 
-    document.getElementById('btn-hangar-next-mission')?.addEventListener('click', () => {
-      if (this.store.data.selectedMission < this.store.data.maxUnlockedMission) {
-        this.store.selectMission(this.store.data.selectedMission + 1);
+    this.elBtnNextSector?.addEventListener('click', () => {
+      const currentMission = this.store.data.selectedMission;
+      const currentSector = SectorSystem.getSectorForMission(currentMission);
+      const maxUnlockedSector = SectorSystem.getSectorForMission(this.store.data.maxUnlockedMission);
+      const maxSectors = SectorSystem.getMaxSectors();
+
+      if (currentSector < maxSectors) {
+        const targetSector = currentSector + 1;
+        if (targetSector <= maxUnlockedSector) {
+          const currentLevel = SectorSystem.getLevelInSector(currentMission);
+          const targetMissions = SectorSystem.getMissionsForSector(targetSector);
+          let targetLevel = Math.min(currentLevel, targetMissions.length);
+          let newMission = targetMissions[targetLevel - 1] || targetMissions[0];
+
+          if (newMission > this.store.data.maxUnlockedMission) {
+            newMission = targetMissions[0];
+          }
+
+          if (newMission <= this.store.data.maxUnlockedMission) {
+            this.store.selectMission(newMission);
+            this.refreshAll();
+          }
+        } else {
+          const greek = SectorSystem.getSectorName(targetSector).toUpperCase();
+          this.showHudToast(`🔒 SECTEUR ${greek} VERROUILLÉ : Terminez les niveaux du secteur précédent pour le débloquer !`, true);
+        }
+      }
+    });
+
+    // Navigation des Niveaux (Flèches du Dessous)
+    this.elBtnPrevMission?.addEventListener('click', () => {
+      const currentMission = this.store.data.selectedMission;
+      const currentSector = SectorSystem.getSectorForMission(currentMission);
+      const currentLevel = SectorSystem.getLevelInSector(currentMission);
+      const sectorMissions = SectorSystem.getMissionsForSector(currentSector);
+
+      if (currentLevel > 1) {
+        const targetMission = sectorMissions[currentLevel - 2];
+        this.store.selectMission(targetMission);
         this.refreshAll();
+      }
+    });
+
+    this.elBtnNextMission?.addEventListener('click', () => {
+      const currentMission = this.store.data.selectedMission;
+      const currentSector = SectorSystem.getSectorForMission(currentMission);
+      const currentLevel = SectorSystem.getLevelInSector(currentMission);
+      const sectorMissions = SectorSystem.getMissionsForSector(currentSector);
+
+      if (currentLevel < sectorMissions.length) {
+        const targetMission = sectorMissions[currentLevel];
+        if (targetMission <= this.store.data.maxUnlockedMission) {
+          this.store.selectMission(targetMission);
+          this.refreshAll();
+        } else {
+          this.showHudToast(`🔒 NIVEAU ${currentLevel + 1} VERROUILLÉ : Terminez le niveau précédent pour le débloquer !`, true);
+        }
       }
     });
 
@@ -879,14 +946,24 @@ export class MenuHangar {
     const mission = this.store.data.selectedMission;
     const sectorInfo = SectorSystem.getSectorInfo(mission);
     const sectorGreek = SectorSystem.getSectorName(sectorInfo.sector).toUpperCase();
+    const sectorMissions = SectorSystem.getMissionsForSector(sectorInfo.sector);
+    const maxUnlockedSector = SectorSystem.getSectorForMission(this.store.data.maxUnlockedMission);
+    const maxSectors = SectorSystem.getMaxSectors();
+
+    // Mettre à jour le nom du secteur en haut
+    if (this.elSectorNameLabel) {
+      this.elSectorNameLabel.textContent = sectorGreek;
+    }
+
+    // Mettre à jour le niveau en dessous
+    if (this.elMissionLabel) {
+      this.elMissionLabel.textContent = `NIVEAU ${sectorInfo.levelInSector}`;
+    }
 
     if (this.elLevelNum) this.elLevelNum.textContent = `${sectorInfo.levelInSector}`;
     if (this.elMissionsScreenLevelNum) this.elMissionsScreenLevelNum.textContent = `${mission}`;
     if (this.elMissionsQuickBadge) {
       this.elMissionsQuickBadge.textContent = `SECTEUR ${sectorGreek} • NIVEAU ${sectorInfo.levelInSector}`;
-    }
-    if (this.elMissionLabel) {
-      this.elMissionLabel.textContent = `SECTEUR ${sectorGreek} // NIVEAU ${sectorInfo.levelInSector}`;
     }
 
     const homeMissionBadge = document.getElementById('home-mission-badge');
@@ -894,10 +971,65 @@ export class MenuHangar {
       homeMissionBadge.textContent = `SECTEUR ${sectorGreek} • NIVEAU ${sectorInfo.levelInSector}`;
     }
 
+    // Bouton de lancement de mission : DÉPLOYER LA FLOTTE
     const launchBtn = document.getElementById('btn-missions-launch');
     const launchText = launchBtn?.querySelector('.launch-text');
     if (launchText) {
-      launchText.textContent = `DÉCOLLER (SECTEUR ${sectorGreek} • NIVEAU ${sectorInfo.levelInSector})`;
+      launchText.textContent = 'DÉPLOYER LA FLOTTE';
+    }
+
+    // Mise à jour de l'état des flèches de Secteur
+    const canPrevSector = sectorInfo.sector > 1;
+    const canNextSector = sectorInfo.sector < maxSectors;
+    const isNextSectorUnlocked = (sectorInfo.sector + 1) <= maxUnlockedSector;
+
+    if (this.elBtnPrevSector) {
+      this.elBtnPrevSector.toggleAttribute('disabled', !canPrevSector);
+      this.elBtnPrevSector.style.opacity = canPrevSector ? '1' : '0.28';
+      this.elBtnPrevSector.style.pointerEvents = canPrevSector ? 'auto' : 'none';
+    }
+
+    if (this.elBtnNextSector) {
+      if (!canNextSector) {
+        this.elBtnNextSector.toggleAttribute('disabled', true);
+        this.elBtnNextSector.style.opacity = '0.28';
+        this.elBtnNextSector.style.pointerEvents = 'none';
+      } else if (!isNextSectorUnlocked) {
+        this.elBtnNextSector.removeAttribute('disabled');
+        this.elBtnNextSector.style.opacity = '0.45';
+        this.elBtnNextSector.style.pointerEvents = 'auto';
+      } else {
+        this.elBtnNextSector.removeAttribute('disabled');
+        this.elBtnNextSector.style.opacity = '1';
+        this.elBtnNextSector.style.pointerEvents = 'auto';
+      }
+    }
+
+    // Mise à jour de l'état des flèches de Niveau
+    const canPrevLevel = sectorInfo.levelInSector > 1;
+    const hasNextLevel = sectorInfo.levelInSector < sectorMissions.length;
+    const isNextLevelUnlocked = hasNextLevel && sectorMissions[sectorInfo.levelInSector] <= this.store.data.maxUnlockedMission;
+
+    if (this.elBtnPrevMission) {
+      this.elBtnPrevMission.toggleAttribute('disabled', !canPrevLevel);
+      this.elBtnPrevMission.style.opacity = canPrevLevel ? '1' : '0.28';
+      this.elBtnPrevMission.style.pointerEvents = canPrevLevel ? 'auto' : 'none';
+    }
+
+    if (this.elBtnNextMission) {
+      if (!hasNextLevel) {
+        this.elBtnNextMission.toggleAttribute('disabled', true);
+        this.elBtnNextMission.style.opacity = '0.28';
+        this.elBtnNextMission.style.pointerEvents = 'none';
+      } else if (!isNextLevelUnlocked) {
+        this.elBtnNextMission.removeAttribute('disabled');
+        this.elBtnNextMission.style.opacity = '0.45';
+        this.elBtnNextMission.style.pointerEvents = 'auto';
+      } else {
+        this.elBtnNextMission.removeAttribute('disabled');
+        this.elBtnNextMission.style.opacity = '1';
+        this.elBtnNextMission.style.pointerEvents = 'auto';
+      }
     }
 
     if (this.elMissionStatus) {

@@ -1046,16 +1046,97 @@ html, body {
   padding: 6px 10px;
 }
 
+/* Navigation des Secteurs (En Haut) */
+.sector-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.1) 0%, rgba(13, 20, 42, 0.6) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 12px;
+  padding: 6px 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 240, 255, 0.05);
+}
+
+.sector-badge-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.sector-chip-label {
+  font-family: var(--font-cyber);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+  opacity: 0.9;
+}
+
+.sector-big-label {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.7), 0 0 20px rgba(0, 240, 255, 0.35);
+}
+
+.btn-sector-nav {
+  width: 32px;
+  height: 32px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.btn-sector-nav:hover:not(:disabled) {
+  background: var(--neon-cyan);
+  color: #000;
+  box-shadow: 0 0 14px var(--neon-cyan);
+  transform: scale(1.05);
+}
+
+.btn-sector-nav:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Navigation des Niveaux (En Dessous) */
 .mission-nav-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.mission-nav-row.level-nav-row {
+  background: rgba(8, 13, 30, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+
 .btn-mission-nav {
   width: 32px;
   height: 32px;
   font-size: 0.95rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-sector-nav:disabled,
+.btn-mission-nav:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(1);
 }
 
 .mission-badge-box {
@@ -1067,7 +1148,7 @@ html, body {
 
 .mission-big-label {
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 900;
   color: #fff;
   letter-spacing: 1.5px;

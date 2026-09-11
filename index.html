@@ -393,14 +393,24 @@
               <!-- VUE 1 : MISSIONS & CAMPAGNE -->
               <div id="view-mode-missions" class="mode-subview active">
                 <div class="mission-selector-panel dedicated-missions-box">
-                  <!-- Navigation des missions -->
-                  <div class="mission-nav-row">
-                    <button id="btn-hangar-prev-mission" class="btn-nav btn-mission-nav" title="Mission précédente">◀</button>
+                  <!-- Navigation des Secteurs (En Haut) -->
+                  <div class="sector-nav-row">
+                    <button id="btn-prev-sector" class="btn-nav btn-sector-nav" title="Secteur précédent" aria-label="Secteur précédent">◀</button>
+                    <div class="sector-badge-box">
+                      <span class="sector-chip-label">SECTEUR</span>
+                      <span id="hangar-sector-name-label" class="sector-big-label">ALPHA</span>
+                    </div>
+                    <button id="btn-next-sector" class="btn-nav btn-sector-nav" title="Secteur suivant" aria-label="Secteur suivant">▶</button>
+                  </div>
+
+                  <!-- Navigation des Niveaux (En Dessous) -->
+                  <div class="mission-nav-row level-nav-row">
+                    <button id="btn-hangar-prev-mission" class="btn-nav btn-mission-nav" title="Niveau précédent" aria-label="Niveau précédent">◀</button>
                     <div class="mission-badge-box">
-                      <div id="hangar-selected-mission-label" class="mission-big-label">MISSION 01</div>
+                      <div id="hangar-selected-mission-label" class="mission-big-label">NIVEAU 1</div>
                       <div id="hangar-mission-status" class="mission-type-tag expedition">EXPÉDITION</div>
                     </div>
-                    <button id="btn-hangar-next-mission" class="btn-nav btn-mission-nav" title="Mission suivante">▶</button>
+                    <button id="btn-hangar-next-mission" class="btn-nav btn-mission-nav" title="Niveau suivant" aria-label="Niveau suivant">▶</button>
                   </div>
 
                   <!-- Carte Améliorations de la Mission & Solde de Diamants -->
@@ -503,7 +513,8 @@
                   <!-- Bouton Lancer depuis l'écran Missions -->
                   <button id="btn-missions-launch" class="btn-launch-game compact-launch">
                     <span class="launch-glow"></span>
-                    <span class="launch-text">DÉCOLLER (MISSION <span id="missions-screen-level-num">1</span>)</span>
+                    <span class="launch-text">DÉPLOYER LA FLOTTE</span>
+                    <span id="missions-screen-level-num" style="display:none;">1</span>
                     <span class="launch-icon">🚀</span>
                   </button>
                 </div>
