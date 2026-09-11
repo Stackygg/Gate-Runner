@@ -268,7 +268,6 @@ export class GameOverModal {
             </div>
             <div class="loot-cell-val val-iridium"><span id="stat-loot-iridium">+${stats.crystalsEarned}</span></div>
             <div class="loot-cell-title">IRIDIUM</div>
-            <span class="loot-cell-badge badge-iridium">RESSOURCE</span>
           </div>
         `;
 
@@ -280,19 +279,41 @@ export class GameOverModal {
             </div>
             <div class="loot-cell-val val-diamonds"><span id="stat-loot-diamonds" class="diamonds-amount">+${stats.diamondsEarned.toLocaleString()}</span></div>
             <div class="loot-cell-title">DIAMANTS</div>
-            <span class="loot-cell-badge badge-diamonds">DEVISE</span>
           </div>
         `;
 
-        // 3. Case Trésor (Coffre Scellé)
+        // 3. Case Coffre Quantique (avec icône vectorielle haute fidélité)
+        const chestSvgIcon = `
+          <svg class="icon-chest-svg chest-bounce" viewBox="0 0 24 24" width="22" height="22" fill="none">
+            <defs>
+              <linearGradient id="chestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FDE68A"/>
+                <stop offset="45%" stop-color="#F59E0B"/>
+                <stop offset="100%" stop-color="#B45309"/>
+              </linearGradient>
+              <linearGradient id="chestLidGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#FEF08A"/>
+                <stop offset="100%" stop-color="#D97706"/>
+              </linearGradient>
+            </defs>
+            <path d="M2.5 11h19v7.5a2.5 2.5 0 0 1-2.5 2.5h-14a2.5 2.5 0 0 1-2.5-2.5V11z" fill="url(#chestGrad)" stroke="#FDE68A" stroke-width="1.2"/>
+            <path d="M4.5 11h15v6.5a1.5 1.5 0 0 1-1.5 1.5h-12a1.5 1.5 0 0 1-1.5-1.5V11z" fill="#0F172A" opacity="0.38"/>
+            <path d="M2 10.5V8a3.5 3.5 0 0 1 3.5-3.5h13A3.5 3.5 0 0 1 22 8v2.5H2z" fill="url(#chestLidGrad)" stroke="#FEF08A" stroke-width="1.2"/>
+            <line x1="2" y1="10.5" x2="22" y2="10.5" stroke="#FFFFFF" stroke-width="1.2" opacity="0.9"/>
+            <rect x="9.5" y="8.5" width="5" height="5.5" rx="1.5" fill="#090D1A" stroke="#FDE68A" stroke-width="1"/>
+            <circle cx="12" cy="11.2" r="1.3" fill="#00F0FF"/>
+            <circle cx="5" cy="15" r="0.9" fill="#FEF08A"/>
+            <circle cx="19" cy="15" r="0.9" fill="#FEF08A"/>
+          </svg>
+        `;
+
         const chestCellHtml = `
           <div class="loot-slot-cell cell-chest" title="${chestName}">
             <div class="loot-cell-icon-wrap">
-              <span class="loot-cell-icon chest-bounce">📦</span>
+              <span class="loot-cell-icon">${chestSvgIcon}</span>
             </div>
             <div class="loot-cell-val val-chest">x1</div>
-            <div class="loot-cell-title" title="${chestName}">TRÉSOR</div>
-            <span class="loot-cell-badge badge-chest">SCELLÉ</span>
+            <div class="loot-cell-title" title="${chestName}">COFFRE QUANTIQUE</div>
           </div>
         `;
 
@@ -307,14 +328,13 @@ export class GameOverModal {
               </div>
               <div class="loot-cell-val" style="color: ${rarityCfg.color}">NIV. ${item.level}</div>
               <div class="loot-cell-title" style="color: ${rarityCfg.color}" title="${item.name}">${item.name}</div>
-              <span class="loot-cell-badge" style="background: ${rarityCfg.color}22; color: ${rarityCfg.color}; border: 1px solid ${rarityCfg.color};">${rarityCfg.name}</span>
             </div>
           `;
         }).join('');
 
         this.elLootGrid.innerHTML = iridiumCellHtml + diamondsCellHtml + chestCellHtml + extraCellsHtml;
 
-        // Message descriptif compact sous les cases
+        // Détails supplémentaires d'effets spéciaux (uniquement si présents)
         if (this.elLootDetails) {
           const extraFxHtml = extraItems.map(item => {
             const fx = EquipmentSystem.ensureItemSpecialEffect(item);
@@ -327,15 +347,7 @@ export class GameOverModal {
             `;
           }).join('');
 
-          this.elLootDetails.innerHTML = `
-            <div class="loot-chest-info-banner">
-              <span class="loot-info-sparkle">✨</span>
-              <span>${isPreHangar
-                ? "Trésor spatial sécurisé ! Débloquez le Hangar (Niveau 5) pour l'ouvrir !"
-                : "Trésor transféré dans votre soute ! Rendez-vous au Hangar pour l'ouvrir avec relance publicitaire possible."}</span>
-            </div>
-            ${extraFxHtml}
-          `;
+          this.elLootDetails.innerHTML = extraFxHtml;
         }
       } else {
         this.elLootBox.classList.add('hidden');

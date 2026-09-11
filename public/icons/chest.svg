@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <defs>
+    <linearGradient id="chestGradFile" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="45%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="chestLidFile" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <filter id="chestGlowFile" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="#F59E0B" flood-opacity="0.9"/>
+    </filter>
+  </defs>
+  <path d="M2.5 11h19v7.5a2.5 2.5 0 0 1-2.5 2.5h-14a2.5 2.5 0 0 1-2.5-2.5V11z" fill="url(#chestGradFile)" stroke="#FDE68A" stroke-width="1.2" filter="url(#chestGlowFile)"/>
+  <path d="M4.5 11h15v6.5a1.5 1.5 0 0 1-1.5 1.5h-12a1.5 1.5 0 0 1-1.5-1.5V11z" fill="#0F172A" opacity="0.38"/>
+  <path d="M2 10.5V8a3.5 3.5 0 0 1 3.5-3.5h13A3.5 3.5 0 0 1 22 8v2.5H2z" fill="url(#chestLidFile)" stroke="#FEF08A" stroke-width="1.2"/>
+  <line x1="2" y1="10.5" x2="22" y2="10.5" stroke="#FFFFFF" stroke-width="1.2" opacity="0.9"/>
+  <rect x="9.5" y="8.5" width="5" height="5.5" rx="1.5" fill="#090D1A" stroke="#FDE68A" stroke-width="1"/>
+  <circle cx="12" cy="11.2" r="1.3" fill="#00F0FF"/>
+  <circle cx="5" cy="15" r="0.9" fill="#FEF08A"/>
+  <circle cx="19" cy="15" r="0.9" fill="#FEF08A"/>
+</svg>
