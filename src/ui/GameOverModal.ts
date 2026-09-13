@@ -18,6 +18,8 @@ export interface GameOverStats {
   quests?: MissionQuest[];
   newlyCompletedQuests?: MissionQuest[];
   rewardLoot?: EquipmentItem | EquipmentItem[] | null;
+  isChallenge?: boolean;
+  challengeReward?: { type: 'bars' | 'dust'; amount: number; label: string };
 }
 
 export class GameOverModal {
@@ -128,6 +130,78 @@ export class GameOverModal {
     if (!this.elModal) return;
     this.currentStats = { ...stats };
     this.isDoubled = false;
+
+    if (stats.isChallenge) {
+      if (stats.isVictory) {
+        if (this.elBadge) {
+          this.elBadge.className = 'modal-badge victory';
+          this.elBadge.textContent = 'DÉFI SURVÉCU !';
+        }
+        if (this.elTitle) this.elTitle.textContent = "CONVOI D'IRIDIUM DÉFENDU";
+        if (this.elBtnNext) this.elBtnNext.textContent = 'CONTINUER 🚀';
+
+        try {
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#00F0FF', '#FF007A', '#FFE600', '#00FF88']
+          });
+        } catch {}
+      } else {
+        if (this.elBadge) {
+          this.elBadge.className = 'modal-badge defeat';
+          this.elBadge.textContent = 'DÉFENSE ÉCHOUÉE';
+        }
+        if (this.elTitle) {
+          this.elTitle.textContent = (stats.defeatReason === 'MOTHERSHIP_DESTROYED') ? "CARGO D'IRIDIUM DÉTRUIT" : 'FLOTTE ANÉANTIE';
+        }
+        if (this.elBtnNext) this.elBtnNext.textContent = 'RÉESSAYER LE DÉFI 🔄';
+      }
+
+      if (this.elFinalFleet) this.elFinalFleet.textContent = `${stats.survivingFleet} vaisseau(x)`;
+      if (this.elKills) this.elKills.textContent = `${stats.enemiesKilled}`;
+      if (this.elMultiplier) this.elMultiplier.textContent = `x1.0`;
+      if (this.elEarnedDiamonds) this.elEarnedDiamonds.textContent = `+0`;
+      if (this.elEarnedCrystals) this.elEarnedCrystals.textContent = `+0`;
+
+      if (this.elBtnDoubleAd) this.elBtnDoubleAd.style.display = 'none';
+      if (this.elQuestsBox) this.elQuestsBox.style.display = 'none';
+
+      const elTopRewards = document.getElementById('gameover-top-rewards');
+      const elTopDivider = document.getElementById('gameover-top-divider');
+      if (elTopRewards) elTopRewards.style.display = 'none';
+      if (elTopDivider) elTopDivider.style.display = 'none';
+
+      // En mode défi : on affiche uniquement la récompense du défi (ex: Barres d'Iridium), pas de diamants, pas d'iridium classique, pas de coffre
+      if (stats.isVictory && stats.challengeReward && this.elLootBox && this.elLootGrid) {
+        this.elLootBox.classList.remove('hidden');
+        const headerTitle = this.elLootBox.querySelector('.loot-header-title');
+        if (headerTitle) headerTitle.textContent = 'RÉCOMPENSE DU DÉFI';
+
+        const isBars = stats.challengeReward.type === 'bars';
+        const iconHtml = isBars
+          ? '<span class="icon-iridium-bar"></span>'
+          : '<span class="icon-diamond-dust"></span>';
+        const rewardTitle = isBars ? "BARRES D'IRIDIUM" : "POUDRE DE DIAMANT";
+
+        this.elLootGrid.innerHTML = `
+          <div class="loot-slot-cell cell-challenge-reward" style="grid-column: 1 / -1; max-width: 240px; margin: 0 auto; border-color: #00F0FF; box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);" title="${rewardTitle}">
+            <div class="loot-cell-icon-wrap">
+              <span class="loot-cell-icon">${iconHtml}</span>
+            </div>
+            <div class="loot-cell-val" style="color: #00F0FF; font-size: 1.15rem; font-weight: 900;">+${stats.challengeReward.amount}</div>
+            <div class="loot-cell-title" style="color: #E2E8F0;">${rewardTitle}</div>
+          </div>
+        `;
+        if (this.elLootDetails) this.elLootDetails.innerHTML = '';
+      } else {
+        this.elLootBox?.classList.add('hidden');
+      }
+
+      this.elModal?.classList.remove('hidden');
+      return;
+    }
 
     if (stats.isVictory) {
       if (this.elBadge) {

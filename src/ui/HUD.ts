@@ -2,11 +2,15 @@
 
 export class HUD {
   private elSessionDiamonds = document.getElementById('hud-session-diamonds');
+  private elTopLeftIcon = document.getElementById('hud-top-left-icon');
   private elSubFleet = document.getElementById('hud-sub-fleet');
+  private elSubFleetWrap = document.getElementById('hud-sub-fleet-wrap');
+  private elSubFleetSep = document.getElementById('hud-sub-fleet-sep');
   private elSubDamage = document.getElementById('hud-sub-damage');
   private elSubFireRate = document.getElementById('hud-sub-firerate');
   private elDistanceFill = document.getElementById('hud-distance-fill');
   private elShipMarker = document.getElementById('hud-ship-marker');
+  private elBossMarker = document.getElementById('hud-boss-marker');
   private elLevelLabel = document.getElementById('hud-level-label');
   private elTopHud = document.getElementById('hud-top');
   
@@ -36,6 +40,7 @@ export class HUD {
   private lastProgressRounded: number = -1;
   private lastLevel: number = -1;
   private lastPhase: number = -1;
+  private lastIsChallenge: boolean | null = null;
 
   public show() {
     this.elTopHud?.classList.remove('hidden');
@@ -47,6 +52,7 @@ export class HUD {
     this.lastProgressRounded = -1;
     this.lastLevel = -1;
     this.lastPhase = -1;
+    this.lastIsChallenge = null;
   }
 
   public hide() {
@@ -62,17 +68,61 @@ export class HUD {
     fireRatePct: number,
     progressRatio: number,
     levelNum: number,
-    currentPhase: number = 1
+    currentPhase: number = 1,
+    options?: {
+      isChallenge?: boolean;
+      customLabel?: string;
+      escortPct?: number;
+    }
   ) {
-    const dFloor = Math.floor(sessionDiamonds);
-    if (this.lastDiamonds !== dFloor) {
-      this.lastDiamonds = dFloor;
-      if (this.elSessionDiamonds) this.elSessionDiamonds.textContent = `${dFloor}`;
+    const isChallenge = !!options?.isChallenge;
+
+    if (this.lastIsChallenge !== isChallenge) {
+      this.lastIsChallenge = isChallenge;
+      if (isChallenge) {
+        if (this.elTopLeftIcon) this.elTopLeftIcon.textContent = '🛡️';
+        if (this.elSubFleetWrap) this.elSubFleetWrap.style.display = 'none';
+        if (this.elSubFleetSep) this.elSubFleetSep.style.display = 'none';
+        if (this.elBossMarker) this.elBossMarker.style.display = 'none';
+      } else {
+        if (this.elTopLeftIcon) this.elTopLeftIcon.textContent = '💎';
+        if (this.elSubFleetWrap) this.elSubFleetWrap.style.display = 'flex';
+        if (this.elSubFleetSep) this.elSubFleetSep.style.display = 'inline';
+        if (this.elBossMarker) this.elBossMarker.style.display = 'block';
+      }
     }
 
-    if (this.lastFleet !== fleetCount) {
-      this.lastFleet = fleetCount;
-      if (this.elSubFleet) this.elSubFleet.textContent = `${fleetCount}`;
+    if (isChallenge) {
+      // Mode Défi : remplacement du nombre de diamants par le % actuel d'escorte / progression
+      const pctVal = options?.escortPct !== undefined ? options.escortPct : Math.round(progressRatio * 100);
+      if (this.lastDiamonds !== pctVal) {
+        this.lastDiamonds = pctVal;
+        if (this.elSessionDiamonds) this.elSessionDiamonds.textContent = `${pctVal}%`;
+      }
+      if (options?.customLabel && this.elLevelLabel) {
+        if (this.elLevelLabel.textContent !== options.customLabel) {
+          this.elLevelLabel.textContent = options.customLabel;
+        }
+      }
+    } else {
+      const dFloor = Math.floor(sessionDiamonds);
+      if (this.lastDiamonds !== dFloor) {
+        this.lastDiamonds = dFloor;
+        if (this.elSessionDiamonds) this.elSessionDiamonds.textContent = `${dFloor}`;
+      }
+
+      if (this.lastFleet !== fleetCount) {
+        this.lastFleet = fleetCount;
+        if (this.elSubFleet) this.elSubFleet.textContent = `${fleetCount}`;
+      }
+
+      if (this.lastLevel !== levelNum || this.lastPhase !== currentPhase) {
+        this.lastLevel = levelNum;
+        this.lastPhase = currentPhase;
+        if (this.elLevelLabel) {
+          this.elLevelLabel.textContent = `M${levelNum < 10 ? '0' + levelNum : levelNum} • VAGUE ${currentPhase}/4`;
+        }
+      }
     }
 
     if (this.lastDamage !== damagePct) {
@@ -91,14 +141,6 @@ export class HUD {
       this.lastProgressRounded = progressPct;
       if (this.elDistanceFill) this.elDistanceFill.style.width = `${progressPct}%`;
       if (this.elShipMarker) this.elShipMarker.style.left = `${progressPct}%`;
-    }
-
-    if (this.lastLevel !== levelNum || this.lastPhase !== currentPhase) {
-      this.lastLevel = levelNum;
-      this.lastPhase = currentPhase;
-      if (this.elLevelLabel) {
-        this.elLevelLabel.textContent = `M${levelNum < 10 ? '0' + levelNum : levelNum} • VAGUE ${currentPhase}/4`;
-      }
     }
   }
 

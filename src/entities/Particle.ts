@@ -183,6 +183,22 @@ export class ParticleSystem {
     this.spawnGateHitSpark(x, y, color);
   }
 
+  public spawnWarpRing(x: number, y: number, color: string = '#00F0FF') {
+    this.particles.push({
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      size: 22,
+      color,
+      alpha: 1,
+      life: 0.45,
+      maxLife: 0.45,
+      type: 'ring'
+    });
+    this.spawnGateHitSpark(x, y, color);
+  }
+
   public spawnFloatingText(x: number, y: number, text: string, color: string = '#00F0FF', size: number = 20) {
     this.floatingTexts.push({
       x,

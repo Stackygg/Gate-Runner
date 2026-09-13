@@ -388,7 +388,7 @@ export class LevelGenerator {
    */
   public static generateCargoDefenseLevel(challengeLevel: number = 1): LevelData {
     const lvl = Math.max(1, Math.min(5, challengeLevel));
-    const duration = 35 + lvl * 5; // 40s (Lvl 1) à 60s (Lvl 5)
+    const duration = 60 + (lvl - 1) * 15; // 60s (Lvl 1), 75s (Lvl 2), 90s (Lvl 3), 105s (Lvl 4), 120s (Lvl 5)
 
     return {
       levelNumber: lvl,

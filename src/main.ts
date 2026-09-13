@@ -74,6 +74,7 @@ export class GameApp {
   private survivalTimer: number = 0;
   private maxSurvivalDuration: number = 0;
   private asteroidSpawnTimer: number = 0;
+  private cornerTurretSpawnTimer: number = 0;
 
   // Cache & Scratch Arrays réutilisables (0 allocation mémoire par frame = 0 GC freeze)
   private cachedEquippedStats: EquippedStatsResult | null = null;
@@ -438,9 +439,12 @@ export class GameApp {
     this.mothershipHitFlash = 0;
     if (isArena) {
       this.cargoShip = new CargoShip(this.currentLevelData.mothershipHp || GAME_CONFIG.CARGO_BASE_HP);
-      this.survivalTimer = this.currentLevelData.survivalDuration || 45;
+      this.survivalTimer = this.currentLevelData.survivalDuration || 60;
       this.maxSurvivalDuration = this.survivalTimer;
       this.asteroidSpawnTimer = 0;
+      this.cornerTurretSpawnTimer = 0;
+      this.enemyProjectiles = [];
+      this.sessionDiamonds = 0;
       this.mothershipHp = this.cargoShip.hp;
       this.maxMothershipHp = this.cargoShip.maxHp;
       this.hud.showMothership(this.cargoShip.hp, this.cargoShip.maxHp, "🛡️ INTÉGRITÉ DU CARGO D'IRIDIUM");
@@ -474,11 +478,20 @@ export class GameApp {
   }
 
   private initFleet() {
-    const frTrack = this.store.data.upgradeTracks.fireRate;
-    const dmgTrack = this.store.data.upgradeTracks.damage;
-    
-    const fireRateMultiplier = UPGRADE_TRACKS_CONFIG.fireRate.getStatMultiplier(frTrack.tier, frTrack.step);
-    const damageMultiplier = UPGRADE_TRACKS_CONFIG.damage.getStatMultiplier(dmgTrack.tier, dmgTrack.step);
+    const isChallenge = !!(this.currentLevelData && (this.currentLevelData.challengeId || this.currentLevelData.gameplayType === 'arena_defense'));
+
+    let fireRateMultiplier = 1.0;
+    let damageMultiplier = 1.0;
+
+    // Dans les défis, aucune amélioration d'échelons/paliers n'est appliquée.
+    // Seuls les statistiques et objets intrinsèques du vaisseau sélectionné sont pris en compte.
+    if (!isChallenge) {
+      const frTrack = this.store.data.upgradeTracks.fireRate;
+      const dmgTrack = this.store.data.upgradeTracks.damage;
+      fireRateMultiplier = UPGRADE_TRACKS_CONFIG.fireRate.getStatMultiplier(frTrack.tier, frTrack.step);
+      damageMultiplier = UPGRADE_TRACKS_CONFIG.damage.getStatMultiplier(dmgTrack.tier, dmgTrack.step);
+    }
+
     const activeSkin = this.store.getSelectedSkin();
     this.cachedEquippedStats = this.store.getEquippedStats(activeSkin.id);
     const equippedStats = this.cachedEquippedStats;
@@ -489,7 +502,7 @@ export class GameApp {
     const fleetFRBonus = 1 + (equippedStats.specialEffects.fleetFireRateBonus || 0) / 100;
     const totalFR = fireRateMultiplier * equippedStats.fireRateMultiplier * fleetFRBonus;
     const totalDmg = damageMultiplier * equippedStats.damageMultiplier;
-    const startingShips = GAME_CONFIG.BASE_FLEET_SIZE + (equippedStats.bonusStartingShips || 0) + (equippedStats.specialEffects.bonusStartingShips || 0);
+    const startingShips = isChallenge ? 1 : (GAME_CONFIG.BASE_FLEET_SIZE + (equippedStats.bonusStartingShips || 0) + (equippedStats.specialEffects.bonusStartingShips || 0));
 
     this.fleet = new Fleet(startingShips, activeSkin, totalFR, totalDmg, maxFleet);
     this.fleet.setEquippedSpecialEffects(equippedStats.specialEffects);
@@ -502,6 +515,9 @@ export class GameApp {
   }
 
   private reapplyUpgradesToFleet() {
+    const isChallenge = !!(this.currentLevelData && (this.currentLevelData.challengeId || this.currentLevelData.gameplayType === 'arena_defense'));
+    if (isChallenge) return; // Pas d'améliorations appliquées en cours de défi
+
     if (this.fleet) {
       const frTrack = this.store.data.upgradeTracks.fireRate;
       const dmgTrack = this.store.data.upgradeTracks.damage;
@@ -521,6 +537,8 @@ export class GameApp {
   private updateHudStats() {
     if (!this.fleet || !this.currentLevelData) return;
     const isArena = this.currentLevelData.gameplayType === 'arena_defense';
+    const isChallenge = !!this.currentLevelData.challengeId || isArena;
+
     const progress = isArena
       ? Math.min(1.0, this.traveledDistance / Math.max(1, this.maxSurvivalDuration))
       : this.traveledDistance / this.currentLevelData.totalDistance;
@@ -531,6 +549,9 @@ export class GameApp {
     const effectiveFireRate = this.fleet.fireRate * this.fleet.evolutionFireRateMultiplier;
     const fireRatePct = Math.round((effectiveFireRate / GAME_CONFIG.BASE_FIRE_RATE) * 100);
 
+    const challengeLvl = this.currentLevelData.challengeLevel || 1;
+    const customLabel = isArena ? `CONVOI D'IRIDIUM • NIVEAU ${challengeLvl}` : undefined;
+
     this.hud.updateStats(
       this.fleet.shipCount,
       this.sessionDiamonds,
@@ -538,7 +559,12 @@ export class GameApp {
       fireRatePct,
       progress,
       this.currentLevelData.levelNumber,
-      this.currentPhase
+      this.currentPhase,
+      {
+        isChallenge,
+        customLabel,
+        escortPct: Math.round(progress * 100)
+      }
     );
   }
 
@@ -575,11 +601,12 @@ export class GameApp {
     let rewardLoot: any = undefined;
 
     // Détection Défi Quotidien (Convoi d'Iridium ou Raid de Diamant)
-    const isChallenge = !!(this.currentLevelData && this.currentLevelData.challengeId);
+    const isChallenge = !!(this.currentLevelData && (this.currentLevelData.challengeId || this.currentLevelData.gameplayType === 'arena_defense'));
     if (isChallenge) {
-      const challengeId = this.currentLevelData.challengeId!;
+      const challengeId = this.currentLevelData.challengeId || 'bars';
       const challengeLvl = this.currentLevelData.challengeLevel || 1;
       const config = SectorSystem.getChallengeLevelConfig(challengeLvl);
+      let challengeReward: { type: 'bars' | 'dust'; amount: number; label: string } | undefined;
 
       if (isVictory) {
         this.sound.playVictory();
@@ -587,9 +614,10 @@ export class GameApp {
         this.store.recordChallengeVictory(challengeId, challengeLvl);
         if (challengeId === 'bars') {
           this.store.addIridiumBars(config.rewards.bars);
-          earnedIridium = config.rewards.bars;
+          challengeReward = { type: 'bars', amount: config.rewards.bars, label: "Barres d'Iridium" };
         } else {
           this.store.addDiamondDust(config.rewards.dust);
+          challengeReward = { type: 'dust', amount: config.rewards.dust, label: 'Poudre de Diamant' };
         }
         this.hangar.updateChallengesDisplay();
         this.hangar.refreshCurrencies();
@@ -599,15 +627,18 @@ export class GameApp {
 
       this.gameOverModal.show({
         isVictory,
-        survivingFleet: Math.max(0, this.fleet ? this.fleet.shipCount : 0),
+        survivingFleet: Math.max(1, this.fleet ? this.fleet.shipCount : 1),
         enemiesKilled: this.sessionKills,
         multiplier: 1.0,
-        diamondsEarned: Math.round(this.sessionDiamonds),
-        crystalsEarned: earnedIridium,
+        diamondsEarned: 0,
+        crystalsEarned: 0,
         nextLevelNum: this.store.data.selectedMission,
         defeatReason: (defeatReason === 'MOTHERSHIP_DESTROYED') ? 'MOTHERSHIP_DESTROYED' : 'FLEET_DESTROYED',
         quests: [],
-        newlyCompletedQuests: []
+        newlyCompletedQuests: [],
+        rewardLoot: null,
+        isChallenge: true,
+        challengeReward
       });
       return;
     }
@@ -1297,36 +1328,117 @@ export class GameApp {
       }
     }
 
-    // 6. Mise à jour des Projectiles
+    // 5.1 Générateur de Tourelles Ennemies dans les Coins (5 PV au Niveau 1)
+    this.cornerTurretSpawnTimer += dt;
+    const cornerAnchors = [
+      { x: 55, y: 80, cornerIndex: 0 },
+      { x: 485, y: 80, cornerIndex: 1 },
+      { x: 55, y: 880, cornerIndex: 2 },
+      { x: 485, y: 880, cornerIndex: 3 }
+    ];
+    const maxTurrets = lvl === 1 ? 2 : (lvl <= 3 ? 3 : 4);
+    const activeTurrets = this.enemies.filter(e => e.type === 'corner_turret' && !e.isDead);
+
+    const turretSpawnInterval = Math.max(5.5, 9.5 - (lvl - 1) * 0.9);
+    if (this.cornerTurretSpawnTimer >= turretSpawnInterval && activeTurrets.length < maxTurrets) {
+      this.cornerTurretSpawnTimer = 0;
+      const occupied = new Set(activeTurrets.map(t => t.cornerIndex));
+      const available = cornerAnchors.filter(c => !occupied.has(c.cornerIndex));
+      if (available.length > 0) {
+        const spot = available[Math.floor(Math.random() * available.length)];
+        const turretHp = 5 + (lvl - 1) * 3; // 5 PV au niveau 1, 8 au niv 2, etc.
+        const turret = new Enemy(spot.x, spot.y, 42, 42, 'corner_turret', turretHp);
+        turret.cornerIndex = spot.cornerIndex;
+        turret.shootInterval = Math.max(1.8, 2.6 - (lvl - 1) * 0.2);
+        turret.shootTimer = 0.8; // Premier tir rapide
+        this.enemies.push(turret);
+        this.particles.spawnWarpRing(spot.x, spot.y, '#FF0055');
+        this.sound.playLaser();
+      }
+    }
+
+    // 5.2 Salves de tirs des Tourelles de Coin vers le Cargo Central
+    for (const turret of activeTurrets) {
+      turret.shootTimer += dt;
+      if (turret.shootTimer >= turret.shootInterval) {
+        turret.shootTimer = 0;
+        const targetX = this.cargoShip ? this.cargoShip.x : GAME_CONFIG.CARGO_CENTER_X;
+        const targetY = this.cargoShip ? this.cargoShip.y : GAME_CONFIG.CARGO_CENTER_Y;
+        const angle = Math.atan2(targetY - turret.y, targetX - turret.x);
+        const bulletSpeed = 190 + (lvl - 1) * 15;
+        const vx = Math.cos(angle) * bulletSpeed;
+        const vy = Math.sin(angle) * bulletSpeed;
+        const bulletDmg = 5 + (lvl - 1);
+
+        const enemyBullet = new Projectile(turret.x, turret.y, vx, vy, bulletDmg, 'enemy_bullet', '#FF0055');
+        this.enemyProjectiles.push(enemyBullet);
+        this.sound.playLaser();
+        this.particles.spawnHitSparks(turret.x, turret.y, '#FF0055');
+      }
+    }
+
+    // 6. Mise à jour des Projectiles du Joueur
     for (const p of this.projectiles) {
       p.update(dt);
     }
 
-    // 7. Mise à jour des Astéroïdes & Collisions
+    // 6.2 Mise à jour des Projectiles Ennemis & Collisions
+    for (const ep of this.enemyProjectiles) {
+      ep.update(dt);
+
+      // Collision Projectile Ennemi vs Vaisseau Cargo
+      if (this.cargoShip && !ep.isDead) {
+        const dCargo = Math.hypot(ep.x - this.cargoShip.x, ep.y - this.cargoShip.y);
+        if (dCargo < 36 + ep.radius) {
+          ep.isDead = true;
+          const dmg = ep.damage || 5;
+          this.cargoShip.takeDamage(dmg);
+          this.mothershipHitFlash = 0.25;
+          this.particles.spawnHitSparks(ep.x, ep.y, '#FF0055');
+          this.particles.spawnFloatingText(this.cargoShip.x, this.cargoShip.y - 45, `-${dmg} HP`, '#FF0055', 18);
+          this.sound.playExplosion(false);
+          this.renderer.addScreenShake(5);
+        }
+      }
+
+      // Collision Projectile Ennemi vs Flotte du Joueur (Bouclier du joueur invincible intercepte le tir)
+      if (!ep.isDead) {
+        const dPlayer = Math.hypot(ep.x - this.fleet.centerX, ep.y - this.fleet.centerY);
+        if (dPlayer < 28 + ep.radius) {
+          ep.isDead = true;
+          this.particles.spawnHitSparks(ep.x, ep.y, '#00F0FF');
+          this.particles.spawnFloatingText(this.fleet.centerX, this.fleet.centerY - 22, 'BOUCLIER 🛡️', '#00F0FF', 15);
+        }
+      }
+    }
+
+    // 7. Mise à jour des Ennemis (Astéroïdes & Tourelles) & Collisions
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const ast = this.enemies[i];
       if (ast.isDead) continue;
 
-      ast.x += (ast.vx || 0) * dt;
-      ast.y += (ast.vy || 0) * dt;
+      if (ast.type === 'block') {
+        ast.x += (ast.vx || 0) * dt;
+        ast.y += (ast.vy || 0) * dt;
 
-      // 7.1 Collision Astéroïde vs Cargo central
-      if (this.cargoShip) {
-        const dCargo = Math.hypot(ast.x - this.cargoShip.x, ast.y - this.cargoShip.y);
-        if (dCargo < 38 + ast.width * 0.4) {
-          ast.isDead = true;
-          const dmg = Math.min(25, 6 + Math.round(ast.maxHp * 0.5));
-          this.cargoShip.takeDamage(dmg);
-          this.mothershipHitFlash = 0.25;
-          this.particles.spawnExplosion(ast.x, ast.y, '#FF4466', 16);
-          this.particles.spawnFloatingText(this.cargoShip.x, this.cargoShip.y - 45, `-${dmg} HP`, '#FF0055', 20);
-          this.sound.playExplosion(false);
-          this.renderer.addScreenShake(6);
-          continue;
+        // 7.1 Collision Astéroïde vs Cargo central
+        if (this.cargoShip) {
+          const dCargo = Math.hypot(ast.x - this.cargoShip.x, ast.y - this.cargoShip.y);
+          if (dCargo < 38 + ast.width * 0.4) {
+            ast.isDead = true;
+            const dmg = Math.min(25, 6 + Math.round(ast.maxHp * 0.5));
+            this.cargoShip.takeDamage(dmg);
+            this.mothershipHitFlash = 0.25;
+            this.particles.spawnExplosion(ast.x, ast.y, '#FF4466', 16);
+            this.particles.spawnFloatingText(this.cargoShip.x, this.cargoShip.y - 45, `-${dmg} HP`, '#FF0055', 20);
+            this.sound.playExplosion(false);
+            this.renderer.addScreenShake(6);
+            continue;
+          }
         }
       }
 
-      // 7.2 Collision Astéroïde vs Flotte du Joueur (Flotte Invincible : dévie et endommage l'astéroïde)
+      // 7.2 Collision Ennemi vs Flotte du Joueur (Flotte Invincible : dévie et endommage l'ennemi)
       const dPlayer = Math.hypot(ast.x - this.fleet.centerX, ast.y - this.fleet.centerY);
       if (dPlayer < 28 + ast.width * 0.4) {
         ast.takeDamage(10);
@@ -1334,13 +1446,14 @@ export class GameApp {
         this.particles.spawnFloatingText(this.fleet.centerX, this.fleet.centerY - 22, 'BOUCLIER 🛡️', '#FFE600', 16);
         if (ast.isDead) {
           this.sessionKills++;
-          this.particles.spawnExplosion(ast.x, ast.y, '#00F0FF', 14);
+          // Pas de diamants reçus dans les défis
+          this.particles.spawnExplosion(ast.x, ast.y, ast.type === 'corner_turret' ? '#FF0055' : '#00F0FF', 14);
           this.sound.playExplosion(false);
           continue;
         }
       }
 
-      // 7.3 Collision Astéroïde vs Projectiles
+      // 7.3 Collision Ennemi vs Projectiles du Joueur
       for (const p of this.projectiles) {
         if (p.isDead) continue;
         const dProj = Math.hypot(ast.x - p.x, ast.y - p.y);
@@ -1352,9 +1465,12 @@ export class GameApp {
           }
           if (ast.isDead) {
             this.sessionKills++;
-            this.sessionDiamonds += 1;
-            this.particles.spawnExplosion(ast.x, ast.y, '#00F0FF', 14);
+            // Pas de diamants reçus en tuant des ennemis dans les défis
+            this.particles.spawnExplosion(ast.x, ast.y, ast.type === 'corner_turret' ? '#FF0055' : '#00F0FF', 14);
             this.sound.playExplosion(false);
+            if (ast.type === 'corner_turret') {
+              this.particles.spawnFloatingText(ast.x, ast.y - 22, 'TOURELLE DÉTRUITE 💥', '#FF0055', 18);
+            }
             break;
           }
         }
@@ -1364,6 +1480,7 @@ export class GameApp {
     // 8. Nettoyage des entités détruites ou sorties de l'écran
     this.enemies = this.enemies.filter(e => !e.isDead && e.x >= -120 && e.x <= 660 && e.y >= -120 && e.y <= 1080);
     this.projectiles = this.projectiles.filter(p => !p.isDead);
+    this.enemyProjectiles = this.enemyProjectiles.filter(ep => !ep.isDead && ep.x >= -60 && ep.x <= 600 && ep.y >= -60 && ep.y <= 1020);
 
     // 9. Particules
     this.particles.update(dt);
@@ -1384,7 +1501,12 @@ export class GameApp {
         this.projectiles[i].draw3D(this.renderer.ctx, this.renderer);
       }
 
-      // 3. Dessin des Astéroïdes
+      // 2.2 Dessin des Projectiles Ennemis (Tourelles)
+      for (let i = 0; i < this.enemyProjectiles.length; i++) {
+        this.enemyProjectiles[i].draw3D(this.renderer.ctx, this.renderer);
+      }
+
+      // 3. Dessin des Ennemis et Astéroïdes
       for (let i = 0; i < this.enemies.length; i++) {
         this.enemies[i].draw3D(this.renderer.ctx, this.renderer);
       }

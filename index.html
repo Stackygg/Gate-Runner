@@ -67,7 +67,7 @@
           <div class="hud-main-row">
             <div class="hud-left">
               <div class="hud-pill diamonds-pill">
-                <span class="pill-icon">💎</span>
+                <span id="hud-top-left-icon" class="pill-icon">💎</span>
                 <span id="hud-session-diamonds" class="pill-value highlight">0</span>
               </div>
             </div>
@@ -78,7 +78,7 @@
                 <div class="progress-bar">
                   <div id="hud-distance-fill" class="gauge-fill"></div>
                   <div id="hud-ship-marker" class="ship-marker">🚀</div>
-                  <div class="boss-marker">👾</div>
+                  <div id="hud-boss-marker" class="boss-marker">👾</div>
                 </div>
                 <div class="gauge-labels">
                   <span id="hud-level-label">MISSION 01</span>
@@ -94,12 +94,12 @@
 
           <!-- Second line: Flotte, Dégâts %, Vitesse % -->
           <div class="hud-stats-subbar">
-            <div class="sub-stat-item">
+            <div id="hud-sub-fleet-wrap" class="sub-stat-item">
               <span class="sub-stat-icon">🚀</span>
               <span class="sub-stat-label">FLOTTE :</span>
               <span id="hud-sub-fleet" class="sub-stat-val">1</span>
             </div>
-            <span class="sub-stat-sep">•</span>
+            <span id="hud-sub-fleet-sep" class="sub-stat-sep">•</span>
             <div class="sub-stat-item">
               <span class="sub-stat-icon">💥</span>
               <span class="sub-stat-label">DÉGÂTS :</span>

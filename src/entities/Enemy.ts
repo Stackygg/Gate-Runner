@@ -5,7 +5,7 @@ import { Renderer } from '../engine/Renderer';
 import { SHIP_RANKS } from './RescuedShip';
 import { GAME_CONFIG } from '../config';
 
-export type EnemyType = 'block' | 'drone' | 'fast' | 'heavy' | 'black_hole' | 'prison' | 'boss_v1' | 'boss_v2' | 'boss_v3' | 'boss_final' | 'gauntlet_wall';
+export type EnemyType = 'block' | 'drone' | 'fast' | 'heavy' | 'black_hole' | 'prison' | 'boss_v1' | 'boss_v2' | 'boss_v3' | 'boss_final' | 'gauntlet_wall' | 'corner_turret';
 
 export class Enemy {
   public x: number;
@@ -20,14 +20,15 @@ export class Enemy {
   public multiplier?: number;
   public multiplierValue?: number;
   public prisonRank: number = 2; // Rang du vaisseau prototype emprisonné (2 à 5)
+  public cornerIndex?: number;   // Index de coin (0: HG, 1: HD, 2: BG, 3: BD)
 
   private rotAngle: number = 0;
   private rotSpeed: number = 0;
   private shapePoints: { x: number; y: number }[] = [];
   private phase: number = Math.random() * Math.PI * 2;
   private hitBlinkTimer: number = 0;
-  private shootTimer: number = 0;
-  private shootInterval: number = 2.0; // Salve de tirs toutes les 2.0s
+  public shootTimer: number = 0;
+  public shootInterval: number = 2.0; // Salve de tirs
   public combatTimer: number = 0;      // Temps écoulé en combat actif
   private salvoPattern: number = 0;
   public vx: number = 0;
@@ -530,6 +531,105 @@ export class Enemy {
       ctx.fillText(`[ ${rInfo.perkName} ]`, 0, badgeY + badgeH * 0.72);
 
       ctx.restore();
+      ctx.restore();
+      return;
+    }
+
+    // 1.2 RENDU DE LA TOURELLE ENNEMIE DE COIN (MODE ARÈNE DÉFENSE)
+    if (this.type === 'corner_turret') {
+      const radius = Math.max(16, (this.width / 2) * s);
+
+      ctx.save();
+      ctx.translate(pt.x, pt.y);
+
+      // Calcul de l'angle de visée vers le Cargo central (270, 480)
+      const aimAngle = Math.atan2(GAME_CONFIG.CARGO_CENTER_Y - this.y, GAME_CONFIG.CARGO_CENTER_X - this.x);
+
+      // A. Aura rougeoyante menaçante
+      const haloGrad = ctx.createRadialGradient(0, 0, radius * 0.3, 0, 0, radius * 1.5);
+      haloGrad.addColorStop(0, isHit ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 0, 85, 0.35)');
+      haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = haloGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // B. Double canon orienté vers le cargo
+      ctx.save();
+      ctx.rotate(aimAngle);
+      ctx.fillStyle = isHit ? '#FFFFFF' : '#1A0410';
+      ctx.strokeStyle = isHit ? '#FFFFFF' : '#FF0055';
+      ctx.lineWidth = Math.max(1.5, 2 * s);
+
+      // Canons gauche et droite
+      ctx.fillRect(radius * 0.3, -radius * 0.38, radius * 0.75, radius * 0.22);
+      ctx.strokeRect(radius * 0.3, -radius * 0.38, radius * 0.75, radius * 0.22);
+      ctx.fillRect(radius * 0.3, radius * 0.16, radius * 0.75, radius * 0.22);
+      ctx.strokeRect(radius * 0.3, radius * 0.16, radius * 0.75, radius * 0.22);
+
+      // Embouts de plasma lumineux
+      ctx.fillStyle = '#FF5500';
+      ctx.beginPath();
+      ctx.arc(radius * 1.05, -radius * 0.27, radius * 0.12, 0, Math.PI * 2);
+      ctx.arc(radius * 1.05, radius * 0.27, radius * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // C. Châssis Cyber-Blindé hexagonal
+      ctx.fillStyle = isHit ? '#FFFFFF' : '#0B0F19';
+      ctx.strokeStyle = isHit ? '#FFFFFF' : '#FF0055';
+      ctx.lineWidth = Math.max(2, 3 * s);
+      ctx.beginPath();
+      const numSides = 6;
+      for (let i = 0; i < numSides; i++) {
+        const a = (i * Math.PI * 2) / numSides + this.phase * 0.8;
+        const px = Math.cos(a) * radius;
+        const py = Math.sin(a) * radius;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // D. Cœur / Œil de visée central rouge pulsant
+      const coreR = radius * 0.45;
+      const eyeGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, coreR);
+      eyeGrad.addColorStop(0, '#FFFFFF');
+      eyeGrad.addColorStop(0.5, '#FF0055');
+      eyeGrad.addColorStop(1, '#660022');
+      ctx.fillStyle = eyeGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, coreR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // E. Badge de Points de Vie bien visible au-dessus
+      const badgeW = Math.max(52, 68 * s);
+      const badgeH = Math.max(16, 20 * s);
+      const badgeY = -radius - badgeH - 6 * s;
+
+      ctx.fillStyle = 'rgba(6, 10, 20, 0.92)';
+      ctx.strokeStyle = '#FF0055';
+      ctx.lineWidth = Math.max(1, 1.5 * s);
+      ctx.beginPath();
+      ctx.roundRect(-badgeW / 2, badgeY, badgeW, badgeH, 4 * s);
+      ctx.fill();
+      ctx.stroke();
+
+      // Jauge de PV interne dans le badge
+      const hpRatio = Math.max(0, Math.min(1, this.hp / this.maxHp));
+      const gaugeW = Math.max(0, (badgeW - 4) * hpRatio);
+      ctx.fillStyle = '#FF0055';
+      ctx.beginPath();
+      ctx.roundRect(-badgeW / 2 + 2, badgeY + 2, gaugeW, badgeH - 4, 2 * s);
+      ctx.fill();
+
+      ctx.font = `900 ${Math.max(9, Math.floor(11 * s))}px 'Orbitron', sans-serif`;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`❤️ ${Math.ceil(this.hp)} / ${this.maxHp}`, 0, badgeY + badgeH / 2);
+
       ctx.restore();
       return;
     }
