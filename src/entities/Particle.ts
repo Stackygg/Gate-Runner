@@ -179,6 +179,10 @@ export class ParticleSystem {
     }
   }
 
+  public spawnHitSparks(x: number, y: number, color: string) {
+    this.spawnGateHitSpark(x, y, color);
+  }
+
   public spawnFloatingText(x: number, y: number, text: string, color: string = '#00F0FF', size: number = 20) {
     this.floatingTexts.push({
       x,

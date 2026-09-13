@@ -31,6 +31,7 @@ export class Enemy {
   public combatTimer: number = 0;      // Temps écoulé en combat actif
   private salvoPattern: number = 0;
   public vx: number = 0;
+  public vy: number = 0;
   public recoilTimer: number = 0;
   public recoilShakeAmount: number = 0;
   private targetCombatX: number = 330;

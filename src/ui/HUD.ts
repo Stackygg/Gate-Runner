@@ -21,6 +21,7 @@ export class HUD {
 
   // Mothership HUD
   private elMothershipHud = document.getElementById('mothership-hud');
+  private elMothershipTitleTag = document.getElementById('mothership-title-tag');
   private elMothershipHpFill = document.getElementById('mothership-hp-fill');
   private elMothershipHpText = document.getElementById('mothership-hp-text');
   private elMothershipStatusTag = document.getElementById('mothership-status-tag');
@@ -169,8 +170,11 @@ export class HUD {
     this.elBossTimerBadge?.classList.add('hidden');
   }
 
-  public showMothership(hp: number, maxHp: number) {
+  public showMothership(hp: number, maxHp: number, customTitle?: string) {
     this.elMothershipHud?.classList.remove('hidden');
+    if (this.elMothershipTitleTag) {
+      this.elMothershipTitleTag.textContent = customTitle || '🛡️ INTÉGRITÉ DU VAISSEAU MÈRE';
+    }
     this.updateMothershipHp(hp, maxHp);
   }
 

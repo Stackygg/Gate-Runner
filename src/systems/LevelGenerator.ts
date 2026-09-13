@@ -1,6 +1,6 @@
 // Générateur de Niveaux : Cycle 3 Modes — Expédition (1, 4..), Raid Fun (2, 5..), Escorte Vaisseau Mère (3, 6..)
 
-import { GAME_CONFIG } from '../config';
+import { GAME_CONFIG, GameplayType } from '../config';
 import { Gate } from '../entities/Gate';
 import { Enemy } from '../entities/Enemy';
 
@@ -16,6 +16,10 @@ export interface LevelData {
   hasBoss: boolean;
   bossEnemy?: Enemy;
   mothershipHp?: number;
+  gameplayType?: GameplayType;
+  challengeId?: 'bars' | 'dust';
+  challengeLevel?: number;
+  survivalDuration?: number;
 }
 
 export class LevelGenerator {
@@ -375,6 +379,30 @@ export class LevelGenerator {
       hasBoss: true,
       bossEnemy: finalBoss,
       mothershipHp: GAME_CONFIG.ESCORT_MOTHERSHIP_HP
+    };
+  }
+
+  /**
+   * Générateur de Défi Spécial : Convoi d'Iridium (Défense Arène 360°)
+   * Le joueur orbite autour du cargo au centre et le protège des astéroïdes convergents.
+   */
+  public static generateCargoDefenseLevel(challengeLevel: number = 1): LevelData {
+    const lvl = Math.max(1, Math.min(5, challengeLevel));
+    const duration = 35 + lvl * 5; // 40s (Lvl 1) à 60s (Lvl 5)
+
+    return {
+      levelNumber: lvl,
+      missionType: 'escort',
+      isFunLevel: false,
+      totalDistance: 1000,
+      gates: [],
+      enemies: [],
+      hasBoss: false,
+      gameplayType: 'arena_defense',
+      challengeId: 'bars',
+      challengeLevel: lvl,
+      survivalDuration: duration,
+      mothershipHp: GAME_CONFIG.CARGO_BASE_HP
     };
   }
 }

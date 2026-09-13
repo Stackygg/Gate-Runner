@@ -10,9 +10,11 @@ import { Fleet } from './entities/Fleet';
 import { Projectile } from './entities/Projectile';
 import { Gate } from './entities/Gate';
 import { Enemy } from './entities/Enemy';
+import { CargoShip } from './entities/CargoShip';
 import { UpgradeStore, EquippedStatsResult } from './systems/UpgradeStore';
 import { LevelGenerator, LevelData } from './systems/LevelGenerator';
 import { CollisionSystem } from './systems/CollisionSystem';
+import { SectorSystem } from './systems/SectorSystem';
 import { RescuedShip, SHIP_RANKS } from './entities/RescuedShip';
 import { HUD } from './ui/HUD';
 import { MenuHangar } from './ui/MenuHangar';
@@ -66,6 +68,12 @@ export class GameApp {
   private mothershipDamageTakenInRun: number = 0;
   private victoryDelayTimer?: number;
   private lastPlayedMission: number = 1;
+
+  // Défi Spécial : Convoi d'Iridium (Défense Arène 360°)
+  private cargoShip: CargoShip | null = null;
+  private survivalTimer: number = 0;
+  private maxSurvivalDuration: number = 0;
+  private asteroidSpawnTimer: number = 0;
 
   // Cache & Scratch Arrays réutilisables (0 allocation mémoire par frame = 0 GC freeze)
   private cachedEquippedStats: EquippedStatsResult | null = null;
@@ -360,6 +368,10 @@ export class GameApp {
 
   public showHangar(openDedicatedHangar: boolean = false) {
     this.state = 'MENU';
+    this.renderer.isArenaMode = false;
+    this.input.setArenaMode(false);
+    this.cargoShip = null;
+    this.store.setActiveChallenge(null);
     if (!this.splashScreen || this.splashScreen.getIsDismissed()) {
       this.music.playTrack('main');
     }
@@ -405,20 +417,41 @@ export class GameApp {
     this.renderer.currentPhase = 1;
     this.hud.showPhaseBanner(1, 'AVANT-POSTE DE RECONNAISSANCE');
 
-    // Génération du niveau
-    this.currentLevelData = LevelGenerator.generateLevel(this.store.data.selectedMission);
+    // Génération du niveau (Défi Convoi ou mission standard)
+    const activeChallenge = this.store.getActiveChallenge();
+    if (activeChallenge && activeChallenge.id === 'bars') {
+      this.currentLevelData = LevelGenerator.generateCargoDefenseLevel(activeChallenge.level);
+    } else {
+      this.currentLevelData = LevelGenerator.generateLevel(this.store.data.selectedMission);
+    }
+
+    const isArena = this.currentLevelData.gameplayType === 'arena_defense';
+    this.renderer.isArenaMode = isArena;
+    this.input.setArenaMode(isArena);
+
     this.gates = this.currentLevelData.gates;
-    this.enemies = this.currentLevelData.enemies;
+    this.enemies = [...this.currentLevelData.enemies];
     this.forceFieldTimer = this.currentLevelData.isFunLevel ? 10.0 : 0;
     this.currentRaidRightTier = 1;
 
-    // Gestion du Vaisseau Mère (Mode Escorte / Défense)
+    // Gestion du Vaisseau Mère (Mode Escorte classique ou Cargo Convoi d'Iridium)
     this.mothershipHitFlash = 0;
-    if (this.currentLevelData.missionType === 'escort') {
+    if (isArena) {
+      this.cargoShip = new CargoShip(this.currentLevelData.mothershipHp || GAME_CONFIG.CARGO_BASE_HP);
+      this.survivalTimer = this.currentLevelData.survivalDuration || 45;
+      this.maxSurvivalDuration = this.survivalTimer;
+      this.asteroidSpawnTimer = 0;
+      this.mothershipHp = this.cargoShip.hp;
+      this.maxMothershipHp = this.cargoShip.maxHp;
+      this.hud.showMothership(this.cargoShip.hp, this.cargoShip.maxHp, "🛡️ INTÉGRITÉ DU CARGO D'IRIDIUM");
+      this.hud.showPhaseBanner(1, "CONVOI D'IRIDIUM // DÉFENSE 360°");
+    } else if (this.currentLevelData.missionType === 'escort') {
+      this.cargoShip = null;
       this.mothershipHp = this.currentLevelData.mothershipHp || 100;
       this.maxMothershipHp = this.mothershipHp;
       this.hud.showMothership(this.mothershipHp, this.maxMothershipHp);
     } else {
+      this.cargoShip = null;
       this.hud.hideMothership();
     }
 
@@ -455,6 +488,12 @@ export class GameApp {
 
     this.fleet = new Fleet(startingShips, activeSkin, totalFR, totalDmg, maxFleet);
     this.fleet.setEquippedSpecialEffects(equippedStats.specialEffects);
+
+    if (this.currentLevelData?.gameplayType === 'arena_defense') {
+      this.fleet.isInvincible = true;
+      this.fleet.centerX = GAME_CONFIG.CARGO_CENTER_X;
+      this.fleet.centerY = GAME_CONFIG.CARGO_CENTER_Y + 120;
+    }
   }
 
   private reapplyUpgradesToFleet() {
@@ -476,7 +515,10 @@ export class GameApp {
 
   private updateHudStats() {
     if (!this.fleet || !this.currentLevelData) return;
-    const progress = this.traveledDistance / this.currentLevelData.totalDistance;
+    const isArena = this.currentLevelData.gameplayType === 'arena_defense';
+    const progress = isArena
+      ? Math.min(1.0, this.traveledDistance / Math.max(1, this.maxSurvivalDuration))
+      : this.traveledDistance / this.currentLevelData.totalDistance;
 
     const effectiveDamage = this.fleet.bulletDamage * this.fleet.evolutionDamageMultiplier;
     const damagePct = Math.round((effectiveDamage / GAME_CONFIG.BASE_BULLET_DAMAGE) * 100);
@@ -526,6 +568,45 @@ export class GameApp {
     let finalMultiplier = this.maxMultiplierAchieved;
     let newlyCompletedQuests: any[] = [];
     let rewardLoot: any = undefined;
+
+    // Détection Défi Quotidien (Convoi d'Iridium ou Raid de Diamant)
+    const isChallenge = !!(this.currentLevelData && this.currentLevelData.challengeId);
+    if (isChallenge) {
+      const challengeId = this.currentLevelData.challengeId!;
+      const challengeLvl = this.currentLevelData.challengeLevel || 1;
+      const config = SectorSystem.getChallengeLevelConfig(challengeLvl);
+
+      if (isVictory) {
+        this.sound.playVictory();
+        this.store.consumeChallengeAttempt(challengeId);
+        this.store.recordChallengeVictory(challengeId, challengeLvl);
+        if (challengeId === 'bars') {
+          this.store.addIridiumBars(config.rewards.bars);
+          earnedIridium = config.rewards.bars;
+        } else {
+          this.store.addDiamondDust(config.rewards.dust);
+        }
+        this.hangar.updateChallengesDisplay();
+        this.hangar.refreshCurrencies();
+      } else {
+        this.sound.playExplosion(true);
+      }
+
+      this.gameOverModal.show({
+        isVictory,
+        survivingFleet: Math.max(0, this.fleet ? this.fleet.shipCount : 0),
+        enemiesKilled: this.sessionKills,
+        multiplier: 1.0,
+        diamondsEarned: Math.round(this.sessionDiamonds),
+        crystalsEarned: earnedIridium,
+        nextLevelNum: this.store.data.selectedMission,
+        defeatReason: (defeatReason === 'MOTHERSHIP_DESTROYED') ? 'MOTHERSHIP_DESTROYED' : 'FLEET_DESTROYED',
+        quests: [],
+        newlyCompletedQuests: []
+      });
+      return;
+    }
+
     const missionQuests = this.store.getQuestsForMission(this.lastPlayedMission);
 
     if (isVictory) {
@@ -587,8 +668,12 @@ export class GameApp {
       this.updatePreFlight(dt);
       this.renderFrame(dt, 0);
     } else if (this.state === 'PLAYING' || this.state === 'BOSS' || this.state === 'GAUNTLET') {
-      this.updateGame(dt);
-      this.renderFrame(dt, this.scrollSpeed);
+      if (this.currentLevelData?.gameplayType === 'arena_defense') {
+        this.updateArenaDefense(dt);
+      } else {
+        this.updateGame(dt);
+      }
+      this.renderFrame(dt, this.currentLevelData?.gameplayType === 'arena_defense' ? 0 : this.scrollSpeed);
     } else if (this.state === 'MENU') {
       this.renderer.clear(dt, 0);
     }
@@ -597,6 +682,13 @@ export class GameApp {
   }
 
   private updatePreFlight(dt: number) {
+    if (this.currentLevelData?.gameplayType === 'arena_defense') {
+      const pos = this.input.getPosition();
+      this.fleet.updateArena(dt, pos.x, pos.y, []);
+      this.cargoShip?.update(dt);
+      this.particles.update(dt);
+      return;
+    }
     const targetX = this.input.update(dt);
     this.fleet.update(dt, targetX);
     this.particles.update(dt);
@@ -1101,8 +1193,203 @@ export class GameApp {
     this.updateHudStats();
   }
 
+  // --- DÉFI SPÉCIAL : CONVOI D'IRIDIUM (MODE ARÈNE DÉFENSE 360°) ---
+  private updateArenaDefense(dt: number) {
+    // 1. Déplacement 2D libre du joueur et auto-ciblage des astéroïdes
+    const pos = this.input.getPosition();
+    const newBullets = this.fleet.updateArena(dt, pos.x, pos.y, this.enemies);
+    if (newBullets.length > 0) {
+      this.projectiles.push(...newBullets);
+      this.sound.playLaser();
+    }
+
+    // 2. Progression temporelle & Synchronisation du HUD
+    this.traveledDistance += dt;
+    this.survivalTimer = Math.max(0, this.survivalTimer - dt);
+    this.updateHudStats();
+
+    // 3. Mise à jour du Vaisseau Cargo central
+    if (this.cargoShip) {
+      this.cargoShip.update(dt);
+      this.hud.showMothership(this.cargoShip.hp, this.cargoShip.maxHp, "🛡️ INTÉGRITÉ DU CARGO D'IRIDIUM");
+      if (this.cargoShip.isDestroyed()) {
+        this.sound.playExplosion(true);
+        this.particles.spawnExplosion(this.cargoShip.x, this.cargoShip.y, '#FF0055', 40);
+        this.renderer.addScreenShake(18);
+        this.triggerGameOver(false, 'MOTHERSHIP_DESTROYED');
+        return;
+      }
+    }
+
+    // 4. Victoire : le compte à rebours de survie est écoulé
+    if (this.survivalTimer <= 0) {
+      if (this.victoryDelayTimer === undefined) {
+        this.victoryDelayTimer = 1.2;
+        this.sound.playWarp();
+        this.particles.spawnFloatingText(GAME_CONFIG.CARGO_CENTER_X, GAME_CONFIG.CARGO_CENTER_Y - 50, 'CONVOI DÉFENDU AVEC SUCCÈS !', '#00F0FF', 24);
+      }
+      this.victoryDelayTimer -= dt;
+      if (this.victoryDelayTimer <= 0) {
+        this.triggerGameOver(true);
+        return;
+      }
+    }
+
+    // 5. Générateur dynamique d'astéroïdes depuis les 4 bordures de l'écran
+    this.asteroidSpawnTimer += dt;
+    const lvl = this.currentLevelData?.challengeLevel || 1;
+    const elapsedRatio = Math.min(1.0, this.traveledDistance / Math.max(1, this.maxSurvivalDuration));
+    // Cadence qui s'accélère au fil du temps et selon le niveau (0.35s à 1.25s)
+    const spawnInterval = Math.max(0.35, 1.25 - elapsedRatio * 0.55 - (lvl - 1) * 0.12);
+
+    if (this.asteroidSpawnTimer >= spawnInterval) {
+      this.asteroidSpawnTimer = 0;
+      
+      const spawnCount = (elapsedRatio > 0.6 || lvl >= 4) ? (Math.random() < 0.4 ? 2 : 1) : 1;
+
+      for (let s = 0; s < spawnCount; s++) {
+        // Choix de la bordure : 0 = Haut, 1 = Bas, 2 = Gauche, 3 = Droite
+        const edge = Math.floor(Math.random() * 4);
+        let spawnX = 0;
+        let spawnY = 0;
+
+        if (edge === 0) {
+          spawnX = Math.random() * GAME_CONFIG.WORLD_WIDTH;
+          spawnY = -40;
+        } else if (edge === 1) {
+          spawnX = Math.random() * GAME_CONFIG.WORLD_WIDTH;
+          spawnY = GAME_CONFIG.WORLD_HEIGHT + 40;
+        } else if (edge === 2) {
+          spawnX = -40;
+          spawnY = Math.random() * GAME_CONFIG.WORLD_HEIGHT;
+        } else {
+          spawnX = GAME_CONFIG.WORLD_WIDTH + 40;
+          spawnY = Math.random() * GAME_CONFIG.WORLD_HEIGHT;
+        }
+
+        // Cible : Cargo central avec très légère déviation aléatoire
+        const targetX = this.cargoShip ? this.cargoShip.x : GAME_CONFIG.CARGO_CENTER_X;
+        const targetY = this.cargoShip ? this.cargoShip.y : GAME_CONFIG.CARGO_CENTER_Y;
+        const jitterX = (Math.random() - 0.5) * 36;
+        const jitterY = (Math.random() - 0.5) * 36;
+
+        const angle = Math.atan2((targetY + jitterY) - spawnY, (targetX + jitterX) - spawnX);
+        const speed = 75 + Math.random() * 35 + (lvl - 1) * 16;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+
+        const minHp = 1 + (lvl - 1) * 2;
+        const maxHp = 3 + (lvl - 1) * 5;
+        const hp = Math.floor(minHp + Math.random() * (maxHp - minHp + 1));
+        const size = 30 + Math.min(22, hp * 1.5);
+
+        const ast = new Enemy(spawnX, spawnY, size, size, 'block', hp);
+        ast.vx = vx;
+        ast.vy = vy;
+        this.enemies.push(ast);
+      }
+    }
+
+    // 6. Mise à jour des Projectiles
+    for (const p of this.projectiles) {
+      p.update(dt);
+    }
+
+    // 7. Mise à jour des Astéroïdes & Collisions
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const ast = this.enemies[i];
+      if (ast.isDead) continue;
+
+      ast.x += (ast.vx || 0) * dt;
+      ast.y += (ast.vy || 0) * dt;
+
+      // 7.1 Collision Astéroïde vs Cargo central
+      if (this.cargoShip) {
+        const dCargo = Math.hypot(ast.x - this.cargoShip.x, ast.y - this.cargoShip.y);
+        if (dCargo < 38 + ast.width * 0.4) {
+          ast.isDead = true;
+          const dmg = Math.min(25, 6 + Math.round(ast.maxHp * 0.5));
+          this.cargoShip.takeDamage(dmg);
+          this.mothershipHitFlash = 0.25;
+          this.particles.spawnExplosion(ast.x, ast.y, '#FF4466', 16);
+          this.particles.spawnFloatingText(this.cargoShip.x, this.cargoShip.y - 45, `-${dmg} HP`, '#FF0055', 20);
+          this.sound.playExplosion(false);
+          this.renderer.addScreenShake(6);
+          continue;
+        }
+      }
+
+      // 7.2 Collision Astéroïde vs Flotte du Joueur (Flotte Invincible : dévie et endommage l'astéroïde)
+      const dPlayer = Math.hypot(ast.x - this.fleet.centerX, ast.y - this.fleet.centerY);
+      if (dPlayer < 28 + ast.width * 0.4) {
+        ast.takeDamage(10);
+        this.particles.spawnHitSparks(ast.x, ast.y, '#FFE600');
+        this.particles.spawnFloatingText(this.fleet.centerX, this.fleet.centerY - 22, 'BOUCLIER 🛡️', '#FFE600', 16);
+        if (ast.isDead) {
+          this.sessionKills++;
+          this.particles.spawnExplosion(ast.x, ast.y, '#00F0FF', 14);
+          this.sound.playExplosion(false);
+          continue;
+        }
+      }
+
+      // 7.3 Collision Astéroïde vs Projectiles
+      for (const p of this.projectiles) {
+        if (p.isDead) continue;
+        const dProj = Math.hypot(ast.x - p.x, ast.y - p.y);
+        if (dProj < p.radius + ast.width * 0.45) {
+          ast.takeDamage(p.damage);
+          this.particles.spawnHitSparks(p.x, p.y, p.color);
+          if (!p.isPiercing) {
+            p.isDead = true;
+          }
+          if (ast.isDead) {
+            this.sessionKills++;
+            this.sessionDiamonds += 1;
+            this.particles.spawnExplosion(ast.x, ast.y, '#00F0FF', 14);
+            this.sound.playExplosion(false);
+            break;
+          }
+        }
+      }
+    }
+
+    // 8. Nettoyage des entités détruites ou sorties de l'écran
+    this.enemies = this.enemies.filter(e => !e.isDead && e.x >= -120 && e.x <= 660 && e.y >= -120 && e.y <= 1080);
+    this.projectiles = this.projectiles.filter(p => !p.isDead);
+
+    // 9. Particules
+    this.particles.update(dt);
+  }
+
   // --- RENDU 3D PERSPECTIVE GLOBAL ---
   private renderFrame(dt: number, scrollSpeed: number) {
+    if (this.currentLevelData?.gameplayType === 'arena_defense') {
+      this.renderer.clear(dt, 0);
+
+      // 1. Dessin du Cargo central à défendre
+      if (this.cargoShip) {
+        this.cargoShip.draw(this.renderer.ctx);
+      }
+
+      // 2. Dessin des Projectiles du joueur en 360°
+      for (let i = 0; i < this.projectiles.length; i++) {
+        this.projectiles[i].draw3D(this.renderer.ctx, this.renderer);
+      }
+
+      // 3. Dessin des Astéroïdes
+      for (let i = 0; i < this.enemies.length; i++) {
+        this.enemies[i].draw3D(this.renderer.ctx, this.renderer);
+      }
+
+      // 4. Dessin de la Flotte du joueur
+      this.fleet.draw(this.renderer.ctx);
+
+      // 5. Dessin des Particules et textes flottants
+      this.particles.draw3D(this.renderer.ctx, this.renderer);
+      return;
+    }
+
     this.renderer.clear(dt, scrollSpeed);
 
     // 1. Dessin du Vaisseau Mère en mode Escorte / Défense (arrière-plan de scène)

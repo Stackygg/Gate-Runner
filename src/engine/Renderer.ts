@@ -120,8 +120,21 @@ export class Renderer {
     this.screenShakeAmount = 0;
   }
 
+  // Contrôle du mode Arène (Défense 360° du Convoi d'Iridium)
+  public isArenaMode: boolean = false;
+
   // Projection mathématique 3D exacte du monde vers l'écran avec Distance Culling (Z-Clip)
   public project(worldX: number, worldY: number): ProjectedPoint {
+    if (this.isArenaMode) {
+      return {
+        x: worldX,
+        y: worldY,
+        scale: 1.0,
+        z: 0,
+        isVisible: true
+      };
+    }
+
     const z = GAME_CONFIG.PLAYER_BASE_Y - worldY;
 
     // Masquage strict des objets trop lointains (z > 2000) pour éliminer le tas d'objets au fond et booster les FPS

@@ -19,6 +19,8 @@ export interface ShipSkin {
   };
 }
 
+export type GameplayType = 'runner' | 'arena_defense';
+
 export const GAME_CONFIG = {
   WORLD_WIDTH: 540,
   WORLD_HEIGHT: 960,
@@ -47,9 +49,16 @@ export const GAME_CONFIG = {
   // Multiplicateurs Gauntlet
   GAUNTLET_MULTIPLIERS: [1.2, 1.5, 2.0, 3.0, 5.0, 10.0, 20.0, 50.0],
 
-  // Mode Escorte / Défense
+  // Mode Escorte / Défense Vaisseau Mère (Runner classique)
   ESCORT_MOTHERSHIP_HP: 100,
-  MOTHERSHIP_BASE_Y: 830
+  MOTHERSHIP_BASE_Y: 830,
+
+  // Mode Convoi d'Iridium (Arène Défense 360°)
+  CARGO_CENTER_X: 270,
+  CARGO_CENTER_Y: 480,
+  CARGO_WIDTH: 66,
+  CARGO_HEIGHT: 74,
+  CARGO_BASE_HP: 100
 };
 
 // Vaisseaux déblocables dans le Hangar avec leurs Slots d'Équipement

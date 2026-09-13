@@ -64,6 +64,11 @@ export class Fleet {
   public magnetRadius: number = 0;
   public critChance: number = 0;
 
+  // Mode Arène / Convoi d'Iridium
+  public isInvincible: boolean = false;
+  public headingAngle: number = -Math.PI / 2;
+  public headingRotation: number = 0;
+
   private shootTimer: number = 0;
   private lastMoveX: number = GAME_CONFIG.WORLD_WIDTH / 2;
   private bankAngle: number = 0;
@@ -159,21 +164,18 @@ export class Fleet {
         tierSpecs.push({ tier: 1 });
       }
     } else {
-      // Au-delà de maxShips : fusion progressive jusqu'au Tier V10
-      const totalPoints = Math.min(this.shipCount, maxCapacity);
-      const baseTier = Math.min(maxTier - 1, Math.floor((totalPoints - 1) / maxShips));
-      const higherTierCount = totalPoints - baseTier * maxShips;
-      const baseTierCount = maxShips - higherTierCount;
+      // Au-delà de maxShips : condensation progressive vers des Tiers supérieurs (V2, V3... V10)
+      let remainingPoints = this.shipCount;
+      const numSlots = maxShips;
+      const baseTier = Math.floor(remainingPoints / numSlots);
+      const extraPoints = remainingPoints % numSlots;
 
-      for (let i = 0; i < higherTierCount; i++) {
-        tierSpecs.push({ tier: Math.min(10, baseTier + 1) });
-      }
-      for (let i = 0; i < baseTierCount; i++) {
-        tierSpecs.push({ tier: Math.min(10, baseTier) });
+      for (let i = 0; i < numSlots; i++) {
+        const t = Math.min(maxTier, baseTier + (i < extraPoints ? 1 : 0));
+        tierSpecs.push({ tier: t });
       }
     }
 
-    // Synchroniser la liste des vaisseaux avec tierSpecs
     while (this.ships.length < tierSpecs.length) {
       this.ships.push({
         id: this.nextShipId++,
@@ -185,6 +187,7 @@ export class Fleet {
         tier: 1
       });
     }
+
     while (this.ships.length > tierSpecs.length) {
       this.ships.pop();
     }
@@ -240,6 +243,11 @@ export class Fleet {
   }
 
   public takeDamage(amount: number = 1): number {
+    // 0. Vaisseau invincible (défi Convoi d'Iridium)
+    if (this.isInvincible) {
+      return 0;
+    }
+
     // 1. Esquive Warp dimensionnelle
     if (this.dodgeChance > 0 && Math.random() * 100 < this.dodgeChance) {
       return -1; // Code -1 : esquivé
@@ -460,11 +468,247 @@ export class Fleet {
     return spawnedProjectiles;
   }
 
+  // Mise à jour dédiée au mode Arène (Convoi d'Iridium) : déplacement libre 2D, auto-ciblage 360°
+  public updateArena(
+    dt: number,
+    targetX: number,
+    targetY: number,
+    enemies: { x: number; y: number; isDead: boolean }[]
+  ): Projectile[] {
+    const spawnedProjectiles: Projectile[] = [];
+    if (this.shipCount <= 0 || this.ships.length === 0) return spawnedProjectiles;
+
+    // Déplacement 2D fluide de la flotte amirale
+    const deltaX = targetX - this.centerX;
+    const deltaY = targetY - this.centerY;
+    this.centerX += deltaX * Math.min(1, 22 * dt);
+    this.centerY += deltaY * Math.min(1, 22 * dt);
+
+    const targetTilt = Math.max(-0.4, Math.min(0.4, deltaX * 0.05));
+    this.bankAngle += (targetTilt - this.bankAngle) * Math.min(1, 15 * dt);
+
+    // Auto-ciblage : détection de l'astéroïde / ennemi actif le plus proche
+    let closestEnemy: { x: number; y: number } | null = null;
+    let closestDistSq = Infinity;
+
+    for (const enemy of enemies) {
+      if (enemy.isDead) continue;
+      const dx = enemy.x - this.centerX;
+      const dy = enemy.y - this.centerY;
+      const dSq = dx * dx + dy * dy;
+      if (dSq < closestDistSq) {
+        closestDistSq = dSq;
+        closestEnemy = enemy;
+      }
+    }
+
+    let desiredAngle = -Math.PI / 2; // Vers le haut par défaut
+    if (closestEnemy) {
+      desiredAngle = Math.atan2(closestEnemy.y - this.centerY, closestEnemy.x - this.centerX);
+    }
+
+    // Lissage angulaire rapide et naturel
+    let diff = desiredAngle - this.headingAngle;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    this.headingAngle += diff * Math.min(1, 18 * dt);
+    this.headingRotation = this.headingAngle - (-Math.PI / 2);
+
+    // Positionnement des vaisseaux de la formation avec rotation de l'escadron
+    const cosR = Math.cos(this.headingRotation);
+    const sinR = Math.sin(this.headingRotation);
+
+    for (let i = 0; i < this.ships.length; i++) {
+      const ship = this.ships[i];
+      const rotOffX = ship.targetOffsetX * cosR - ship.targetOffsetY * sinR;
+      const rotOffY = ship.targetOffsetX * sinR + ship.targetOffsetY * cosR;
+      const targetShipX = this.centerX + rotOffX;
+      const targetShipY = this.centerY + rotOffY;
+
+      ship.x += (targetShipX - ship.x) * Math.min(1, 22 * dt);
+      ship.y += (targetShipY - ship.y) * Math.min(1, 22 * dt);
+      ship.tilt = this.bankAngle;
+    }
+
+    this.animationPhase += dt * 4;
+    this.shootTimer += dt;
+    const effectiveFireRate = this.fireRate * this.evolutionFireRateMultiplier * (1 + (this.leaderFireRateBonus * 0.4) / 100);
+    const fireInterval = 1.0 / effectiveFireRate;
+
+    if (this.shootTimer >= fireInterval) {
+      this.shootTimer = 0;
+
+      const aimAngle = closestEnemy
+        ? Math.atan2(closestEnemy.y - this.centerY, closestEnemy.x - this.centerX)
+        : this.headingAngle;
+
+      const dirX = Math.cos(aimAngle);
+      const dirY = Math.sin(aimAngle);
+      const perpX = -dirY;
+      const perpY = dirX;
+      const speed = GAME_CONFIG.BASE_BULLET_SPEED;
+
+      for (let sIdx = 0; sIdx < this.ships.length; sIdx++) {
+        const ship = this.ships[sIdx];
+        const isLeader = (sIdx === 0);
+        const t = Math.min(10, Math.max(1, ship.tier));
+        const theme = TIER_THEMES[t] || TIER_THEMES[1];
+        const totalTierDamage = (this.bulletDamage * this.evolutionDamageMultiplier) * t;
+        const newlySpawned: Projectile[] = [];
+
+        const spawnDist = 14;
+        const baseSx = ship.x + dirX * spawnDist;
+        const baseSy = ship.y + dirY * spawnDist;
+
+        if (t === 1) {
+          // V1 : 1 tir dirigé vers la cible
+          newlySpawned.push(
+            new Projectile(baseSx, baseSy, dirX * speed, dirY * speed, totalTierDamage, 'laser', this.activeSkin.primaryColor)
+          );
+        } else if (t === 2) {
+          // V2 : 2 tirs laser parallèles
+          const singleDmg = totalTierDamage / 2;
+          const sx1 = baseSx + perpX * 6;
+          const sy1 = baseSy + perpY * 6;
+          const sx2 = baseSx - perpX * 6;
+          const sy2 = baseSy - perpY * 6;
+          newlySpawned.push(
+            new Projectile(sx1, sy1, dirX * speed, dirY * speed, singleDmg, 'laser', theme.primary),
+            new Projectile(sx2, sy2, dirX * speed, dirY * speed, singleDmg, 'laser', theme.primary)
+          );
+        } else if (t === 3) {
+          // V3 : 3 tirs plasma
+          const singleDmg = totalTierDamage / 3;
+          newlySpawned.push(
+            new Projectile(baseSx + perpX * 8, baseSy + perpY * 8, dirX * speed, dirY * speed, singleDmg, 'plasma', theme.primary),
+            new Projectile(baseSx, baseSy, dirX * speed * 1.05, dirY * speed * 1.05, singleDmg, 'plasma', theme.secondary),
+            new Projectile(baseSx - perpX * 8, baseSy - perpY * 8, dirX * speed, dirY * speed, singleDmg, 'plasma', theme.primary)
+          );
+        } else if (t <= 5) {
+          // V4-V5 : Double laser plasma lourd
+          const singleDmg = totalTierDamage / 2;
+          newlySpawned.push(
+            new Projectile(baseSx + perpX * 7, baseSy + perpY * 7, dirX * speed * 1.05, dirY * speed * 1.05, singleDmg, 'plasma', theme.primary),
+            new Projectile(baseSx - perpX * 7, baseSy - perpY * 7, dirX * speed * 1.05, dirY * speed * 1.05, singleDmg, 'plasma', theme.secondary)
+          );
+        } else {
+          // V6-V10 : Rayon lourd central + ailes
+          const coreDmg = totalTierDamage * 0.60;
+          const wingDmg = totalTierDamage * 0.20;
+          newlySpawned.push(
+            new Projectile(baseSx, baseSy, dirX * speed * 1.15, dirY * speed * 1.15, coreDmg, 'plasma', theme.primary),
+            new Projectile(baseSx + perpX * 10, baseSy + perpY * 10, dirX * speed * 1.05, dirY * speed * 1.05, wingDmg, 'laser', theme.secondary),
+            new Projectile(baseSx - perpX * 10, baseSy - perpY * 10, dirX * speed * 1.05, dirY * speed * 1.05, wingDmg, 'laser', theme.secondary)
+          );
+        }
+
+        // Leader tirs additionnels & explosif
+        if (isLeader) {
+          if (this.leaderExtraShots > 0) {
+            for (let k = 1; k <= this.leaderExtraShots; k++) {
+              const side = (k % 2 === 1) ? 1 : -1;
+              const col = Math.ceil(k / 2);
+              const offPerp = side * (col * 7 + 4);
+              const sx = baseSx + perpX * offPerp;
+              const sy = baseSy + perpY * offPerp;
+              const extraProj = new Projectile(sx, sy, dirX * speed * 1.05, dirY * speed * 1.05, totalTierDamage, 'laser', theme.primary);
+              newlySpawned.push(extraProj);
+            }
+          }
+
+          if (this.explosiveRadius > 0) {
+            for (const proj of newlySpawned) {
+              proj.isExplosive = true;
+              proj.explosionRadius = this.explosiveRadius;
+              proj.explosionDamagePct = this.explosiveDamagePct;
+            }
+          }
+        }
+
+        // Surcharges Critiques
+        if (this.critChance > 0) {
+          for (const proj of newlySpawned) {
+            if (Math.random() * 100 < this.critChance) {
+              proj.isCrit = true;
+              proj.damage *= 3.0;
+            }
+          }
+        }
+
+        // Tirs perçants
+        const effectivePierces = (this.isPiercingUnlocked ? 1 : 0) + this.piercingExtraTargets;
+        if (effectivePierces > 0) {
+          for (const proj of newlySpawned) {
+            proj.isPiercing = true;
+            proj.maxPierces = effectivePierces >= 999 ? 9999 : (1 + effectivePierces);
+          }
+        }
+
+        spawnedProjectiles.push(...newlySpawned);
+      }
+    }
+
+    // Missile explosif toutes les 10s
+    if (this.hasExplosiveMissile && this.ships.length > 0) {
+      this.missileTimer += dt;
+      if (this.missileTimer >= 10.0) {
+        this.missileTimer = 0;
+        const leader = this.ships[0];
+        const aimAngle = closestEnemy
+          ? Math.atan2(closestEnemy.y - this.centerY, closestEnemy.x - this.centerX)
+          : this.headingAngle;
+        const dirX = Math.cos(aimAngle);
+        const dirY = Math.sin(aimAngle);
+        const sx = leader.x + dirX * 18;
+        const sy = leader.y + dirY * 18;
+        const missileDmg = (this.bulletDamage * this.evolutionDamageMultiplier) * this.explosiveMissileDamageMult;
+        const missile = new Projectile(sx, sy, dirX * GAME_CONFIG.BASE_BULLET_SPEED * 1.1, dirY * GAME_CONFIG.BASE_BULLET_SPEED * 1.1, missileDmg, 'missile', '#FF6600');
+        missile.isExplosive = true;
+        missile.explosionRadius = 65;
+        missile.explosionDamagePct = 100;
+        spawnedProjectiles.push(missile);
+      }
+    }
+
+    return spawnedProjectiles;
+  }
+
   public draw(ctx: CanvasRenderingContext2D) {
     for (let i = this.ships.length - 1; i >= 0; i--) {
       const ship = this.ships[i];
       const isLeader = (i === 0);
       this.drawSingleShip(ctx, ship, isLeader);
+    }
+
+    // Aura d'Invincibilité (Défi Convoi d'Iridium)
+    if (this.isInvincible && this.ships.length > 0) {
+      const leader = this.ships[0];
+      ctx.save();
+      ctx.translate(leader.x, leader.y);
+      const pulse = Math.sin(this.animationPhase * 4) * 3;
+      const invRadius = 26 + pulse;
+
+      ctx.strokeStyle = '#FFE600';
+      ctx.lineWidth = 2;
+      if (Renderer.enableGlow) {
+        ctx.shadowColor = '#FFE600';
+        ctx.shadowBlur = 12;
+      }
+      ctx.fillStyle = 'rgba(255, 230, 0, 0.12)';
+      ctx.beginPath();
+      ctx.arc(0, 0, invRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Couronne protectrice cyan
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.arc(0, 0, invRadius + 5, this.animationPhase * 0.8, this.animationPhase * 0.8 + Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
     }
 
     // Bulle de Bouclier Énergétique autour du Vaisseau Amiral
@@ -537,7 +781,7 @@ export class Fleet {
   ) {
     ctx.save();
     ctx.translate(ship.x, ship.y);
-    ctx.rotate(ship.tilt);
+    ctx.rotate(this.headingRotation + ship.tilt);
 
     const t = Math.min(10, Math.max(1, ship.tier));
     const theme = TIER_THEMES[t] || TIER_THEMES[1];

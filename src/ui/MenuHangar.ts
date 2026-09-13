@@ -856,7 +856,7 @@ export class MenuHangar {
     this.updateHangarShipDisplay();
   }
 
-  private refreshCurrencies() {
+  public refreshCurrencies() {
     const crys = (this.store.data.violetCrystals || 0).toLocaleString();
     const bars = (this.store.data.iridiumBars || 0).toLocaleString();
     const dust = (this.store.data.diamondDust || 0).toLocaleString();
@@ -2075,7 +2075,7 @@ export class MenuHangar {
     return `${h}:${m}:${s}`;
   }
 
-  private updateChallengesDisplay() {
+  public updateChallengesDisplay() {
     if (this.elChallengesResetCountdown) {
       this.elChallengesResetCountdown.textContent = this.getCountdownToMidnight();
     }
