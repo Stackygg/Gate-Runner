@@ -11,6 +11,7 @@ import { RescuedShip, SHIP_RANKS } from '../entities/RescuedShip';
 export interface CollisionResults {
   diamondsEarned: number;
   enemiesKilled: number;
+  gatesPassed: number;
   highestGauntletMultiplier: number;
   screenShake: number;
   fleetDamageTaken: number;
@@ -34,6 +35,7 @@ export class CollisionSystem {
     const results: CollisionResults = {
       diamondsEarned: 0,
       enemiesKilled: 0,
+      gatesPassed: 0,
       highestGauntletMultiplier: 1.0,
       screenShake: 0,
       fleetDamageTaken: 0,
@@ -208,6 +210,7 @@ export class CollisionSystem {
 
         if (fleet.centerX >= left - 25 && fleet.centerX <= right + 25) {
           gate.isPassed = true;
+          results.gatesPassed++;
 
           // Si le portail fait partie d'une paire exclusive (ex: butin de boss), dissoudre instantanément l'autre portail
           if (gate.pairGate && !gate.pairGate.isPassed) {

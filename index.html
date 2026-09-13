@@ -177,9 +177,10 @@
               </div>
 
               <div class="top-bar-group top-bar-controls">
-                <div id="btn-hangar-music" class="hangar-nav-btn nav-btn-music" role="button" title="Changer de Musique">
-                  <span id="hangar-music-name">ARCADE GROOVE</span>
-                </div>
+                <button id="btn-hangar-inbox" class="hangar-nav-btn nav-btn-icon nav-btn-inbox" title="Boîte de réception">
+                  <span class="inbox-icon">✉️</span>
+                  <span id="inbox-notification-dot" class="station-notif-dot hidden"></span>
+                </button>
                 <button id="btn-hangar-music-toggle" class="hangar-nav-btn nav-btn-icon" title="Couper / Activer la musique">🎵</button>
                 <button id="btn-hangar-settings" class="hangar-nav-btn nav-btn-icon nav-btn-settings" title="Paramètres Audio & Jeu">⚙️</button>
               </div>
@@ -345,6 +346,13 @@
               <span class="version-dot"></span>
               <span class="version-text">v1.0.0</span>
             </div>
+
+            <!-- Bouton Quêtes & Succès en bas à droite -->
+            <button id="btn-main-quests" class="main-screen-quests-btn" title="Quêtes Quotidiennes & Succès" type="button">
+              <span class="quests-btn-icon">📜</span>
+              <span class="quests-btn-text">QUÊTES</span>
+              <span id="quests-badge-count" class="quests-badge-pill hidden">0</span>
+            </button>
           </div>
         </div>
 
@@ -1622,6 +1630,97 @@
               </div>
 
               <div id="refinery-feedback-msg" class="refinery-feedback hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             MODALE : QUÊTES QUOTIDIENNES & SUCCÈS GALACTIQUES
+             ================================================================== -->
+        <div id="modal-quests-achievements" class="modal-overlay hidden">
+          <div class="modal-card quests-modal-card">
+            <div class="quests-modal-header">
+              <button id="btn-close-quests-modal" class="btn-hangar-back" title="Fermer">
+                <span>◀ RETOUR</span>
+              </button>
+              <div class="quests-modal-title-wrap">
+                <h2 class="quests-modal-main-title">TERMINAL DE MISSIONS</h2>
+              </div>
+              <div class="quests-header-spacer"></div>
+            </div>
+
+            <!-- Barre de Navigation par Onglets -->
+            <div class="quests-tabs-nav">
+              <button id="tab-btn-quests" class="quests-tab-btn active" type="button">
+                <span class="tab-icon">📜</span>
+                <span class="tab-label">QUÊTES</span>
+                <span id="tab-quests-badge" class="tab-badge-dot hidden"></span>
+              </button>
+              <button id="tab-btn-achievements" class="quests-tab-btn" type="button">
+                <span class="tab-icon">🏆</span>
+                <span class="tab-label">SUCCÈS</span>
+                <span id="tab-achievements-badge" class="tab-badge-dot hidden"></span>
+              </button>
+            </div>
+
+            <!-- Contenu Onglet 1 : Quêtes Quotidiennes -->
+            <div id="tab-pane-quests" class="quests-tab-pane active">
+              <div class="quests-pane-hero">
+                <div class="quests-pane-hero-left">
+                  <span class="quests-hero-icon">⚔️</span>
+                  <div>
+                    <h3 class="quests-pane-title">QUÊTES QUOTIDIENNES</h3>
+                    <p class="quests-pane-desc">Accomplissez ces objectifs chaque jour pour maximiser vos ressources.</p>
+                  </div>
+                </div>
+                <div class="quests-timer-chip" title="Heure de réinitialisation (fuseau France/Belgique)">
+                  <span class="timer-chip-icon">⏳</span>
+                  <span class="timer-chip-label">Reset dans</span>
+                  <span id="quests-reset-timer" class="timer-chip-val">-- heures -- min</span>
+                </div>
+              </div>
+
+              <div id="quests-daily-list" class="quests-cards-list">
+                <!-- Rendu dynamique via MenuHangar.ts -->
+              </div>
+            </div>
+
+            <!-- Contenu Onglet 2 : Succès Galactiques -->
+            <div id="tab-pane-achievements" class="quests-tab-pane hidden">
+              <div class="quests-pane-hero">
+                <div class="quests-pane-hero-left">
+                  <span class="quests-hero-icon">🏆</span>
+                  <div>
+                    <h3 class="quests-pane-title">SUCCÈS GALACTIQUES</h3>
+                    <p class="quests-pane-desc">Franchissez les étapes clés de votre carrière et empochez vos récompenses permanentes.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div id="achievements-list" class="quests-cards-list">
+                <!-- Rendu dynamique via MenuHangar.ts -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             MODALE : BOÎTE DE RÉCEPTION (INBOX)
+             ================================================================== -->
+        <div id="modal-inbox" class="modal-overlay hidden">
+          <div class="modal-card inbox-modal-card">
+            <div class="quests-modal-header">
+              <button id="btn-close-inbox-modal" class="btn-hangar-back" title="Fermer">
+                <span>◀ RETOUR</span>
+              </button>
+              <div class="quests-modal-title-wrap">
+                <h2 class="quests-modal-main-title">BOÎTE DE RÉCEPTION ✉️</h2>
+              </div>
+              <div class="quests-header-spacer"></div>
+            </div>
+
+            <div class="inbox-messages-container" id="inbox-messages-list">
+              <!-- Rendu dynamique des messages via MenuHangar.ts -->
             </div>
           </div>
         </div>

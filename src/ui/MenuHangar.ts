@@ -1,6 +1,7 @@
 // Contrôleur du Menu Principal & du Hangar / Armurerie Stellaire
 
-import { UpgradeStore } from '../systems/UpgradeStore';
+import confetti from 'canvas-confetti';
+import { UpgradeStore, getParisCountdownToMidnight } from '../systems/UpgradeStore';
 import { SKINS_CONFIG, ShipSkin } from '../config';
 import { ModalConfirmCrystal } from './ModalConfirmCrystal';
 import { Renderer } from '../engine/Renderer';
@@ -220,6 +221,29 @@ export class MenuHangar {
   private elBtnChestClaimItem = document.getElementById('btn-chest-claim-item');
   private elHangarChestsCountPill = document.getElementById('hangar-chests-count-pill');
 
+  // Quêtes & Succès
+  private elBtnMainQuests = document.getElementById('btn-main-quests');
+  private elModalQuestsAchievements = document.getElementById('modal-quests-achievements');
+  private elBtnCloseQuestsModal = document.getElementById('btn-close-quests-modal');
+  private elTabBtnQuests = document.getElementById('tab-btn-quests');
+  private elTabBtnAchievements = document.getElementById('tab-btn-achievements');
+  private elTabPaneQuests = document.getElementById('tab-pane-quests');
+  private elTabPaneAchievements = document.getElementById('tab-pane-achievements');
+  private elQuestsResetTimer = document.getElementById('quests-reset-timer');
+  private elQuestsDailyList = document.getElementById('quests-daily-list');
+  private elAchievementsList = document.getElementById('achievements-list');
+  private elQuestsBadgeCount = document.getElementById('quests-badge-count');
+  private elTabQuestsBadge = document.getElementById('tab-quests-badge');
+  private elTabAchievementsBadge = document.getElementById('tab-achievements-badge');
+
+  // Boîte de Réception (Inbox)
+  private elBtnHangarInbox = document.getElementById('btn-hangar-inbox');
+  private elModalInbox = document.getElementById('modal-inbox');
+  private elBtnCloseInboxModal = document.getElementById('btn-close-inbox-modal');
+  private elInboxMessagesList = document.getElementById('inbox-messages-list');
+  private elInboxNotificationDot = document.getElementById('inbox-notification-dot');
+  private activeQuestsTab: 'quests' | 'achievements' = 'quests';
+
   private currentChestItem: EquipmentItem | null = null;
   private currentRevealedItem: EquipmentItem | null = null;
   private isChestOpening: boolean = false;
@@ -248,10 +272,45 @@ export class MenuHangar {
       if (!this.elScreenChallenges?.classList.contains('hidden')) {
         this.updateChallengesDisplay();
       }
+      if (this.elModalQuestsAchievements && !this.elModalQuestsAchievements.classList.contains('hidden')) {
+        this.updateQuestsTimer();
+      }
     }, 1000);
   }
 
   private setupListeners() {
+    // Bouton Quêtes & Succès (Bas à droite)
+    this.elBtnMainQuests?.addEventListener('click', () => {
+      this.sound.playClick();
+      this.openQuestsModal('quests');
+    });
+
+    this.elBtnCloseQuestsModal?.addEventListener('click', () => {
+      this.sound.playClick();
+      this.closeQuestsModal();
+    });
+
+    this.elTabBtnQuests?.addEventListener('click', () => {
+      this.sound.playClick();
+      this.switchQuestsTab('quests');
+    });
+
+    this.elTabBtnAchievements?.addEventListener('click', () => {
+      this.sound.playClick();
+      this.switchQuestsTab('achievements');
+    });
+
+    // Boîte de Réception (Haut)
+    this.elBtnHangarInbox?.addEventListener('click', () => {
+      this.sound.playClick();
+      this.openInboxModal();
+    });
+
+    this.elBtnCloseInboxModal?.addEventListener('click', () => {
+      this.sound.playClick();
+      this.closeInboxModal();
+    });
+
     // Bouton Boutique (Menu Principal)
     document.getElementById('btn-hangar-shop')?.addEventListener('click', () => {
       this.onOpenShopCallback?.();
@@ -868,6 +927,8 @@ export class MenuHangar {
     this.refreshCurrencies();
     this.updateMainMenuDisplay();
     this.updateHangarShipDisplay();
+    this.updateQuestsNotificationBadges();
+    this.updateInboxNotificationDot();
   }
 
   public refreshCurrencies() {
@@ -999,6 +1060,10 @@ export class MenuHangar {
       if (hasLoot) this.elHangarNotifDot.classList.remove('hidden');
       else this.elHangarNotifDot.classList.add('hidden');
     }
+
+    // Badges Quêtes & Boîte de réception
+    this.updateQuestsNotificationBadges();
+    this.updateInboxNotificationDot();
 
     // Missions & Secteurs
     const mission = this.store.data.selectedMission;
@@ -2747,6 +2812,309 @@ export class MenuHangar {
     this.renderInventory();
     this.updateMainMenuDisplay();
     this.showHudToast(`🎉 ${item.name.toUpperCase()} AJOUTÉ À L'INVENTAIRE !`, false);
+  }
+
+  // =========================================================================
+  // GESTION DES QUÊTES QUOTIDIENNES ET SUCCÈS
+  // =========================================================================
+  public openQuestsModal(tab: 'quests' | 'achievements' = 'quests') {
+    this.activeQuestsTab = tab;
+    this.switchQuestsTab(tab);
+    this.elModalQuestsAchievements?.classList.remove('hidden');
+    this.updateQuestsTimer();
+    this.updateQuestsNotificationBadges();
+  }
+
+  public closeQuestsModal() {
+    this.elModalQuestsAchievements?.classList.add('hidden');
+    this.updateQuestsNotificationBadges();
+    this.refreshCurrencies();
+  }
+
+  private switchQuestsTab(tab: 'quests' | 'achievements') {
+    this.activeQuestsTab = tab;
+    if (tab === 'quests') {
+      this.elTabBtnQuests?.classList.add('active');
+      this.elTabBtnAchievements?.classList.remove('active');
+      this.elTabPaneQuests?.classList.remove('hidden');
+      this.elTabPaneQuests?.classList.add('active');
+      this.elTabPaneAchievements?.classList.add('hidden');
+      this.elTabPaneAchievements?.classList.remove('active');
+      this.renderQuestsTab();
+    } else {
+      this.elTabBtnQuests?.classList.remove('active');
+      this.elTabBtnAchievements?.classList.add('active');
+      this.elTabPaneQuests?.classList.add('hidden');
+      this.elTabPaneQuests?.classList.remove('active');
+      this.elTabPaneAchievements?.classList.remove('hidden');
+      this.elTabPaneAchievements?.classList.add('active');
+      this.renderAchievementsTab();
+    }
+  }
+
+  private updateQuestsTimer() {
+    if (!this.elQuestsResetTimer) return;
+    const cd = getParisCountdownToMidnight();
+    this.elQuestsResetTimer.textContent = cd.text;
+  }
+
+  private renderQuestsTab() {
+    if (!this.elQuestsDailyList) return;
+    const quests = this.store.getDailyQuests();
+    this.updateQuestsTimer();
+
+    this.elQuestsDailyList.innerHTML = quests.map(q => {
+      const isCompleted = q.isCompleted;
+      const isClaimed = q.isClaimed;
+      const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
+
+      let rewardIcon = '💎';
+      if (q.reward.type === 'crystals') rewardIcon = '<span class="icon-iridium"></span>';
+      else if (q.reward.type === 'bars') rewardIcon = '<span class="icon-iridium-bar"></span>';
+      else if (q.reward.type === 'dust') rewardIcon = '<span class="icon-diamond-dust"></span>';
+
+      let buttonHtml = '';
+      if (isClaimed) {
+        buttonHtml = `<button class="btn-quest-claim claimed" disabled>VALIDÉ ✅</button>`;
+      } else if (isCompleted) {
+        buttonHtml = `<button class="btn-quest-claim ready" data-quest-id="${q.id}">RÉCLAMER 🎁</button>`;
+      } else {
+        buttonHtml = `<button class="btn-quest-claim pending" disabled>${q.progress} / ${q.target}</button>`;
+      }
+
+      return `
+        <div class="quest-item-card ${isClaimed ? 'claimed' : isCompleted ? 'completed' : ''}">
+          <div class="quest-card-left">
+            <div class="quest-card-header">
+              <span class="quest-card-title">${q.title}</span>
+            </div>
+            <div class="quest-card-desc">${q.desc}</div>
+            <div class="quest-card-progress-wrap">
+              <div class="quest-progress-track">
+                <div class="quest-progress-fill" style="width: ${pct}%;"></div>
+              </div>
+              <span class="quest-progress-text">${q.progress} / ${q.target}</span>
+            </div>
+          </div>
+          <div class="quest-card-right">
+            <div class="quest-reward-pill-box">
+              <span>+${q.reward.amount}</span>
+              <span>${rewardIcon}</span>
+            </div>
+            ${buttonHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    this.elQuestsDailyList.querySelectorAll('.btn-quest-claim.ready').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const questId = (e.currentTarget as HTMLElement).getAttribute('data-quest-id');
+        if (questId) {
+          this.handleClaimDailyQuest(questId);
+        }
+      });
+    });
+  }
+
+  private renderAchievementsTab() {
+    if (!this.elAchievementsList) return;
+    const achievements = this.store.getAchievements();
+
+    this.elAchievementsList.innerHTML = achievements.map(a => {
+      const isCompleted = a.isCompleted;
+      const isClaimed = a.isClaimed;
+      const pct = Math.min(100, Math.round((a.progress / a.target) * 100));
+
+      let rewardIcon = '💎';
+      if (a.reward.type === 'crystals') rewardIcon = '<span class="icon-iridium"></span>';
+      else if (a.reward.type === 'bars') rewardIcon = '<span class="icon-iridium-bar"></span>';
+      else if (a.reward.type === 'dust') rewardIcon = '<span class="icon-diamond-dust"></span>';
+
+      let buttonHtml = '';
+      if (isClaimed) {
+        buttonHtml = `<button class="btn-quest-claim claimed" disabled>VALIDÉ ✅</button>`;
+      } else if (isCompleted) {
+        buttonHtml = `<button class="btn-quest-claim ready" data-achievement-id="${a.id}">RÉCLAMER 🎁</button>`;
+      } else {
+        buttonHtml = `<button class="btn-quest-claim pending" disabled>${a.progress} / ${a.target}</button>`;
+      }
+
+      return `
+        <div class="quest-item-card ${isClaimed ? 'claimed' : isCompleted ? 'completed' : ''}">
+          <div class="quest-card-left">
+            <div class="quest-card-header">
+              <span class="quest-card-title">${a.title}</span>
+            </div>
+            <div class="quest-card-desc">${a.desc}</div>
+            <div class="quest-card-progress-wrap">
+              <div class="quest-progress-track">
+                <div class="quest-progress-fill" style="width: ${pct}%;"></div>
+              </div>
+              <span class="quest-progress-text">${a.progress} / ${a.target}</span>
+            </div>
+          </div>
+          <div class="quest-card-right">
+            <div class="quest-reward-pill-box">
+              <span>+${a.reward.amount}</span>
+              <span>${rewardIcon}</span>
+            </div>
+            ${buttonHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    this.elAchievementsList.querySelectorAll('.btn-quest-claim.ready').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const achId = (e.currentTarget as HTMLElement).getAttribute('data-achievement-id');
+        if (achId) {
+          this.handleClaimAchievement(achId);
+        }
+      });
+    });
+  }
+
+  private handleClaimDailyQuest(questId: string) {
+    const res = this.store.claimDailyQuest(questId);
+    if (res.success && res.reward) {
+      this.sound.playLevelUp();
+      try {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+      } catch {}
+      this.renderQuestsTab();
+      this.updateQuestsNotificationBadges();
+      this.refreshCurrencies();
+      this.showHudToast(`🎉 Quête validée : +${res.reward.amount} récompensé !`, false);
+    }
+  }
+
+  private handleClaimAchievement(achId: string) {
+    const res = this.store.claimAchievement(achId);
+    if (res.success && res.reward) {
+      this.sound.playLevelUp();
+      try {
+        confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
+      } catch {}
+      this.renderAchievementsTab();
+      this.updateQuestsNotificationBadges();
+      this.refreshCurrencies();
+      this.showHudToast(`🏆 Succès validé : +${res.reward.amount} récompensé !`, false);
+    }
+  }
+
+  public updateQuestsNotificationBadges() {
+    const unclaimedQuests = this.store.getUnclaimedQuestsCount();
+    const unclaimedAch = this.store.getUnclaimedAchievementsCount();
+    const totalUnclaimed = unclaimedQuests + unclaimedAch;
+
+    if (this.elQuestsBadgeCount) {
+      if (totalUnclaimed > 0) {
+        this.elQuestsBadgeCount.textContent = String(totalUnclaimed);
+        this.elQuestsBadgeCount.classList.remove('hidden');
+      } else {
+        this.elQuestsBadgeCount.classList.add('hidden');
+      }
+    }
+
+    if (this.elTabQuestsBadge) {
+      if (unclaimedQuests > 0) this.elTabQuestsBadge.classList.remove('hidden');
+      else this.elTabQuestsBadge.classList.add('hidden');
+    }
+
+    if (this.elTabAchievementsBadge) {
+      if (unclaimedAch > 0) this.elTabAchievementsBadge.classList.remove('hidden');
+      else this.elTabAchievementsBadge.classList.add('hidden');
+    }
+  }
+
+  // =========================================================================
+  // GESTION DE LA BOÎTE DE RÉCEPTION (INBOX)
+  // =========================================================================
+  public openInboxModal() {
+    this.renderInbox();
+    this.elModalInbox?.classList.remove('hidden');
+    this.updateInboxNotificationDot();
+  }
+
+  public closeInboxModal() {
+    this.elModalInbox?.classList.add('hidden');
+    this.updateInboxNotificationDot();
+    this.refreshCurrencies();
+  }
+
+  private renderInbox() {
+    if (!this.elInboxMessagesList) return;
+    const messages = this.store.getInboxMessages();
+
+    this.elInboxMessagesList.innerHTML = messages.map(m => {
+      let rewardHtml = '';
+      if (m.reward) {
+        let rewardIcon = '💎';
+        if (m.reward.type === 'crystals') rewardIcon = '<span class="icon-iridium"></span>';
+        else if (m.reward.type === 'bars') rewardIcon = '<span class="icon-iridium-bar"></span>';
+        else if (m.reward.type === 'dust') rewardIcon = '<span class="icon-diamond-dust"></span>';
+
+        let btn = '';
+        if (m.isClaimed) {
+          btn = `<button class="btn-quest-claim claimed" disabled>RÉCUPÉRÉ ✅</button>`;
+        } else {
+          btn = `<button class="btn-quest-claim ready" data-inbox-id="${m.id}">RÉCUPÉRER 🎁</button>`;
+        }
+        rewardHtml = `
+          <div class="inbox-msg-footer">
+            <div class="quest-reward-pill-box">
+              <span>+${m.reward.amount}</span>
+              <span>${rewardIcon}</span>
+            </div>
+            ${btn}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="inbox-message-item ${!m.isRead ? 'unread' : ''}">
+          <div class="inbox-msg-header">
+            <span class="inbox-msg-sender">${m.sender}</span>
+            <span class="inbox-msg-date">${m.date}</span>
+          </div>
+          <div class="inbox-msg-title">${m.title}</div>
+          <div class="inbox-msg-body">${m.content}</div>
+          ${rewardHtml}
+        </div>
+      `;
+    }).join('');
+
+    this.elInboxMessagesList.querySelectorAll('.btn-quest-claim.ready').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const msgId = (e.currentTarget as HTMLElement).getAttribute('data-inbox-id');
+        if (msgId) {
+          this.handleClaimInboxMessage(msgId);
+        }
+      });
+    });
+  }
+
+  private handleClaimInboxMessage(msgId: string) {
+    const res = this.store.claimInboxMessage(msgId);
+    if (res.success && res.reward) {
+      this.sound.playLevelUp();
+      try {
+        confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+      } catch {}
+      this.renderInbox();
+      this.updateInboxNotificationDot();
+      this.refreshCurrencies();
+      this.showHudToast(`📬 Récompense récupérée : +${res.reward.amount} !`, false);
+    }
+  }
+
+  public updateInboxNotificationDot() {
+    const unreadInbox = this.store.getUnclaimedInboxCount();
+    if (this.elInboxNotificationDot) {
+      if (unreadInbox > 0) this.elInboxNotificationDot.classList.remove('hidden');
+      else this.elInboxNotificationDot.classList.add('hidden');
+    }
   }
 }
 

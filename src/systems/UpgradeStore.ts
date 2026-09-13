@@ -82,6 +82,10 @@ export interface PlayerSaveData {
   // Défis Quotidiens & Événements Saisonniers
   dailyChallenges: DailyChallengesState;
   eventSeason: EventSeasonState;
+  // Quêtes Quotidiennes, Succès & Boîte de Réception
+  dailyQuests: DailyQuestsState;
+  achievements: AchievementsState;
+  inboxMessages: InboxMessage[];
   // Proxies dynamiques pour le niveau actif
   diamonds: number;
   upgradeTracks: {
@@ -105,6 +109,159 @@ export interface EventSeasonState {
   bestTimeMs: number | null;
   claimedMilestones: string[];
   rank: number;
+}
+
+export interface DailyQuestDefinition {
+  id: string;
+  title: string;
+  desc: string;
+  target: number;
+  type: 'missions_played' | 'enemies_killed' | 'challenges_played' | 'fleet_size' | 'gates_passed';
+  reward: {
+    type: 'diamonds' | 'crystals' | 'bars' | 'dust';
+    amount: number;
+  };
+}
+
+export interface DailyQuestItem extends DailyQuestDefinition {
+  progress: number;
+  isCompleted: boolean;
+  isClaimed: boolean;
+}
+
+export interface DailyQuestsState {
+  date: string; // 'YYYY-MM-DD'
+  quests: {
+    [questId: string]: {
+      progress: number;
+      claimed: boolean;
+    };
+  };
+}
+
+export interface AchievementDefinition {
+  id: string;
+  title: string;
+  desc: string;
+  target: number;
+  type: 'max_mission' | 'total_enemies' | 'max_fleet' | 'total_crystals' | 'upgrades_bought' | 'challenges_won';
+  reward: {
+    type: 'diamonds' | 'crystals' | 'bars' | 'dust';
+    amount: number;
+  };
+}
+
+export interface AchievementItem extends AchievementDefinition {
+  progress: number;
+  isCompleted: boolean;
+  isClaimed: boolean;
+}
+
+export interface AchievementsState {
+  [achievementId: string]: {
+    progress: number;
+    claimed: boolean;
+  };
+}
+
+export interface InboxMessage {
+  id: string;
+  date: string;
+  sender: string;
+  title: string;
+  content: string;
+  reward?: {
+    type: 'diamonds' | 'crystals' | 'bars' | 'dust';
+    amount: number;
+  };
+  isClaimed: boolean;
+  isRead: boolean;
+}
+
+export const DAILY_QUESTS_CONFIG: DailyQuestDefinition[] = [
+  { id: 'dq_missions', title: 'Patrouille Galactique', desc: 'Terminer 2 missions de campagne', target: 2, type: 'missions_played', reward: { type: 'diamonds', amount: 150 } },
+  { id: 'dq_enemies', title: 'Chasseur Stellaire', desc: 'Éliminer 50 vaisseaux ennemis', target: 50, type: 'enemies_killed', reward: { type: 'crystals', amount: 200 } },
+  { id: 'dq_challenge', title: 'Pilote d\'Escorte', desc: 'Participer à 1 défi quotidien', target: 1, type: 'challenges_played', reward: { type: 'bars', amount: 1 } },
+  { id: 'dq_fleet', title: 'Armada Tactique', desc: 'Atteindre une flotte de 10 vaisseaux', target: 10, type: 'fleet_size', reward: { type: 'diamonds', amount: 100 } },
+  { id: 'dq_gates', title: 'Maître des Portails', desc: 'Traverser 12 portails multiplicateurs', target: 12, type: 'gates_passed', reward: { type: 'dust', amount: 15 } }
+];
+
+export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
+  { id: 'ach_first_blood', title: 'Baptême de l\'Espace', desc: 'Compléter la première mission de campagne', target: 1, type: 'max_mission', reward: { type: 'diamonds', amount: 200 } },
+  { id: 'ach_beta_sector', title: 'Franchir le Secteur Beta', desc: 'Atteindre le Secteur Beta (Mission 4)', target: 4, type: 'max_mission', reward: { type: 'bars', amount: 2 } },
+  { id: 'ach_delta_sector', title: 'Explorateur du Secteur Delta', desc: 'Atteindre le Secteur Delta (Mission 10)', target: 10, type: 'max_mission', reward: { type: 'bars', amount: 4 } },
+  { id: 'ach_enemies_100', title: 'Tireur d\'Élite', desc: 'Éliminer 100 vaisseaux ennemis au total', target: 100, type: 'total_enemies', reward: { type: 'diamonds', amount: 250 } },
+  { id: 'ach_enemies_500', title: 'Terreur des Corsaires', desc: 'Éliminer 500 vaisseaux ennemis au total', target: 500, type: 'total_enemies', reward: { type: 'bars', amount: 3 } },
+  { id: 'ach_fleet_20', title: 'Amiral de Flotte', desc: 'Commander une armada de 20 vaisseaux en vol', target: 20, type: 'max_fleet', reward: { type: 'diamonds', amount: 300 } },
+  { id: 'ach_crystals_1000', title: 'Mineur Fortuné', desc: 'Récolter 1 000 minerais d\'iridium au total', target: 1000, type: 'total_crystals', reward: { type: 'dust', amount: 50 } },
+  { id: 'ach_challenges_5', title: 'Vétéran de l\'Iridium', desc: 'Compléter 5 défis du Convoi d\'Iridium', target: 5, type: 'challenges_won', reward: { type: 'bars', amount: 5 } }
+];
+
+export const DEFAULT_INBOX_MESSAGES: InboxMessage[] = [
+  {
+    id: 'msg_welcome',
+    date: 'Transmission Prioritaire',
+    sender: 'COMMUTATEUR DE LA FLOTTE',
+    title: 'Dotation Initiale de Recrue',
+    content: 'Commandant, félicitations pour votre affectation. L\'état-major vous alloue cette dotation d\'iridium pour optimiser vos systèmes de bord et préparer votre flotte.',
+    reward: { type: 'crystals', amount: 500 },
+    isClaimed: false,
+    isRead: false
+  },
+  {
+    id: 'msg_daily_briefing',
+    date: 'Ordres du Jour',
+    sender: 'CENTRE DES OPÉRATIONS',
+    title: 'Protocole Quotidien Activé',
+    content: 'Les objectifs quotidiens sont réinitialisés chaque nuit à minuit (fuseau France/Belgique). Consultez régulièrement votre terminal de Quêtes pour maximiser vos gains.',
+    reward: { type: 'diamonds', amount: 100 },
+    isClaimed: false,
+    isRead: false
+  }
+];
+
+export function getParisDateString(): string {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    return formatter.format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+export function getParisCountdownToMidnight(): { hours: number; minutes: number; text: string } {
+  try {
+    const now = new Date();
+    const parisString = now.toLocaleString('en-US', { timeZone: 'Europe/Paris' });
+    const parisNow = new Date(parisString);
+    const parisMidnight = new Date(parisNow);
+    parisMidnight.setHours(24, 0, 0, 0);
+    const diff = Math.max(0, parisMidnight.getTime() - parisNow.getTime());
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    return {
+      hours,
+      minutes,
+      text: `${hours} heures ${minutes} min`
+    };
+  } catch {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const diff = Math.max(0, midnight.getTime() - now.getTime());
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    return {
+      hours,
+      minutes,
+      text: `${hours} heures ${minutes} min`
+    };
+  }
 }
 
 const STORAGE_KEY = 'stacky_gate_runner_save_v8';
@@ -176,6 +333,12 @@ export class UpgradeStore {
         attempts: {},
         doubledRuns: {}
       },
+      dailyQuests: {
+        date: getParisDateString(),
+        quests: {}
+      },
+      achievements: {},
+      inboxMessages: DEFAULT_INBOX_MESSAGES.map(m => ({ ...m })),
       eventSeason: {
         eventId: 'event_season_1',
         seasonName: 'OPÉRATION NÉBULEUSE NOIRE // SAISON 1',
@@ -250,6 +413,11 @@ export class UpgradeStore {
         }
         if (parsed.hasNewLootNotification !== undefined) defaultData.hasNewLootNotification = parsed.hasNewLootNotification;
         if (parsed.dailyChallenges !== undefined) defaultData.dailyChallenges = parsed.dailyChallenges;
+        if (parsed.dailyQuests !== undefined) defaultData.dailyQuests = parsed.dailyQuests;
+        if (parsed.achievements !== undefined) defaultData.achievements = parsed.achievements;
+        if (parsed.inboxMessages !== undefined && Array.isArray(parsed.inboxMessages)) {
+          defaultData.inboxMessages = parsed.inboxMessages;
+        }
         if (parsed.eventSeason !== undefined) defaultData.eventSeason = parsed.eventSeason;
       }
       // Règle stricte : Avant de débloquer le Hangar (Niveau 5), le vaisseau ne dispose d'aucun objet équipé
@@ -1150,4 +1318,226 @@ export class UpgradeStore {
     this.save();
     return true;
   }
+
+  // =========================================================================
+  // GESTION DES RÉCOMPENSES MULTI-DEVISES
+  // =========================================================================
+  public addReward(type: 'diamonds' | 'crystals' | 'bars' | 'dust', amount: number) {
+    if (type === 'diamonds') {
+      const activeMission = this.data.selectedMission || 1;
+      this.addDiamondsToMission(activeMission, amount);
+    } else if (type === 'crystals') {
+      this.addCrystals(amount);
+    } else if (type === 'bars') {
+      this.addIridiumBars(amount);
+    } else if (type === 'dust') {
+      this.addDiamondDust(amount);
+    }
+  }
+
+  // =========================================================================
+  // QUÊTES QUOTIDIENNES (Reset Minuit Heure de Paris)
+  // =========================================================================
+  public checkDailyQuestsReset(): void {
+    const today = getParisDateString();
+    if (!this.data.dailyQuests || this.data.dailyQuests.date !== today) {
+      this.data.dailyQuests = {
+        date: today,
+        quests: {}
+      };
+      this.save();
+    }
+  }
+
+  public getDailyQuests(): DailyQuestItem[] {
+    this.checkDailyQuestsReset();
+    return DAILY_QUESTS_CONFIG.map(cfg => {
+      const state = this.data.dailyQuests.quests[cfg.id] || { progress: 0, claimed: false };
+      const progress = Math.min(cfg.target, state.progress || 0);
+      const isCompleted = progress >= cfg.target;
+      const isClaimed = !!state.claimed;
+      return {
+        ...cfg,
+        progress,
+        isCompleted,
+        isClaimed
+      };
+    });
+  }
+
+  public recordDailyQuestProgress(type: 'missions_played' | 'enemies_killed' | 'challenges_played' | 'fleet_size' | 'gates_passed', amount: number = 1): void {
+    this.checkDailyQuestsReset();
+    let hasChanged = false;
+
+    for (const cfg of DAILY_QUESTS_CONFIG) {
+      if (cfg.type === type) {
+        if (!this.data.dailyQuests.quests[cfg.id]) {
+          this.data.dailyQuests.quests[cfg.id] = { progress: 0, claimed: false };
+        }
+        const q = this.data.dailyQuests.quests[cfg.id];
+        if (type === 'fleet_size') {
+          if (amount > q.progress) {
+            q.progress = Math.min(cfg.target, amount);
+            hasChanged = true;
+          }
+        } else {
+          if (q.progress < cfg.target) {
+            q.progress = Math.min(cfg.target, q.progress + amount);
+            hasChanged = true;
+          }
+        }
+      }
+    }
+
+    if (hasChanged) {
+      this.save();
+    }
+  }
+
+  public claimDailyQuest(questId: string): { success: boolean; reward?: { type: 'diamonds' | 'crystals' | 'bars' | 'dust'; amount: number } } {
+    this.checkDailyQuestsReset();
+    const cfg = DAILY_QUESTS_CONFIG.find(q => q.id === questId);
+    if (!cfg) return { success: false };
+
+    const q = this.data.dailyQuests.quests[questId];
+    if (!q || q.progress < cfg.target || q.claimed) {
+      return { success: false };
+    }
+
+    q.claimed = true;
+    this.addReward(cfg.reward.type, cfg.reward.amount);
+    this.save();
+    return { success: true, reward: cfg.reward };
+  }
+
+  // =========================================================================
+  // SUCCÈS (ACHIEVEMENTS À VIE)
+  // =========================================================================
+  public getAchievements(): AchievementItem[] {
+    if (!this.data.achievements) {
+      this.data.achievements = {};
+    }
+
+    // Calcul / synchronisation dynamique des succès basés sur l'état existant
+    const currentMaxMission = this.data.maxUnlockedMission || 1;
+    const currentTotalCrystals = this.data.violetCrystals || 0;
+
+    return ACHIEVEMENTS_CONFIG.map(cfg => {
+      let state = this.data.achievements[cfg.id];
+      if (!state) {
+        state = { progress: 0, claimed: false };
+        this.data.achievements[cfg.id] = state;
+      }
+
+      // Sync auto selon les stats déjà existantes
+      if (cfg.type === 'max_mission') {
+        state.progress = Math.max(state.progress, currentMaxMission);
+      } else if (cfg.type === 'total_crystals') {
+        state.progress = Math.max(state.progress, currentTotalCrystals);
+      }
+
+      const progress = Math.min(cfg.target, state.progress);
+      const isCompleted = progress >= cfg.target;
+      const isClaimed = !!state.claimed;
+
+      return {
+        ...cfg,
+        progress,
+        isCompleted,
+        isClaimed
+      };
+    });
+  }
+
+  public recordAchievementProgress(type: 'max_mission' | 'total_enemies' | 'max_fleet' | 'total_crystals' | 'upgrades_bought' | 'challenges_won', amountOrValue: number, isSet: boolean = false): void {
+    if (!this.data.achievements) {
+      this.data.achievements = {};
+    }
+    let hasChanged = false;
+
+    for (const cfg of ACHIEVEMENTS_CONFIG) {
+      if (cfg.type === type) {
+        if (!this.data.achievements[cfg.id]) {
+          this.data.achievements[cfg.id] = { progress: 0, claimed: false };
+        }
+        const a = this.data.achievements[cfg.id];
+        if (isSet) {
+          if (amountOrValue > a.progress) {
+            a.progress = Math.min(cfg.target, amountOrValue);
+            hasChanged = true;
+          }
+        } else {
+          if (a.progress < cfg.target) {
+            a.progress = Math.min(cfg.target, a.progress + amountOrValue);
+            hasChanged = true;
+          }
+        }
+      }
+    }
+
+    if (hasChanged) {
+      this.save();
+    }
+  }
+
+  public claimAchievement(achievementId: string): { success: boolean; reward?: { type: 'diamonds' | 'crystals' | 'bars' | 'dust'; amount: number } } {
+    if (!this.data.achievements) return { success: false };
+    const cfg = ACHIEVEMENTS_CONFIG.find(a => a.id === achievementId);
+    if (!cfg) return { success: false };
+
+    const a = this.data.achievements[achievementId];
+    if (!a || a.progress < cfg.target || a.claimed) {
+      return { success: false };
+    }
+
+    a.claimed = true;
+    this.addReward(cfg.reward.type, cfg.reward.amount);
+    this.save();
+    return { success: true, reward: cfg.reward };
+  }
+
+  // =========================================================================
+  // BOÎTE DE RÉCEPTION (INBOX)
+  // =========================================================================
+  public getInboxMessages(): InboxMessage[] {
+    if (!this.data.inboxMessages || !Array.isArray(this.data.inboxMessages) || this.data.inboxMessages.length === 0) {
+      this.data.inboxMessages = DEFAULT_INBOX_MESSAGES.map(m => ({ ...m }));
+      this.save();
+    }
+    return this.data.inboxMessages;
+  }
+
+  public claimInboxMessage(messageId: string): { success: boolean; reward?: { type: 'diamonds' | 'crystals' | 'bars' | 'dust'; amount: number } } {
+    const messages = this.getInboxMessages();
+    const msg = messages.find(m => m.id === messageId);
+    if (!msg || msg.isClaimed || !msg.reward) {
+      return { success: false };
+    }
+
+    msg.isClaimed = true;
+    msg.isRead = true;
+    this.addReward(msg.reward.type, msg.reward.amount);
+    this.save();
+    return { success: true, reward: msg.reward };
+  }
+
+  // =========================================================================
+  // INDICATEURS DE NOTIFICATION
+  // =========================================================================
+  public getUnclaimedQuestsCount(): number {
+    return this.getDailyQuests().filter(q => q.isCompleted && !q.isClaimed).length;
+  }
+
+  public getUnclaimedAchievementsCount(): number {
+    return this.getAchievements().filter(a => a.isCompleted && !a.isClaimed).length;
+  }
+
+  public getUnclaimedInboxCount(): number {
+    return this.getInboxMessages().filter(m => !m.isClaimed && m.reward).length;
+  }
+
+  public hasUnclaimedQuestsOrAchievements(): boolean {
+    return (this.getUnclaimedQuestsCount() + this.getUnclaimedAchievementsCount()) > 0;
+  }
 }
+
