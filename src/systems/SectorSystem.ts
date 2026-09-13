@@ -78,7 +78,52 @@ export const SECTORS_CONFIG: SectorConfig[] = [
     sector: 5,
     name: 'Secteur Epsilon',
     missions: [13, 14, 15]
+  },
+  {
+    sector: 6,
+    name: 'Secteur Zeta',
+    missions: [16, 17, 18]
+  },
+  {
+    sector: 7,
+    name: 'Secteur Eta',
+    missions: [19, 20, 21]
+  },
+  {
+    sector: 8,
+    name: 'Secteur Theta',
+    missions: [22, 23, 24]
+  },
+  {
+    sector: 9,
+    name: 'Secteur Iota',
+    missions: [25, 26, 27]
+  },
+  {
+    sector: 10,
+    name: 'Secteur Kappa',
+    missions: [28, 29, 30]
   }
+];
+
+// Configuration des 5 Niveaux de Défi et Déblocage par Secteur
+export interface ChallengeLevelConfig {
+  level: number;
+  requiredSector: number;
+  requiredSectorName: string;
+  difficultyLabel: string;
+  rewards: {
+    bars: number;
+    dust: number;
+  };
+}
+
+export const CHALLENGE_LEVELS_CONFIG: ChallengeLevelConfig[] = [
+  { level: 1, requiredSector: 2, requiredSectorName: 'Beta', difficultyLabel: 'NORMAL', rewards: { bars: 2, dust: 15 } },
+  { level: 2, requiredSector: 4, requiredSectorName: 'Delta', difficultyLabel: 'DIFFICILE', rewards: { bars: 3, dust: 25 } },
+  { level: 3, requiredSector: 6, requiredSectorName: 'Zeta', difficultyLabel: 'EXPERT', rewards: { bars: 5, dust: 40 } },
+  { level: 4, requiredSector: 8, requiredSectorName: 'Theta', difficultyLabel: 'MAÎTRE', rewards: { bars: 8, dust: 65 } },
+  { level: 5, requiredSector: 10, requiredSectorName: 'Kappa', difficultyLabel: 'CAUCHEMAR', rewards: { bars: 12, dust: 100 } }
 ];
 
 // Paliers de déblocage des fonctionnalités par Secteur
@@ -90,6 +135,22 @@ export const FEATURE_UNLOCK_SECTORS: Record<GalacticFeature, number> = {
 };
 
 export class SectorSystem {
+  /**
+   * Vérifie si un niveau de défi (1 à 5) est débloqué selon la mission max atteinte
+   */
+  public static isChallengeLevelUnlocked(level: number, maxUnlockedMission: number): boolean {
+    const cfg = CHALLENGE_LEVELS_CONFIG.find(c => c.level === level) || CHALLENGE_LEVELS_CONFIG[0];
+    const playerSector = this.getSectorForMission(maxUnlockedMission);
+    return playerSector >= cfg.requiredSector;
+  }
+
+  /**
+   * Retourne la configuration d'un niveau de défi
+   */
+  public static getChallengeLevelConfig(level: number): ChallengeLevelConfig {
+    return CHALLENGE_LEVELS_CONFIG.find(c => c.level === level) || CHALLENGE_LEVELS_CONFIG[0];
+  }
+
   /**
    * Retourne le nom grec du secteur (ex: "Alpha", "Beta", "Delta"...)
    */

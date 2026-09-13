@@ -95,6 +95,7 @@ export interface DailyChallengesState {
   date: string; // 'YYYY-MM-DD'
   attempts: { [challengeId: string]: number }; // Fois joué aujourd'hui (0, 1, 2)
   doubledRuns: { [challengeId: string]: number }; // Fois doublé avec pub aujourd'hui (0, 1, 2)
+  completions?: { [challengeKey: string]: number }; // Nombre de réussites permanentes par défi et niveau (ex: 'bars_1': 5)
 }
 
 export interface EventSeasonState {
@@ -1011,12 +1012,16 @@ export class UpgradeStore {
   public checkDailyChallengesReset(): void {
     const today = new Date().toISOString().slice(0, 10);
     if (!this.data.dailyChallenges || this.data.dailyChallenges.date !== today) {
+      const existingCompletions = this.data.dailyChallenges?.completions || {};
       this.data.dailyChallenges = {
         date: today,
         attempts: {},
-        doubledRuns: {}
+        doubledRuns: {},
+        completions: existingCompletions
       };
       this.save();
+    } else if (!this.data.dailyChallenges.completions) {
+      this.data.dailyChallenges.completions = {};
     }
   }
 
@@ -1049,6 +1054,46 @@ export class UpgradeStore {
     const doubled = this.data.dailyChallenges.doubledRuns[challengeId] || 0;
     this.data.dailyChallenges.doubledRuns[challengeId] = doubled + 1;
     this.save();
+  }
+
+  /**
+   * Retourne le nombre de fois que ce défi a été réussi à ce niveau
+   */
+  public getChallengeCompletions(challengeId: string, level: number): number {
+    this.checkDailyChallengesReset();
+    const key = `${challengeId}_${level}`;
+    return this.data.dailyChallenges.completions?.[key] || 0;
+  }
+
+  /**
+   * Enregistre une victoire sur ce défi à ce niveau (+1 réussite)
+   */
+  public recordChallengeVictory(challengeId: string, level: number): void {
+    this.checkDailyChallengesReset();
+    const key = `${challengeId}_${level}`;
+    if (!this.data.dailyChallenges.completions) {
+      this.data.dailyChallenges.completions = {};
+    }
+    this.data.dailyChallenges.completions[key] = (this.data.dailyChallenges.completions[key] || 0) + 1;
+    this.save();
+  }
+
+  /**
+   * Indique si la simulation est débloquée (>= 5 réussites sur ce niveau)
+   */
+  public canSimulateChallenge(challengeId: string, level: number): boolean {
+    return this.getChallengeCompletions(challengeId, level) >= 5;
+  }
+
+  // Défi actif en cours de jeu (si lancé via l'écran des défis)
+  public activeChallenge: { id: 'bars' | 'dust'; level: number } | null = null;
+
+  public setActiveChallenge(challenge: { id: 'bars' | 'dust'; level: number } | null): void {
+    this.activeChallenge = challenge;
+  }
+
+  public getActiveChallenge(): { id: 'bars' | 'dust'; level: number } | null {
+    return this.activeChallenge;
   }
 
   // --- GESTION DES ÉVÉNEMENTS & CLASSEMENT SUR 100 JOUEURS ---

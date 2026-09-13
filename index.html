@@ -648,7 +648,7 @@
                 </div>
               </div>
               <p class="challenges-hero-desc">
-                2 tentatives par jour par défi / Doublez votre butin 1x par défi avec la pub
+                2 tentatives par jour par défi // 5 niveaux de difficulté par secteur
               </p>
             </div>
 
@@ -707,32 +707,87 @@
           </div>
         </div>
 
-        <!-- Modal Victoire Défi & Multiplicateur Publicitaire x2 -->
-        <div id="modal-challenge-victory" class="modal-overlay hidden">
-          <div class="modal-window challenge-victory-modal">
+        <!-- Modal Préparation & Niveaux de Difficulté du Défi -->
+        <div id="modal-challenge-briefing" class="modal-overlay hidden">
+          <div class="modal-window challenge-briefing-modal">
+            <!-- Header du Modal : Titre & Fermeture -->
             <div class="modal-header">
-              <h2 class="modal-title">🎉 DÉFI ACCOMPLI !</h2>
-              <button id="btn-close-challenge-victory" class="btn-close-modal">✕</button>
+              <div class="modal-title-wrap">
+                <span id="challenge-modal-title" class="modal-title">CONVOI D'IRIDIUM</span>
+                <span id="challenge-modal-subtitle" class="modal-subtitle-chip">MISSION D'ESCORTE</span>
+              </div>
+              <button id="btn-close-challenge-modal" class="btn-close-modal" title="Fermer">✕</button>
             </div>
-            <div class="modal-body text-center">
-              <div class="challenge-victory-icon-wrap">
-                <span id="challenge-victory-icon" class="victory-big-icon">🎁</span>
+
+            <div class="modal-body text-center challenge-modal-body">
+              <!-- Sélecteur de Niveau de Difficulté (1 à 5) en haut -->
+              <div class="challenge-level-nav-card">
+                <div class="challenge-level-selector-row">
+                  <button id="btn-challenge-prev-level" class="btn-nav btn-challenge-nav" title="Niveau précédent">◀</button>
+                  <div class="challenge-level-badge-box">
+                    <span class="level-top-tag">DIFFICULTÉ DU DÉFI</span>
+                    <div class="level-main-title-row">
+                      <span id="challenge-level-label" class="challenge-level-big-label">NIVEAU 1</span>
+                      <span id="challenge-difficulty-tag" class="challenge-difficulty-tag normal">NORMAL</span>
+                    </div>
+                  </div>
+                  <button id="btn-challenge-next-level" class="btn-nav btn-challenge-nav" title="Niveau suivant">▶</button>
+                </div>
+                <!-- Pill d'accès par secteur -->
+                <div id="challenge-sector-lock-pill" class="challenge-sector-lock-pill unlocked">
+                  <span id="challenge-sector-lock-icon" class="lock-icon">✓</span>
+                  <span id="challenge-sector-req-text">DISPONIBLE // SECTEUR BETA</span>
+                </div>
               </div>
-              <div id="challenge-victory-name" class="challenge-victory-name">RAID D'IRIDIUM TERMINÉ</div>
-              <div class="challenge-victory-reward-box">
-                <span class="reward-box-label">RÉCOMPENSE VALIDÉE</span>
-                <span id="challenge-victory-reward-text" class="reward-box-val">+350 Minerais d'Iridium</span>
+
+              <!-- Visuel & Description de l'objectif -->
+              <div class="challenge-visual-card">
+                <div class="challenge-icon-halo-wrap">
+                  <div id="challenge-modal-icon" class="challenge-big-icon">
+                    <span class="icon-iridium-bar" style="width: 3.2em; height: 3.2em;"></span>
+                  </div>
+                </div>
+                <div id="challenge-modal-desc" class="challenge-modal-objective-text">
+                  Escorter la navette marchande sans perte
+                </div>
               </div>
-              <div class="challenge-double-box">
-                <p class="double-box-tip">Regardez une courte transmission sponsorisée (📺) pour doubler instantanément votre butin !</p>
-                <button id="btn-challenge-double-ad" class="btn-primary btn-double-reward">
-                  <span>📺 DOUBLER LE BUTIN (x2)</span>
-                  <span id="challenge-double-reward-preview" class="double-tag">+350 Minerais</span>
+
+              <!-- Boîte Récompense en cas de victoire -->
+              <div class="challenge-reward-card">
+                <div class="reward-card-header">
+                  <span class="reward-icon">🎁</span>
+                  <span class="reward-title">BUTIN EN CAS DE RÉUSSITE</span>
+                </div>
+                <div class="reward-display-val">
+                  <span id="challenge-reward-amount" class="reward-amount-text">+2 Barres d'Iridium</span>
+                </div>
+              </div>
+
+              <!-- Statut des tentatives restantes -->
+              <div class="challenge-attempts-status-row">
+                <span class="attempts-label">Tentatives restantes :</span>
+                <span id="challenge-modal-attempts-left" class="attempts-val">2 / 2 RESTANTES</span>
+              </div>
+
+              <!-- Boutons d'Action : Lancer le défi & Simuler le défi -->
+              <div class="challenge-actions-stack">
+                <!-- Bouton 1 : Lancer le défi -->
+                <button id="btn-challenge-launch-action" class="btn-primary btn-challenge-start">
+                  <span>LANCER LE DÉFI</span>
+                  <span>🚀</span>
+                </button>
+
+                <!-- Bouton 2 : Simuler le défi (débloqué après 5 réussites) -->
+                <button id="btn-challenge-simulate-action" class="btn-secondary btn-challenge-simulate">
+                  <div class="simulate-btn-content">
+                    <div class="simulate-btn-title">
+                      <span>⚡ SIMULER LE DÉFI</span>
+                      <span id="challenge-simulate-status-tag" class="simulate-status-pill locked">🔒 0/5 RÉUSSITES</span>
+                    </div>
+                    <span id="challenge-simulate-hint" class="simulate-hint-text">Réussissez ce niveau 5 fois pour débloquer la simulation</span>
+                  </div>
                 </button>
               </div>
-              <button id="btn-challenge-continue" class="btn-secondary btn-continue-reward">
-                <span>CONTINUER ➔</span>
-              </button>
             </div>
           </div>
         </div>

@@ -128,16 +128,29 @@ export class MenuHangar {
   private elChallengesScreenDust = document.getElementById('challenges-screen-dust');
   private elChallengesResetCountdown = document.getElementById('challenges-reset-countdown');
 
-  // Modal Victoire Défi & Multiplicateur Pub
-  private elModalChallengeVictory = document.getElementById('modal-challenge-victory');
-  private elBtnCloseChallengeVictory = document.getElementById('btn-close-challenge-victory');
-  private elChallengeVictoryIcon = document.getElementById('challenge-victory-icon');
-  private elChallengeVictoryName = document.getElementById('challenge-victory-name');
-  private elChallengeVictoryRewardText = document.getElementById('challenge-victory-reward-text');
-  private elBtnChallengeDoubleAd = document.getElementById('btn-challenge-double-ad');
-  private elChallengeDoubleRewardPreview = document.getElementById('challenge-double-reward-preview');
-  private elBtnChallengeContinue = document.getElementById('btn-challenge-continue');
-  private currentWonChallengeId: string | null = null;
+  // Modal Préparation & Niveaux de Défi (Difficultés 1 à 5)
+  private elModalChallengeBriefing = document.getElementById('modal-challenge-briefing');
+  private elBtnCloseChallengeModal = document.getElementById('btn-close-challenge-modal');
+  private elChallengeModalTitle = document.getElementById('challenge-modal-title');
+  private elChallengeModalSubtitle = document.getElementById('challenge-modal-subtitle');
+  private elBtnChallengePrevLevel = document.getElementById('btn-challenge-prev-level');
+  private elBtnChallengeNextLevel = document.getElementById('btn-challenge-next-level');
+  private elChallengeLevelLabel = document.getElementById('challenge-level-label');
+  private elChallengeDifficultyTag = document.getElementById('challenge-difficulty-tag');
+  private elChallengeSectorLockPill = document.getElementById('challenge-sector-lock-pill');
+  private elChallengeSectorLockIcon = document.getElementById('challenge-sector-lock-icon');
+  private elChallengeSectorReqText = document.getElementById('challenge-sector-req-text');
+  private elChallengeModalIcon = document.getElementById('challenge-modal-icon');
+  private elChallengeModalDesc = document.getElementById('challenge-modal-desc');
+  private elChallengeRewardAmount = document.getElementById('challenge-reward-amount');
+  private elChallengeModalAttemptsLeft = document.getElementById('challenge-modal-attempts-left');
+  private elBtnChallengeLaunchAction = document.getElementById('btn-challenge-launch-action');
+  private elBtnChallengeSimulateAction = document.getElementById('btn-challenge-simulate-action');
+  private elChallengeSimulateStatusTag = document.getElementById('challenge-simulate-status-tag');
+  private elChallengeSimulateHint = document.getElementById('challenge-simulate-hint');
+
+  private selectedChallengeId: 'bars' | 'dust' = 'bars';
+  private selectedChallengeLevel: number = 1;
 
   // Modal Raffinerie & Fonderie Lunaire
   private elModalRefinery = document.getElementById('modal-refinery');
@@ -263,6 +276,7 @@ export class MenuHangar {
 
     // Bouton Décoller
     document.getElementById('btn-start-game')?.addEventListener('click', () => {
+      this.store.setActiveChallenge(null);
       this.hide();
       this.onStartCallback();
     });
@@ -284,6 +298,7 @@ export class MenuHangar {
 
     // Lancement de mission depuis l'écran Missions
     this.elBtnMissionsLaunch?.addEventListener('click', () => {
+      this.store.setActiveChallenge(null);
       this.hide();
       this.onStartCallback();
     });
@@ -391,25 +406,47 @@ export class MenuHangar {
       this.showMainMenu();
     });
 
-    document.querySelectorAll('.btn-launch-challenge').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = (e.currentTarget as HTMLElement).dataset.challengeId;
+    // Clic sur les cartes ou boutons des Défis Quotidiens -> Ouvre le modal de préparation
+    document.querySelectorAll('.daily-challenge-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('button.btn-launch-challenge')) return;
+        const id = (card as HTMLElement).dataset.challengeId as 'bars' | 'dust' | undefined;
         if (id) {
-          this.handleLaunchDailyChallenge(id);
+          this.openChallengeBriefingModal(id);
         }
       });
     });
 
-    this.elBtnCloseChallengeVictory?.addEventListener('click', () => {
-      this.closeChallengeVictoryModal();
+    document.querySelectorAll('.btn-launch-challenge').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = (e.currentTarget as HTMLElement).dataset.challengeId as 'bars' | 'dust' | undefined;
+        if (id) {
+          this.openChallengeBriefingModal(id);
+        }
+      });
     });
 
-    this.elBtnChallengeContinue?.addEventListener('click', () => {
-      this.closeChallengeVictoryModal();
+    // Événements du Modal de Préparation Défi
+    this.elBtnCloseChallengeModal?.addEventListener('click', () => {
+      this.closeChallengeBriefingModal();
     });
 
-    this.elBtnChallengeDoubleAd?.addEventListener('click', () => {
-      this.handleDoubleChallengeReward();
+    this.elBtnChallengePrevLevel?.addEventListener('click', () => {
+      this.changeChallengeLevel(-1);
+    });
+
+    this.elBtnChallengeNextLevel?.addEventListener('click', () => {
+      this.changeChallengeLevel(1);
+    });
+
+    this.elBtnChallengeLaunchAction?.addEventListener('click', () => {
+      this.handleLaunchSelectedChallenge();
+    });
+
+    this.elBtnChallengeSimulateAction?.addEventListener('click', () => {
+      this.handleSimulateSelectedChallenge();
     });
 
     // Événements Tournoi & Classement Saisonniers
@@ -719,7 +756,7 @@ export class MenuHangar {
     this.elScreenMissions?.classList.add('hidden');
     this.elScreenChallenges?.classList.remove('active');
     this.elScreenChallenges?.classList.add('hidden');
-    this.closeChallengeVictoryModal();
+    this.closeChallengeBriefingModal();
     this.startPreviewLoop();
     this.refreshAll();
   }
@@ -803,7 +840,7 @@ export class MenuHangar {
     this.elScreenChallenges?.classList.add('hidden');
     this.closeItemDetailModal();
     this.closeRefineryModal();
-    this.closeChallengeVictoryModal();
+    this.closeChallengeBriefingModal();
   }
 
   public refreshAll() {
@@ -2058,7 +2095,7 @@ export class MenuHangar {
       if (btn) {
         if (attemptsLeft > 0) {
           btn.removeAttribute('disabled');
-          btn.innerHTML = `<span>DÉCOLLER</span><span>🚀</span>`;
+          btn.innerHTML = `<span>DÉFI</span><span>🎯</span>`;
         } else {
           btn.setAttribute('disabled', 'true');
           btn.innerHTML = `<span>ÉPUISÉ</span><span>🔒</span>`;
@@ -2067,119 +2104,237 @@ export class MenuHangar {
     });
   }
 
-  private handleLaunchDailyChallenge(id: string) {
+  public openChallengeBriefingModal(id: 'bars' | 'dust') {
+    this.selectedChallengeId = id;
+    if (this.selectedChallengeLevel < 1 || this.selectedChallengeLevel > 5) {
+      this.selectedChallengeLevel = 1;
+    }
+    this.updateChallengeModalDisplay();
+    this.elModalChallengeBriefing?.classList.remove('hidden');
+  }
+
+  public closeChallengeBriefingModal() {
+    this.elModalChallengeBriefing?.classList.add('hidden');
+    this.updateChallengesDisplay();
+    this.refreshCurrencies();
+  }
+
+  private changeChallengeLevel(delta: number) {
+    const newLevel = this.selectedChallengeLevel + delta;
+    if (newLevel >= 1 && newLevel <= 5) {
+      this.selectedChallengeLevel = newLevel;
+      this.sound.playClick();
+      this.updateChallengeModalDisplay();
+    }
+  }
+
+  private updateChallengeModalDisplay() {
+    const id = this.selectedChallengeId;
+    const level = this.selectedChallengeLevel;
+    const config = SectorSystem.getChallengeLevelConfig(level);
+    const isUnlocked = SectorSystem.isChallengeLevelUnlocked(level, this.store.data.maxUnlockedMission);
+    const playerSector = SectorSystem.getSectorForMission(this.store.data.maxUnlockedMission);
+    const playerSectorName = SectorSystem.getSectorName(playerSector);
+    const attemptsLeft = this.store.getChallengeAttemptsLeft(id);
+    const completions = this.store.getChallengeCompletions(id, level);
+    const canSimulate = this.store.canSimulateChallenge(id, level);
+
+    // Titres, icônes et descriptions selon le type de défi
+    if (id === 'bars') {
+      if (this.elChallengeModalTitle) this.elChallengeModalTitle.textContent = "CONVOI D'IRIDIUM";
+      if (this.elChallengeModalSubtitle) this.elChallengeModalSubtitle.textContent = "MISSION D'ESCORTE";
+      if (this.elChallengeModalIcon) {
+        this.elChallengeModalIcon.innerHTML = '<span class="icon-iridium-bar" style="width: 3.2em; height: 3.2em;"></span>';
+      }
+      if (this.elChallengeModalDesc) {
+        this.elChallengeModalDesc.textContent = "Escortez le cargo d'Iridium à travers le champ hostile et protégez-le des assauts.";
+      }
+      if (this.elChallengeRewardAmount) {
+        this.elChallengeRewardAmount.innerHTML = `+${config.rewards.bars} Barres d'Iridium <span class="icon-iridium-bar"></span>`;
+      }
+    } else {
+      if (this.elChallengeModalTitle) this.elChallengeModalTitle.textContent = "RAID DE DIAMANT";
+      if (this.elChallengeModalSubtitle) this.elChallengeModalSubtitle.textContent = "COMBAT PIRATE";
+      if (this.elChallengeModalIcon) {
+        this.elChallengeModalIcon.innerHTML = '<span class="icon-diamond-dust" style="width: 3.2em; height: 3.2em;"></span>';
+      }
+      if (this.elChallengeModalDesc) {
+        this.elChallengeModalDesc.textContent = "Neutralisez les pirates et récupérez leur butin de poudre de diamant.";
+      }
+      if (this.elChallengeRewardAmount) {
+        this.elChallengeRewardAmount.innerHTML = `+${config.rewards.dust} Poudres de Diamant <span class="icon-diamond-dust"></span>`;
+      }
+    }
+
+    // Gestion du niveau et du badge de difficulté
+    if (this.elChallengeLevelLabel) {
+      this.elChallengeLevelLabel.textContent = `NIVEAU ${level}`;
+    }
+
+    const diffClassMap: Record<string, string> = {
+      NORMAL: 'normal',
+      DIFFICILE: 'difficile',
+      EXPERT: 'expert',
+      'MAÎTRE': 'maitre',
+      CAUCHEMAR: 'cauchemar'
+    };
+    if (this.elChallengeDifficultyTag) {
+      const cls = diffClassMap[config.difficultyLabel] || 'normal';
+      this.elChallengeDifficultyTag.className = `challenge-difficulty-tag ${cls}`;
+      this.elChallengeDifficultyTag.textContent = config.difficultyLabel;
+    }
+
+    // Boutons flèches
+    if (this.elBtnChallengePrevLevel) {
+      if (level <= 1) {
+        this.elBtnChallengePrevLevel.setAttribute('disabled', 'true');
+      } else {
+        this.elBtnChallengePrevLevel.removeAttribute('disabled');
+      }
+    }
+    if (this.elBtnChallengeNextLevel) {
+      if (level >= 5) {
+        this.elBtnChallengeNextLevel.setAttribute('disabled', 'true');
+      } else {
+        this.elBtnChallengeNextLevel.removeAttribute('disabled');
+      }
+    }
+
+    // Statut de déblocage par secteur
+    if (this.elChallengeSectorLockPill && this.elChallengeSectorLockIcon && this.elChallengeSectorReqText) {
+      if (isUnlocked) {
+        this.elChallengeSectorLockPill.className = 'challenge-sector-lock-pill unlocked';
+        this.elChallengeSectorLockIcon.textContent = '✓';
+        this.elChallengeSectorReqText.textContent = `DISPONIBLE // SECTEUR ${config.requiredSectorName.toUpperCase()}`;
+      } else {
+        this.elChallengeSectorLockPill.className = 'challenge-sector-lock-pill locked';
+        this.elChallengeSectorLockIcon.textContent = '🔒';
+        this.elChallengeSectorReqText.textContent = `VERROUILLÉ // REQUIS : SECTEUR ${config.requiredSectorName.toUpperCase()} (ACTUEL : ${playerSectorName.toUpperCase()})`;
+      }
+    }
+
+    // Affichage des tentatives restantes
+    if (this.elChallengeModalAttemptsLeft) {
+      this.elChallengeModalAttemptsLeft.textContent = `${attemptsLeft} / 2 RESTANTE${attemptsLeft > 1 ? 'S' : ''}`;
+      if (attemptsLeft <= 0) {
+        this.elChallengeModalAttemptsLeft.style.color = '#FF4466';
+      } else if (attemptsLeft === 1) {
+        this.elChallengeModalAttemptsLeft.style.color = '#FFAA00';
+      } else {
+        this.elChallengeModalAttemptsLeft.style.color = '#00FF88';
+      }
+    }
+
+    // Bouton 1 : Lancer le défi
+    if (this.elBtnChallengeLaunchAction) {
+      if (attemptsLeft <= 0) {
+        this.elBtnChallengeLaunchAction.setAttribute('disabled', 'true');
+        this.elBtnChallengeLaunchAction.innerHTML = `<span>TENTATIVES ÉPUISÉES</span><span>🔒</span>`;
+      } else if (!isUnlocked) {
+        this.elBtnChallengeLaunchAction.setAttribute('disabled', 'true');
+        this.elBtnChallengeLaunchAction.innerHTML = `<span>SECTEUR ${config.requiredSectorName.toUpperCase()} REQUIS</span><span>🔒</span>`;
+      } else {
+        this.elBtnChallengeLaunchAction.removeAttribute('disabled');
+        this.elBtnChallengeLaunchAction.innerHTML = `<span>LANCER LE DÉFI</span><span>🚀</span>`;
+      }
+    }
+
+    // Bouton 2 : Simuler le défi (5 réussites requises)
+    if (this.elChallengeSimulateStatusTag) {
+      if (canSimulate) {
+        this.elChallengeSimulateStatusTag.className = 'simulate-status-pill unlocked';
+        this.elChallengeSimulateStatusTag.textContent = `✓ DÉBLOQUÉ (${completions}/5)`;
+      } else {
+        this.elChallengeSimulateStatusTag.className = 'simulate-status-pill locked';
+        this.elChallengeSimulateStatusTag.textContent = `🔒 ${completions}/5 RÉUSSITES`;
+      }
+    }
+
+    if (this.elChallengeSimulateHint) {
+      if (canSimulate) {
+        this.elChallengeSimulateHint.textContent = `Consomme 1 tentative quotidienne et valide le butin immédiatement`;
+      } else {
+        const remaining = Math.max(0, 5 - completions);
+        this.elChallengeSimulateHint.textContent = `Réussissez ce niveau 5 fois pour débloquer la simulation (${remaining} restante${remaining > 1 ? 's' : ''})`;
+      }
+    }
+
+    if (this.elBtnChallengeSimulateAction) {
+      if (!isUnlocked || attemptsLeft <= 0 || !canSimulate) {
+        this.elBtnChallengeSimulateAction.setAttribute('disabled', 'true');
+      } else {
+        this.elBtnChallengeSimulateAction.removeAttribute('disabled');
+      }
+    }
+  }
+
+  private handleSimulateSelectedChallenge() {
+    const id = this.selectedChallengeId;
+    const level = this.selectedChallengeLevel;
+    const config = SectorSystem.getChallengeLevelConfig(level);
+    const isUnlocked = SectorSystem.isChallengeLevelUnlocked(level, this.store.data.maxUnlockedMission);
+
+    if (!isUnlocked) {
+      this.showHudToast(`🔒 Ce niveau de défi nécessite le Secteur ${config.requiredSectorName} !`, true);
+      return;
+    }
+
     if (!this.store.canPlayChallenge(id)) {
       this.showHudToast('⚠️ Tentatives quotidiennes épuisées pour ce défi ! Revenez demain.', true);
+      return;
+    }
+
+    if (!this.store.canSimulateChallenge(id, level)) {
+      const completions = this.store.getChallengeCompletions(id, level);
+      this.showHudToast(`🔒 Simulation verrouillée : réussissez ce niveau encore ${5 - completions} fois !`, true);
       return;
     }
 
     const consumed = this.store.consumeChallengeAttempt(id);
     if (!consumed) return;
 
-    // Attribue la récompense de base du défi
-    const rewardsMap: Record<string, { type: string; amt: number }> = {
-      bars: { type: 'bars', amt: 2 },
-      dust: { type: 'dust', amt: 15 }
-    };
+    let rewardSummary = '';
+    if (id === 'bars') {
+      this.store.addIridiumBars(config.rewards.bars);
+      rewardSummary = `+${config.rewards.bars} Barres d'Iridium`;
+    } else {
+      this.store.addDiamondDust(config.rewards.dust);
+      rewardSummary = `+${config.rewards.dust} Poudres de Diamant`;
+    }
 
-    const r = rewardsMap[id] || { type: 'bars', amt: 2 };
-    if (r.type === 'dust') this.store.addDiamondDust(r.amt);
-    else if (r.type === 'bars') this.store.addIridiumBars(r.amt);
-
+    this.sound.playLevelUp();
     this.refreshCurrencies();
     this.updateChallengesDisplay();
-    this.openChallengeVictoryModal(id);
+    this.updateChallengeModalDisplay();
+
+    this.showHudToast(`⚡ DÉFI SIMULÉ AVEC SUCCÈS ! Récompense obtenue : ${rewardSummary}`, false);
   }
 
-  private openChallengeVictoryModal(id: string) {
-    this.currentWonChallengeId = id;
-    const infoMap: Record<string, { title: string; icon: string; rewardText: string; shortText: string }> = {
-      bars: {
-        title: "CONVOI D'IRIDIUM ESCORTÉ !",
-        icon: '🟦',
-        rewardText: "+2 Barres d'Iridium raffiné",
-        shortText: "+2 Barres"
-      },
-      dust: {
-        title: 'RAID DE DIAMANT ACCOMPLI !',
-        icon: '💎',
-        rewardText: '+15 Poudre de Diamant pour vos équipements',
-        shortText: '+15 Poudre'
-      }
-    };
+  private handleLaunchSelectedChallenge() {
+    const id = this.selectedChallengeId;
+    const level = this.selectedChallengeLevel;
+    const config = SectorSystem.getChallengeLevelConfig(level);
+    const isUnlocked = SectorSystem.isChallengeLevelUnlocked(level, this.store.data.maxUnlockedMission);
 
-    const info = infoMap[id] || infoMap.bars;
-
-    if (this.elChallengeVictoryIcon) {
-      if (id === 'dust') {
-        this.elChallengeVictoryIcon.innerHTML = '<span class="icon-diamond-dust" style="width: 2em; height: 2em;"></span>';
-      } else if (id === 'bars') {
-        this.elChallengeVictoryIcon.innerHTML = '<span class="icon-iridium-bar" style="width: 2em; height: 2em;"></span>';
-      } else {
-        this.elChallengeVictoryIcon.textContent = info.icon;
-      }
-    }
-    if (this.elChallengeVictoryName) this.elChallengeVictoryName.textContent = info.title;
-    if (this.elChallengeVictoryRewardText) this.elChallengeVictoryRewardText.textContent = info.rewardText;
-    if (this.elChallengeDoubleRewardPreview) this.elChallengeDoubleRewardPreview.textContent = info.shortText;
-
-    const canDouble = this.store.canDoubleChallengeReward(id);
-    if (this.elBtnChallengeDoubleAd) {
-      if (canDouble) {
-        this.elBtnChallengeDoubleAd.removeAttribute('disabled');
-        this.elBtnChallengeDoubleAd.innerHTML = `<span>📺 DOUBLER LE BUTIN (x2)</span><span class="double-tag">${info.shortText}</span>`;
-      } else {
-        this.elBtnChallengeDoubleAd.setAttribute('disabled', 'true');
-        this.elBtnChallengeDoubleAd.innerHTML = `<span>✓ BUTIN DÉJÀ DOUBLÉ</span><span class="double-tag">MAX</span>`;
-      }
-    }
-
-    this.elModalChallengeVictory?.classList.remove('hidden');
-  }
-
-  private handleDoubleChallengeReward() {
-    if (!this.currentWonChallengeId) return;
-    const id = this.currentWonChallengeId;
-
-    if (!this.store.canDoubleChallengeReward(id)) {
-      this.showHudToast('⚠️ Le butin a déjà été doublé pour cette tentative !', true);
+    if (!isUnlocked) {
+      this.showHudToast(`🔒 Ce niveau de défi nécessite le Secteur ${config.requiredSectorName} !`, true);
       return;
     }
 
-    AdService.showRewardedAd(
-      'DOUBLER DÉFI QUOTIDIEN (x2)',
-      () => {
-        const rewardsMap: Record<string, { type: string; amt: number }> = {
-          bars: { type: 'bars', amt: 2 },
-          dust: { type: 'dust', amt: 15 }
-        };
+    if (!this.store.canPlayChallenge(id)) {
+      this.showHudToast('⚠️ Tentatives quotidiennes épuisées pour ce défi ! Revenez demain.', true);
+      return;
+    }
 
-        const r = rewardsMap[id] || { type: 'bars', amt: 2 };
-        if (r.type === 'dust') this.store.addDiamondDust(r.amt);
-        else if (r.type === 'bars') this.store.addIridiumBars(r.amt);
+    // Marque le défi actif dans le store
+    this.store.setActiveChallenge({ id, level });
 
-        this.store.markChallengeDoubled(id);
-        this.refreshCurrencies();
-        this.updateChallengesDisplay();
+    // Fermer le modal
+    this.closeChallengeBriefingModal();
 
-        if (this.elBtnChallengeDoubleAd) {
-          this.elBtnChallengeDoubleAd.setAttribute('disabled', 'true');
-          this.elBtnChallengeDoubleAd.innerHTML = `<span>✓ BUTIN DOUBLÉ AVEC SUCCÈS !</span><span class="double-tag">x2 REÇU</span>`;
-        }
-
-        this.showHudToast('🎉 TRANSMISSION VALIDÉE : BUTIN DU DÉFI DOUBLÉ (x2) !', false);
-      },
-      () => {
-        this.showHudToast('Transmission publicitaire interrompue.', true);
-      }
-    );
-  }
-
-  private closeChallengeVictoryModal() {
-    this.elModalChallengeVictory?.classList.add('hidden');
-    this.currentWonChallengeId = null;
-    this.updateChallengesDisplay();
-    this.refreshCurrencies();
+    // Déclencher le lancement du jeu
+    this.hide();
+    this.onStartCallback();
   }
 
   // --- GESTION DES ÉVÉNEMENTS & CLASSEMENT SUR 100 JOUEURS (DÉBLOQUÉS NIV 15) ---

@@ -256,6 +256,51 @@ export class SoundSynth {
     } catch {}
   }
 
+  // Clic d'interface UI doux et net
+  public playClick() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    try {
+      const cTime = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, cTime);
+      osc.frequency.exponentialRampToValueAtTime(800, cTime + 0.04);
+      gain.gain.setValueAtTime(0.08, cTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, cTime + 0.04);
+      osc.connect(gain);
+      gain.connect(this.getDestination());
+      osc.start(cTime);
+      osc.stop(cTime + 0.04);
+    } catch {}
+  }
+
+  // Son de montée en niveau / récompense
+  public playLevelUp() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+    try {
+      const cTime = this.ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = 'triangle';
+        const start = cTime + idx * 0.06;
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.12, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
+        osc.connect(gain);
+        gain.connect(this.getDestination());
+        osc.start(start);
+        osc.stop(start + 0.18);
+      });
+    } catch {}
+  }
+
   // Alerte Boss
   public playBossAlarm() {
     if (this.isMuted) return;
