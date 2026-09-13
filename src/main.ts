@@ -1328,14 +1328,9 @@ export class GameApp {
       }
     }
 
-    // 5.1 Générateur de Tourelles Ennemies dans les Coins (5 PV au Niveau 1)
+    // 5.1 Générateur de Tourelles Ennemies dans les Coins (5 PV au Niveau 1, dégagées de l'interface)
     this.cornerTurretSpawnTimer += dt;
-    const cornerAnchors = [
-      { x: 55, y: 80, cornerIndex: 0 },
-      { x: 485, y: 80, cornerIndex: 1 },
-      { x: 55, y: 880, cornerIndex: 2 },
-      { x: 485, y: 880, cornerIndex: 3 }
-    ];
+    const cornerAnchors = GAME_CONFIG.ARENA_CORNER_TURRETS;
     const maxTurrets = lvl === 1 ? 2 : (lvl <= 3 ? 3 : 4);
     const activeTurrets = this.enemies.filter(e => e.type === 'corner_turret' && !e.isDead);
 
@@ -1382,7 +1377,7 @@ export class GameApp {
       p.update(dt);
     }
 
-    // 6.2 Mise à jour des Projectiles Ennemis & Collisions
+    // 6.2 Mise à jour des Projectiles Ennemis & Collisions (Le joueur peut tanker les tirs ennemis)
     for (const ep of this.enemyProjectiles) {
       ep.update(dt);
 
@@ -1401,7 +1396,7 @@ export class GameApp {
         }
       }
 
-      // Collision Projectile Ennemi vs Flotte du Joueur (Bouclier du joueur invincible intercepte le tir)
+      // Collision Projectile Ennemi vs Flotte du Joueur (Bouclier du joueur invincible tanke le tir)
       if (!ep.isDead) {
         const dPlayer = Math.hypot(ep.x - this.fleet.centerX, ep.y - this.fleet.centerY);
         if (dPlayer < 28 + ep.radius) {
@@ -1438,18 +1433,31 @@ export class GameApp {
         }
       }
 
-      // 7.2 Collision Ennemi vs Flotte du Joueur (Flotte Invincible : dévie et endommage l'ennemi)
-      const dPlayer = Math.hypot(ast.x - this.fleet.centerX, ast.y - this.fleet.centerY);
-      if (dPlayer < 28 + ast.width * 0.4) {
-        ast.takeDamage(10);
-        this.particles.spawnHitSparks(ast.x, ast.y, '#FFE600');
-        this.particles.spawnFloatingText(this.fleet.centerX, this.fleet.centerY - 22, 'BOUCLIER 🛡️', '#FFE600', 16);
-        if (ast.isDead) {
+      // 7.2 Collision Ennemi vs Flotte du Joueur :
+      // On ne peut "tanker" QUE les astéroïdes (et on les tue instantanément) !
+      // Les tourelles ne peuvent PAS être détruites en volant dessus.
+      if (ast.type === 'block') {
+        const dPlayer = Math.hypot(ast.x - this.fleet.centerX, ast.y - this.fleet.centerY);
+        if (dPlayer < 32 + ast.width * 0.4) {
+          ast.isDead = true;
+          ast.hp = 0;
           this.sessionKills++;
-          // Pas de diamants reçus dans les défis
-          this.particles.spawnExplosion(ast.x, ast.y, ast.type === 'corner_turret' ? '#FF0055' : '#00F0FF', 14);
+          this.particles.spawnHitSparks(ast.x, ast.y, '#00F0FF');
+          this.particles.spawnExplosion(ast.x, ast.y, '#00F0FF', 16);
+          this.particles.spawnFloatingText(this.fleet.centerX, this.fleet.centerY - 22, 'BOUCLIER 🛡️', '#00F0FF', 18);
           this.sound.playExplosion(false);
           continue;
+        }
+      } else if (ast.type === 'corner_turret') {
+        // La tourelle repousse le joueur s'il tente de voler dessus (dégâts uniquement par les tirs)
+        const dPlayer = Math.hypot(this.fleet.centerX - ast.x, this.fleet.centerY - ast.y);
+        const minD = GAME_CONFIG.ARENA_CORNER_BARRIER_RADIUS;
+        if (dPlayer < minD && dPlayer > 0.001) {
+          const pushX = (this.fleet.centerX - ast.x) / dPlayer;
+          const pushY = (this.fleet.centerY - ast.y) / dPlayer;
+          this.fleet.centerX = ast.x + pushX * minD;
+          this.fleet.centerY = ast.y + pushY * minD;
+          this.particles.spawnHitSparks(ast.x + pushX * 25, ast.y + pushY * 25, '#FF0055');
         }
       }
 

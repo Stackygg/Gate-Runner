@@ -72,14 +72,11 @@ export class InputManager {
         const sensitivity = 1.35;
 
         if (this.isArenaMode) {
-          this.targetWorldX = Math.max(
-            35,
-            Math.min(GAME_CONFIG.WORLD_WIDTH - 35, this.targetWorldX + (deltaX / scale) * sensitivity)
-          );
-          this.targetWorldY = Math.max(
-            60,
-            Math.min(GAME_CONFIG.WORLD_HEIGHT - 60, this.targetWorldY + (deltaY / scale) * sensitivity)
-          );
+          const rawX = this.targetWorldX + (deltaX / scale) * sensitivity;
+          const rawY = this.targetWorldY + (deltaY / scale) * sensitivity;
+          const clamped = this.clampArenaPosition(rawX, rawY);
+          this.targetWorldX = clamped.x;
+          this.targetWorldY = clamped.y;
         } else {
           this.targetWorldX = Math.max(
             GAME_CONFIG.ROAD_MARGIN,
@@ -105,17 +102,19 @@ export class InputManager {
       this.lastClientY = e.clientY;
       if (this.isArenaMode) {
         const world = this.clientToWorld(e.clientX, e.clientY);
-        this.targetWorldX = Math.max(35, Math.min(GAME_CONFIG.WORLD_WIDTH - 35, world.x));
-        this.targetWorldY = Math.max(60, Math.min(GAME_CONFIG.WORLD_HEIGHT - 60, world.y));
+        const clamped = this.clampArenaPosition(world.x, world.y);
+        this.targetWorldX = clamped.x;
+        this.targetWorldY = clamped.y;
       }
     });
 
     window.addEventListener('mousemove', (e) => {
       if (this.isArenaMode) {
-        // Mode arène : la souris dirige directement le vaisseau dans tout l'espace 360°
+        // Mode arène : la souris dirige directement le vaisseau dans tout l'espace 360° (avec barrière de coin)
         const world = this.clientToWorld(e.clientX, e.clientY);
-        this.targetWorldX = Math.max(35, Math.min(GAME_CONFIG.WORLD_WIDTH - 35, world.x));
-        this.targetWorldY = Math.max(60, Math.min(GAME_CONFIG.WORLD_HEIGHT - 60, world.y));
+        const clamped = this.clampArenaPosition(world.x, world.y);
+        this.targetWorldX = clamped.x;
+        this.targetWorldY = clamped.y;
         return;
       }
 
@@ -153,6 +152,37 @@ export class InputManager {
     });
   }
 
+  /**
+   * Restreint les coordonnées du joueur en mode arène :
+   * - Ne passe jamais sous les interfaces (HUD haut et bas)
+   * - Barrière infranchissable devant les tourelles de coin (impossible de voler dessus)
+   */
+  public clampArenaPosition(x: number, y: number): { x: number; y: number } {
+    const bounds = GAME_CONFIG.ARENA_BOUNDS;
+    let cx = Math.max(bounds.MIN_X, Math.min(bounds.MAX_X, x));
+    let cy = Math.max(bounds.MIN_Y, Math.min(bounds.MAX_Y, y));
+
+    const barrierR = GAME_CONFIG.ARENA_CORNER_BARRIER_RADIUS;
+    for (const turret of GAME_CONFIG.ARENA_CORNER_TURRETS) {
+      const dx = cx - turret.x;
+      const dy = cy - turret.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < barrierR) {
+        if (dist > 0.001) {
+          cx = turret.x + (dx / dist) * barrierR;
+          cy = turret.y + (dy / dist) * barrierR;
+        } else {
+          cx = turret.x + (dx >= 0 ? barrierR : -barrierR);
+        }
+      }
+    }
+
+    cx = Math.max(bounds.MIN_X, Math.min(bounds.MAX_X, cx));
+    cy = Math.max(bounds.MIN_Y, Math.min(bounds.MAX_Y, cy));
+
+    return { x: cx, y: cy };
+  }
+
   public update(dt: number): number {
     // Prise en compte du clavier axe X
     let dirX = 0;
@@ -163,13 +193,6 @@ export class InputManager {
       dirX += 1;
     }
 
-    if (dirX !== 0) {
-      const minX = this.isArenaMode ? 35 : GAME_CONFIG.ROAD_MARGIN;
-      const maxX = this.isArenaMode ? GAME_CONFIG.WORLD_WIDTH - 35 : GAME_CONFIG.WORLD_WIDTH - GAME_CONFIG.ROAD_MARGIN;
-      this.targetWorldX = Math.max(minX, Math.min(maxX, this.targetWorldX + dirX * 800 * dt));
-    }
-
-    // Prise en compte du clavier axe Y en mode arène
     if (this.isArenaMode) {
       let dirY = 0;
       if (this.keysPressed['arrowup'] || this.keysPressed['z'] || this.keysPressed['w']) {
@@ -178,10 +201,19 @@ export class InputManager {
       if (this.keysPressed['arrowdown'] || this.keysPressed['s']) {
         dirY += 1;
       }
-      if (dirY !== 0) {
-        this.targetWorldY = Math.max(
-          60,
-          Math.min(GAME_CONFIG.WORLD_HEIGHT - 60, this.targetWorldY + dirY * 800 * dt)
+
+      if (dirX !== 0 || dirY !== 0) {
+        const nextX = this.targetWorldX + dirX * 800 * dt;
+        const nextY = this.targetWorldY + dirY * 800 * dt;
+        const clamped = this.clampArenaPosition(nextX, nextY);
+        this.targetWorldX = clamped.x;
+        this.targetWorldY = clamped.y;
+      }
+    } else {
+      if (dirX !== 0) {
+        this.targetWorldX = Math.max(
+          GAME_CONFIG.ROAD_MARGIN,
+          Math.min(GAME_CONFIG.WORLD_WIDTH - GAME_CONFIG.ROAD_MARGIN, this.targetWorldX + dirX * 650 * dt)
         );
       }
     }

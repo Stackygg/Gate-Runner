@@ -486,20 +486,39 @@ export class Fleet {
     const targetTilt = Math.max(-0.4, Math.min(0.4, deltaX * 0.08));
     this.bankAngle += (targetTilt - this.bankAngle) * Math.min(1, 20 * dt);
 
-    // Auto-ciblage : détection de l'astéroïde / ennemi actif le plus proche
-    let closestEnemy: { x: number; y: number } | null = null;
-    let closestDistSq = Infinity;
+    // Auto-ciblage prioritaire :
+    // Si une tourelle de coin est à portée (~1/4 de hauteur d'écran, soit ~250-260px),
+    // le vaisseau la verrouille en priorité absolue pour concentrer ses tirs dessus !
+    // Sinon, il cible l'astéroïde le plus proche.
+    const SHOOTER_PRIORITY_RANGE = 260; // 1/4 d'écran en height (960 / 4 = 240px + marge)
+    const priorityRangeSq = SHOOTER_PRIORITY_RANGE * SHOOTER_PRIORITY_RANGE;
+
+    let closestShooter: { x: number; y: number } | null = null;
+    let closestShooterDistSq = Infinity;
+
+    let closestAsteroid: { x: number; y: number } | null = null;
+    let closestAsteroidDistSq = Infinity;
 
     for (const enemy of enemies) {
       if (enemy.isDead) continue;
       const dx = enemy.x - this.centerX;
       const dy = enemy.y - this.centerY;
       const dSq = dx * dx + dy * dy;
-      if (dSq < closestDistSq) {
-        closestDistSq = dSq;
-        closestEnemy = enemy;
+
+      if ((enemy as any).type === 'corner_turret') {
+        if (dSq <= priorityRangeSq && dSq < closestShooterDistSq) {
+          closestShooterDistSq = dSq;
+          closestShooter = enemy;
+        }
+      } else {
+        if (dSq < closestAsteroidDistSq) {
+          closestAsteroidDistSq = dSq;
+          closestAsteroid = enemy;
+        }
       }
     }
+
+    const closestEnemy = closestShooter || closestAsteroid;
 
     let desiredAngle = -Math.PI / 2; // Vers le haut par défaut
     if (closestEnemy) {

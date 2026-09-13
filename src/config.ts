@@ -58,7 +58,22 @@ export const GAME_CONFIG = {
   CARGO_CENTER_Y: 480,
   CARGO_WIDTH: 66,
   CARGO_HEIGHT: 74,
-  CARGO_BASE_HP: 100
+  CARGO_BASE_HP: 100,
+
+  // Périmètre d'action du joueur & Ancrages des tourelles (dégagés de l'interface HUD)
+  ARENA_BOUNDS: {
+    MIN_X: 65,
+    MAX_X: 475,
+    MIN_Y: 155, // Dégagé sous le HUD haut (~115px)
+    MAX_Y: 805  // Dégagé au-dessus de la barre cargo (~850px)
+  },
+  ARENA_CORNER_TURRETS: [
+    { x: 70, y: 175, cornerIndex: 0 },  // Haut-Gauche
+    { x: 470, y: 175, cornerIndex: 1 }, // Haut-Droite
+    { x: 70, y: 785, cornerIndex: 2 },  // Bas-Gauche
+    { x: 470, y: 785, cornerIndex: 3 }  // Bas-Droite
+  ],
+  ARENA_CORNER_BARRIER_RADIUS: 95 // Rayon infranchissable autour des tourelles de coin
 };
 
 // Vaisseaux déblocables dans le Hangar avec leurs Slots d'Équipement
