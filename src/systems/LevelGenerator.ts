@@ -390,9 +390,9 @@ export class LevelGenerator {
     const lvl = Math.max(1, Math.min(5, challengeLevel));
     const duration = 60 + (lvl - 1) * 15; // 60s (Lvl 1), 75s (Lvl 2), 90s (Lvl 3), 105s (Lvl 4), 120s (Lvl 5)
 
-    // À chaque nouvelle difficulté, vie du convoi réduite par 2 :
-    // Lvl 1: 100 HP, Lvl 2: 50 HP, Lvl 3: 25 HP, Lvl 4: 13 HP, Lvl 5: 6 HP
-    const cargoHp = Math.max(5, Math.round(GAME_CONFIG.CARGO_BASE_HP / Math.pow(2, lvl - 1)));
+    // HP du cargo par niveau : 100 HP (Niv 1), 50 HP (Niv 2), 30 HP (Niv 3), 20 HP (Niv 4), 10 HP (Niv 5)
+    const CARGO_HP_PER_LEVEL = [100, 50, 30, 20, 10];
+    const cargoHp = CARGO_HP_PER_LEVEL[lvl - 1] ?? 10;
 
     return {
       levelNumber: lvl,

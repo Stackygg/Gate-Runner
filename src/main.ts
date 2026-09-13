@@ -1300,21 +1300,21 @@ export class GameApp {
     }
 
     // 5. Générateur dynamique d'astéroïdes depuis les 4 bordures de l'écran
-    // À chaque nouvelle difficulté (lvl 1 à 5), le nombre d'astéroïdes est multiplié par 2 :
+    // Multiplicateur progressif de difficulté x1.5 par niveau (lvl 1 à 5) :
     this.asteroidSpawnTimer += dt;
     const lvl = this.currentLevelData?.challengeLevel || 1;
-    const diffMultiplier = Math.pow(2, lvl - 1); // x1 (lvl 1), x2 (lvl 2), x4 (lvl 3), x8 (lvl 4), x16 (lvl 5)
+    const diffMultiplier = Math.pow(1.5, lvl - 1); // x1.0 (lvl 1), x1.5 (lvl 2), x2.25 (lvl 3), x3.38 (lvl 4), x5.06 (lvl 5)
     const elapsedRatio = Math.min(1.0, this.traveledDistance / Math.max(1, this.maxSurvivalDuration));
 
-    // Cadence et taille de vague modulées pour doubler le flux total d'astéroïdes par niveau
+    // Cadence et taille de vague modulées pour augmenter le flux total d'astéroïdes de x1.5 par niveau
     const baseInterval = Math.max(0.35, 1.15 - elapsedRatio * 0.45);
-    const spawnInterval = Math.max(0.18, baseInterval / Math.sqrt(diffMultiplier));
+    const spawnInterval = Math.max(0.20, baseInterval / Math.sqrt(diffMultiplier));
 
     if (this.asteroidSpawnTimer >= spawnInterval) {
       this.asteroidSpawnTimer = 0;
       
       const baseBatch = (elapsedRatio > 0.6) ? 2 : 1;
-      const spawnCount = Math.min(24, Math.max(2, Math.round(baseBatch * 2 * Math.sqrt(diffMultiplier))));
+      const spawnCount = Math.min(16, Math.max(2, Math.round(baseBatch * 2 * Math.sqrt(diffMultiplier))));
 
       for (let s = 0; s < spawnCount; s++) {
         // Choix de la bordure : 0 = Haut, 1 = Bas, 2 = Gauche, 3 = Droite
@@ -1360,13 +1360,13 @@ export class GameApp {
     }
 
     // 5.1 Générateur de Vaisseaux Ennemis (Tourelles dans les Coins)
-    // À chaque nouvelle difficulté, le nombre de vaisseaux est multiplié par 2 (cadence de réapparition doublée)
+    // À chaque nouvelle difficulté, la cadence de réapparition des tourelles augmente de x1.5
     this.cornerTurretSpawnTimer += dt;
     const cornerAnchors = GAME_CONFIG.ARENA_CORNER_TURRETS;
     const maxTurrets = lvl >= 2 ? 4 : 3;
     const activeTurrets = this.enemies.filter(e => e.type === 'corner_turret' && !e.isDead);
 
-    const turretSpawnInterval = Math.max(0.55, 9.0 / diffMultiplier);
+    const turretSpawnInterval = Math.max(1.0, 9.0 / diffMultiplier);
     if (this.cornerTurretSpawnTimer >= turretSpawnInterval && activeTurrets.length < maxTurrets) {
       this.cornerTurretSpawnTimer = 0;
       const occupied = new Set(activeTurrets.map(t => t.cornerIndex));
