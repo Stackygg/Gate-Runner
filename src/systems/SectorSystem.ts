@@ -152,6 +152,20 @@ export class SectorSystem {
   }
 
   /**
+   * Retourne le niveau maximum de défi affichable :
+   * Tous les niveaux débloqués + au maximum UN niveau verrouillé suivant (plafonné à 5).
+   */
+  public static getMaxVisibleChallengeLevel(maxUnlockedMission: number): number {
+    let highestUnlocked = 0;
+    for (const cfg of CHALLENGE_LEVELS_CONFIG) {
+      if (this.isChallengeLevelUnlocked(cfg.level, maxUnlockedMission)) {
+        highestUnlocked = cfg.level;
+      }
+    }
+    return Math.min(CHALLENGE_LEVELS_CONFIG.length, highestUnlocked + 1);
+  }
+
+  /**
    * Retourne le nom grec du secteur (ex: "Alpha", "Beta", "Delta"...)
    */
   public static getSectorName(sector: number): string {

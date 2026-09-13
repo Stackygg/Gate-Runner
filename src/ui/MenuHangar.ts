@@ -242,6 +242,13 @@ export class MenuHangar {
 
     this.setupListeners();
     this.startPreviewLoop();
+
+    // Ticker périodique pour la mise à jour des comptes à rebours des boutons
+    setInterval(() => {
+      if (!this.elScreenChallenges?.classList.contains('hidden')) {
+        this.updateChallengesDisplay();
+      }
+    }, 1000);
   }
 
   private setupListeners() {
@@ -2098,7 +2105,8 @@ export class MenuHangar {
           btn.innerHTML = `<span>DÉFI</span><span>🎯</span>`;
         } else {
           btn.setAttribute('disabled', 'true');
-          btn.innerHTML = `<span>ÉPUISÉ</span><span>🔒</span>`;
+          const cd = this.getCountdownToMidnight();
+          btn.innerHTML = `<span class="btn-timer-icon">⏳</span><span>RESET DANS ${cd}</span>`;
         }
       }
     });
@@ -2106,7 +2114,8 @@ export class MenuHangar {
 
   public openChallengeBriefingModal(id: 'bars' | 'dust') {
     this.selectedChallengeId = id;
-    if (this.selectedChallengeLevel < 1 || this.selectedChallengeLevel > 5) {
+    const maxVisible = SectorSystem.getMaxVisibleChallengeLevel(this.store.data.maxUnlockedMission);
+    if (this.selectedChallengeLevel < 1 || this.selectedChallengeLevel > maxVisible) {
       this.selectedChallengeLevel = 1;
     }
     this.updateChallengeModalDisplay();
@@ -2120,8 +2129,9 @@ export class MenuHangar {
   }
 
   private changeChallengeLevel(delta: number) {
+    const maxVisible = SectorSystem.getMaxVisibleChallengeLevel(this.store.data.maxUnlockedMission);
     const newLevel = this.selectedChallengeLevel + delta;
-    if (newLevel >= 1 && newLevel <= 5) {
+    if (newLevel >= 1 && newLevel <= maxVisible) {
       this.selectedChallengeLevel = newLevel;
       this.sound.playClick();
       this.updateChallengeModalDisplay();
@@ -2130,6 +2140,10 @@ export class MenuHangar {
 
   private updateChallengeModalDisplay() {
     const id = this.selectedChallengeId;
+    const maxVisible = SectorSystem.getMaxVisibleChallengeLevel(this.store.data.maxUnlockedMission);
+    if (this.selectedChallengeLevel > maxVisible) {
+      this.selectedChallengeLevel = maxVisible;
+    }
     const level = this.selectedChallengeLevel;
     const config = SectorSystem.getChallengeLevelConfig(level);
     const isUnlocked = SectorSystem.isChallengeLevelUnlocked(level, this.store.data.maxUnlockedMission);
@@ -2150,7 +2164,7 @@ export class MenuHangar {
         this.elChallengeModalDesc.textContent = "Escortez le cargo d'Iridium à travers le champ hostile et protégez-le des assauts.";
       }
       if (this.elChallengeRewardAmount) {
-        this.elChallengeRewardAmount.innerHTML = `+${config.rewards.bars} Barres d'Iridium <span class="icon-iridium-bar"></span>`;
+        this.elChallengeRewardAmount.innerHTML = `<span>+${config.rewards.bars}</span> <span class="icon-iridium-bar" style="width: 1.3em; height: 1.3em;"></span> <span>Barres d'Iridium</span>`;
       }
     } else {
       if (this.elChallengeModalTitle) this.elChallengeModalTitle.textContent = "RAID DE DIAMANT";
@@ -2162,7 +2176,7 @@ export class MenuHangar {
         this.elChallengeModalDesc.textContent = "Neutralisez les pirates et récupérez leur butin de poudre de diamant.";
       }
       if (this.elChallengeRewardAmount) {
-        this.elChallengeRewardAmount.innerHTML = `+${config.rewards.dust} Poudres de Diamant <span class="icon-diamond-dust"></span>`;
+        this.elChallengeRewardAmount.innerHTML = `<span>+${config.rewards.dust}</span> <span class="icon-diamond-dust" style="width: 1.3em; height: 1.3em;"></span> <span>Poudres de Diamant</span>`;
       }
     }
 
@@ -2193,7 +2207,7 @@ export class MenuHangar {
       }
     }
     if (this.elBtnChallengeNextLevel) {
-      if (level >= 5) {
+      if (level >= maxVisible) {
         this.elBtnChallengeNextLevel.setAttribute('disabled', 'true');
       } else {
         this.elBtnChallengeNextLevel.removeAttribute('disabled');

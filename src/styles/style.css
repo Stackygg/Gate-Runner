@@ -3650,7 +3650,7 @@ html, body {
 }
 
 .station-card-overlay.challenges-overlay {
-  background: linear-gradient(180deg, rgba(32, 8, 20, 0.32) 0%, rgba(22, 6, 14, 0.8) 60%, rgba(14, 4, 10, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(32, 10, 52, 0.32) 0%, rgba(20, 6, 36, 0.8) 60%, rgba(12, 4, 24, 0.98) 100%);
 }
 
 .station-card-overlay.events-overlay {
@@ -3759,10 +3759,10 @@ html, body {
 }
 
 .station-badge.status-challenges {
-  color: #fb7185;
-  background: rgba(244, 63, 94, 0.15);
-  border: 1px solid rgba(244, 63, 94, 0.5);
-  box-shadow: 0 0 8px rgba(244, 63, 94, 0.25);
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.55);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
 }
 
 .station-badge.status-events {
@@ -3825,8 +3825,8 @@ html, body {
 }
 
 .station-button-card.challenges-card-btn:hover:not(.station-locked) {
-  border-color: #f43f5e;
-  box-shadow: 0 0 20px rgba(244, 63, 94, 0.45);
+  border-color: #a855f7;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.45);
 }
 
 .station-button-card.events-card-btn:hover:not(.station-locked) {
@@ -6817,10 +6817,10 @@ html, body {
 }
 
 .challenges-hero-header {
-  background: linear-gradient(135deg, rgba(244, 63, 94, 0.12) 0%, rgba(13, 22, 54, 0.85) 100%);
-  border: 1px solid rgba(244, 63, 94, 0.35);
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.16) 0%, rgba(15, 23, 58, 0.88) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.42);
   border-radius: 14px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
@@ -6839,7 +6839,7 @@ html, body {
 
 .challenges-hero-icon {
   font-size: 1.2rem;
-  filter: drop-shadow(0 0 8px #f43f5e);
+  filter: drop-shadow(0 0 8px #a855f7);
 }
 
 .challenges-main-title {
@@ -6849,21 +6849,7 @@ html, body {
   color: #fff;
   letter-spacing: 1px;
   margin: 0;
-  text-shadow: 0 0 10px rgba(244, 63, 94, 0.6);
-}
-
-.challenges-daily-timer-badge {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(244, 63, 94, 0.4);
-  padding: 3px 8px;
-  border-radius: 20px;
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #fda4af;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
 }
 
 .challenges-hero-desc {
@@ -7024,10 +7010,26 @@ html, body {
 }
 
 .btn-launch-challenge:disabled {
-  opacity: 0.45;
+  opacity: 0.92;
   cursor: not-allowed;
-  filter: grayscale(0.7);
-  box-shadow: none;
+  filter: none;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  color: #d8b4fe;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.5px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.btn-launch-challenge:disabled .btn-timer-icon {
+  font-size: 0.78rem;
+  animation: pulse-timer 1.5s infinite;
+}
+
+@keyframes pulse-timer {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(0.92); }
 }
 
 /* Modal Victoire Défi & Doubleur Pub */
@@ -7039,6 +7041,61 @@ html, body {
   border: 1.5px solid var(--neon-cyan) !important;
   border-radius: 18px !important;
   box-shadow: 0 0 35px rgba(0, 240, 255, 0.4) !important;
+  overflow: hidden;
+}
+
+.challenge-modal-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px 16px;
+  background: rgba(10, 18, 42, 0.6);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.18);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+}
+
+.challenge-modal-top-bar .modal-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+
+.challenge-modal-top-bar .modal-title {
+  font-family: var(--font-cyber);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  letter-spacing: 1.2px;
+  margin: 0;
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+}
+
+.challenge-modal-top-bar .modal-subtitle-chip {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #7dd3fc;
+  letter-spacing: 1.5px;
+  margin-top: 2px;
+}
+
+.challenge-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.challenge-top-spacer {
+  width: 76px;
+  flex-shrink: 0;
 }
 
 .modal-title-wrap {
@@ -7060,7 +7117,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px 14px 14px 14px;
+  padding: 12px 16px 16px 16px;
 }
 
 /* Sélecteur de Niveau en haut du modal */
@@ -7227,34 +7284,28 @@ html, body {
   line-height: 1.35;
 }
 
-/* Boîte Récompense */
+/* Boîte Récompense (Épurée) */
 .challenge-reward-card {
   background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(234, 179, 8, 0.4);
+  border: 1px solid rgba(234, 179, 8, 0.35);
   border-radius: 12px;
-  padding: 8px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.reward-card-header {
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  font-size: 0.58rem;
-  font-family: var(--font-mono);
-  color: #94a3b8;
-  letter-spacing: 0.5px;
+  box-shadow: inset 0 0 12px rgba(234, 179, 8, 0.08);
 }
 
 .reward-amount-text {
   font-family: var(--font-cyber);
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 900;
   color: #fde047;
-  text-shadow: 0 0 10px rgba(234, 179, 8, 0.55);
+  text-shadow: 0 0 12px rgba(234, 179, 8, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .challenge-attempts-status-row {

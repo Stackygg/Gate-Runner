@@ -272,7 +272,7 @@
                         <span class="station-badge status-challenges">2X / JOUR</span>
                       </div>
                       <div class="station-meta-row">
-                        <span class="station-subtitle">Missions Spéciales (x2 Pub)</span>
+                        <span class="station-subtitle">Missions & Récompenses</span>
                       </div>
                     </div>
                   </div>
@@ -642,10 +642,6 @@
                   <span class="challenges-hero-icon">⚔️</span>
                   <h2 class="challenges-main-title">DÉFIS QUOTIDIENS</h2>
                 </div>
-                <div class="challenges-daily-timer-badge">
-                  <span>🔄 RESET DANS :</span>
-                  <span id="challenges-reset-countdown">08:35:12</span>
-                </div>
               </div>
               <p class="challenges-hero-desc">
                 2 tentatives par jour par défi // 5 niveaux de difficulté par secteur
@@ -710,13 +706,16 @@
         <!-- Modal Préparation & Niveaux de Difficulté du Défi -->
         <div id="modal-challenge-briefing" class="modal-overlay hidden">
           <div class="modal-window challenge-briefing-modal">
-            <!-- Header du Modal : Titre & Fermeture -->
-            <div class="modal-header">
+            <!-- Header du Modal avec Bouton Retour & Titres Harmonieux -->
+            <div class="challenge-modal-top-bar">
+              <button id="btn-close-challenge-modal" class="btn-hangar-back challenge-back-btn" title="Retour aux défis">
+                <span>◀ RETOUR</span>
+              </button>
               <div class="modal-title-wrap">
                 <span id="challenge-modal-title" class="modal-title">CONVOI D'IRIDIUM</span>
                 <span id="challenge-modal-subtitle" class="modal-subtitle-chip">MISSION D'ESCORTE</span>
               </div>
-              <button id="btn-close-challenge-modal" class="btn-close-modal" title="Fermer">✕</button>
+              <div class="challenge-top-spacer"></div>
             </div>
 
             <div class="modal-body text-center challenge-modal-body">
@@ -752,12 +751,8 @@
                 </div>
               </div>
 
-              <!-- Boîte Récompense en cas de victoire -->
+              <!-- Boîte Récompense en cas de victoire (affichage épuré de la currency) -->
               <div class="challenge-reward-card">
-                <div class="reward-card-header">
-                  <span class="reward-icon">🎁</span>
-                  <span class="reward-title">BUTIN EN CAS DE RÉUSSITE</span>
-                </div>
                 <div class="reward-display-val">
                   <span id="challenge-reward-amount" class="reward-amount-text">+2 Barres d'Iridium</span>
                 </div>
