@@ -75,6 +75,7 @@ export class GameApp {
   private maxSurvivalDuration: number = 0;
   private asteroidSpawnTimer: number = 0;
   private cornerTurretSpawnTimer: number = 0;
+  private cornerTurretSpawnCount: number = 0;
 
   // Cache & Scratch Arrays réutilisables (0 allocation mémoire par frame = 0 GC freeze)
   private cachedEquippedStats: EquippedStatsResult | null = null;
@@ -140,7 +141,17 @@ export class GameApp {
         this.store.addDiamondsToMission(targetMission, bonusDiamonds);
         this.hangar.refreshAll();
       },
-      () => this.showHangar(true)
+      () => this.showHangar(true),
+      (reward: { type: 'bars' | 'dust'; amount: number }) => {
+        // Callback lors du doublement du butin de défi par pub
+        if (reward.type === 'bars') {
+          this.store.addIridiumBars(reward.amount);
+        } else {
+          this.store.addDiamondDust(reward.amount);
+        }
+        this.hangar.refreshCurrencies();
+        this.hangar.updateChallengesDisplay();
+      }
     );
 
     this.setupGlobalControls();
@@ -443,6 +454,7 @@ export class GameApp {
       this.maxSurvivalDuration = this.survivalTimer;
       this.asteroidSpawnTimer = 0;
       this.cornerTurretSpawnTimer = 0;
+      this.cornerTurretSpawnCount = 0;
       this.enemyProjectiles = [];
       this.sessionDiamonds = 0;
       this.mothershipHp = this.cargoShip.hp;
@@ -1283,7 +1295,9 @@ export class GameApp {
     if (this.asteroidSpawnTimer >= spawnInterval) {
       this.asteroidSpawnTimer = 0;
       
-      const spawnCount = (elapsedRatio > 0.6 || lvl >= 4) ? (Math.random() < 0.4 ? 2 : 1) : 1;
+      // Nombre d'astéroïdes doublé selon la demande
+      const baseCount = (elapsedRatio > 0.6 || lvl >= 4) ? (Math.random() < 0.4 ? 2 : 1) : 1;
+      const spawnCount = baseCount * 2;
 
       for (let s = 0; s < spawnCount; s++) {
         // Choix de la bordure : 0 = Haut, 1 = Bas, 2 = Gauche, 3 = Droite
@@ -1328,10 +1342,10 @@ export class GameApp {
       }
     }
 
-    // 5.1 Générateur de Tourelles Ennemies dans les Coins (5 PV au Niveau 1, dégagées de l'interface)
+    // 5.1 Générateur de Tourelles Ennemies dans les Coins (maxTurrets fixé à 3, spéciale toutes les 3 tourelles)
     this.cornerTurretSpawnTimer += dt;
     const cornerAnchors = GAME_CONFIG.ARENA_CORNER_TURRETS;
-    const maxTurrets = lvl === 1 ? 2 : (lvl <= 3 ? 3 : 4);
+    const maxTurrets = 3;
     const activeTurrets = this.enemies.filter(e => e.type === 'corner_turret' && !e.isDead);
 
     const turretSpawnInterval = Math.max(5.5, 9.5 - (lvl - 1) * 0.9);
@@ -1340,14 +1354,18 @@ export class GameApp {
       const occupied = new Set(activeTurrets.map(t => t.cornerIndex));
       const available = cornerAnchors.filter(c => !occupied.has(c.cornerIndex));
       if (available.length > 0) {
+        this.cornerTurretSpawnCount++;
+        // Toutes les 3 tourelles : variante spéciale rapide qui n'a que 2 PV et cadence fulgurante
+        const isRapid = (this.cornerTurretSpawnCount % 3 === 0);
         const spot = available[Math.floor(Math.random() * available.length)];
-        const turretHp = 5 + (lvl - 1) * 3; // 5 PV au niveau 1, 8 au niv 2, etc.
+        const turretHp = isRapid ? 2 : (5 + (lvl - 1) * 3);
         const turret = new Enemy(spot.x, spot.y, 42, 42, 'corner_turret', turretHp);
         turret.cornerIndex = spot.cornerIndex;
-        turret.shootInterval = Math.max(1.8, 2.6 - (lvl - 1) * 0.2);
-        turret.shootTimer = 0.8; // Premier tir rapide
+        turret.isRapidSpecial = isRapid;
+        turret.shootInterval = isRapid ? 0.65 : Math.max(1.8, 2.6 - (lvl - 1) * 0.2);
+        turret.shootTimer = isRapid ? 0.3 : 0.8;
         this.enemies.push(turret);
-        this.particles.spawnWarpRing(spot.x, spot.y, '#FF0055');
+        this.particles.spawnWarpRing(spot.x, spot.y, isRapid ? '#FFE600' : '#FF0055');
         this.sound.playLaser();
       }
     }
@@ -1360,15 +1378,17 @@ export class GameApp {
         const targetX = this.cargoShip ? this.cargoShip.x : GAME_CONFIG.CARGO_CENTER_X;
         const targetY = this.cargoShip ? this.cargoShip.y : GAME_CONFIG.CARGO_CENTER_Y;
         const angle = Math.atan2(targetY - turret.y, targetX - turret.x);
-        const bulletSpeed = 190 + (lvl - 1) * 15;
+        const isRapid = !!turret.isRapidSpecial;
+        const bulletSpeed = isRapid ? (260 + (lvl - 1) * 15) : (190 + (lvl - 1) * 15);
         const vx = Math.cos(angle) * bulletSpeed;
         const vy = Math.sin(angle) * bulletSpeed;
-        const bulletDmg = 5 + (lvl - 1);
+        const bulletDmg = isRapid ? 2 : (5 + (lvl - 1));
+        const bulletColor = isRapid ? '#FFE600' : '#FF0055';
 
-        const enemyBullet = new Projectile(turret.x, turret.y, vx, vy, bulletDmg, 'enemy_bullet', '#FF0055');
+        const enemyBullet = new Projectile(turret.x, turret.y, vx, vy, bulletDmg, 'enemy_bullet', bulletColor);
         this.enemyProjectiles.push(enemyBullet);
         this.sound.playLaser();
-        this.particles.spawnHitSparks(turret.x, turret.y, '#FF0055');
+        this.particles.spawnHitSparks(turret.x, turret.y, bulletColor);
       }
     }
 
@@ -1402,7 +1422,7 @@ export class GameApp {
         if (dPlayer < 28 + ep.radius) {
           ep.isDead = true;
           this.particles.spawnHitSparks(ep.x, ep.y, '#00F0FF');
-          this.particles.spawnFloatingText(this.fleet.centerX, this.fleet.centerY - 22, 'BOUCLIER 🛡️', '#00F0FF', 15);
+          this.sound.playShieldHit();
         }
       }
     }
@@ -1444,7 +1464,6 @@ export class GameApp {
           this.sessionKills++;
           this.particles.spawnHitSparks(ast.x, ast.y, '#00F0FF');
           this.particles.spawnExplosion(ast.x, ast.y, '#00F0FF', 16);
-          this.particles.spawnFloatingText(this.fleet.centerX, this.fleet.centerY - 22, 'BOUCLIER 🛡️', '#00F0FF', 18);
           this.sound.playExplosion(false);
           continue;
         }

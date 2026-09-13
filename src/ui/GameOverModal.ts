@@ -45,6 +45,7 @@ export class GameOverModal {
   private onHangarCallback: () => void;
   private onDoubleDiamondsCallback?: (bonusDiamonds: number) => void;
   private onLootToHangarCallback?: () => void;
+  private onDoubleChallengeRewardCallback?: (reward: { type: 'bars' | 'dust'; amount: number }) => void;
 
   private currentStats: GameOverStats | null = null;
   private isDoubled: boolean = false;
@@ -53,12 +54,14 @@ export class GameOverModal {
     onNext: () => void,
     onHangar: () => void,
     onDoubleDiamonds?: (bonusDiamonds: number) => void,
-    onLootToHangar?: () => void
+    onLootToHangar?: () => void,
+    onDoubleChallengeReward?: (reward: { type: 'bars' | 'dust'; amount: number }) => void
   ) {
     this.onNextCallback = onNext;
     this.onHangarCallback = onHangar;
     this.onDoubleDiamondsCallback = onDoubleDiamonds;
     this.onLootToHangarCallback = onLootToHangar;
+    this.onDoubleChallengeRewardCallback = onDoubleChallengeReward;
     this.setupListeners();
   }
 
@@ -85,6 +88,44 @@ export class GameOverModal {
     this.elBtnDoubleAd?.addEventListener('click', () => {
       if (this.isDoubled || !this.currentStats) return;
 
+      // Cas 1 : Mode Défi (Doubler le butin du défi : Barres d'Iridium ou Poudre de Diamant)
+      if (this.currentStats.isChallenge && this.currentStats.challengeReward) {
+        const reward = this.currentStats.challengeReward;
+        const isBars = reward.type === 'bars';
+        const label = isBars ? "BARRES D'IRIDIUM" : "POUDRE DE DIAMANT";
+
+        AdService.showRewardedAd(`DOUBLER LE BUTIN (x2 ${label}) 🎁`, () => {
+          this.isDoubled = true;
+          const bonusAmount = reward.amount;
+          reward.amount *= 2;
+
+          const lootVal = this.elLootGrid?.querySelector('.loot-cell-val');
+          if (lootVal) {
+            lootVal.textContent = `+${reward.amount}`;
+            lootVal.classList.add('doubled-sparkle');
+          }
+
+          if (this.elBtnDoubleAd) {
+            this.elBtnDoubleAd.setAttribute('disabled', 'true');
+            this.elBtnDoubleAd.classList.add('disabled');
+            this.elBtnDoubleAd.innerHTML = '<span class="ad-icon-big">✅</span><span class="ad-label-big">x2 🎁 (BUTIN DOUBLÉ !)</span>';
+          }
+
+          try {
+            confetti({
+              particleCount: 60,
+              spread: 70,
+              origin: { y: 0.7 },
+              colors: ['#00F0FF', '#FFE600', '#FF0055']
+            });
+          } catch {}
+
+          this.onDoubleChallengeRewardCallback?.({ type: reward.type, amount: bonusAmount });
+        });
+        return;
+      }
+
+      // Cas 2 : Mission Standard (Doubler les Diamants récoltés)
       AdService.showRewardedAd('DOUBLER LES DIAMANTS (x2) 💎', () => {
         this.isDoubled = true;
         const bonusDiamonds = this.currentStats!.diamondsEarned;
@@ -165,7 +206,17 @@ export class GameOverModal {
       if (this.elEarnedDiamonds) this.elEarnedDiamonds.textContent = `+0`;
       if (this.elEarnedCrystals) this.elEarnedCrystals.textContent = `+0`;
 
-      if (this.elBtnDoubleAd) this.elBtnDoubleAd.style.display = 'none';
+      // En cas de victoire dans le défi : possibilité de lancer la pub pour doubler le butin
+      if (stats.isVictory && stats.challengeReward && this.elBtnDoubleAd) {
+        this.elBtnDoubleAd.removeAttribute('disabled');
+        this.elBtnDoubleAd.classList.remove('disabled');
+        const isBars = stats.challengeReward.type === 'bars';
+        const rName = isBars ? "BARRES (x2)" : "POUDRE (x2)";
+        this.elBtnDoubleAd.innerHTML = `<span class="ad-icon-big">🎬</span><span class="ad-label-big">DOUBLER LE BUTIN (${rName})</span>`;
+        this.elBtnDoubleAd.style.display = 'flex';
+      } else {
+        if (this.elBtnDoubleAd) this.elBtnDoubleAd.style.display = 'none';
+      }
       if (this.elQuestsBox) this.elQuestsBox.style.display = 'none';
 
       const elTopRewards = document.getElementById('gameover-top-rewards');

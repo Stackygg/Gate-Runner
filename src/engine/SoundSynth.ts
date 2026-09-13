@@ -165,6 +165,32 @@ export class SoundSynth {
     } catch {}
   }
 
+  // Dévier / intercepter un projectile au bouclier (bruitage de déviation plasma)
+  public playShieldHit() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    try {
+      const cTime = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(880, cTime);
+      osc.frequency.exponentialRampToValueAtTime(440, cTime + 0.09);
+
+      gain.gain.setValueAtTime(0.14, cTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, cTime + 0.09);
+
+      osc.connect(gain);
+      if (this.sfxMasterGain) gain.connect(this.sfxMasterGain);
+
+      osc.start(cTime);
+      osc.stop(cTime + 0.1);
+    } catch {}
+  }
+
   // Franchissement réussi d'un portail (Accord lumineux triomphal)
   public playGatePass(isPositive: boolean = true) {
     if (this.isMuted) return;

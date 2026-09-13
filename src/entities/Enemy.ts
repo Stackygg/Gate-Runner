@@ -21,6 +21,7 @@ export class Enemy {
   public multiplierValue?: number;
   public prisonRank: number = 2; // Rang du vaisseau prototype emprisonné (2 à 5)
   public cornerIndex?: number;   // Index de coin (0: HG, 1: HD, 2: BG, 3: BD)
+  public isRapidSpecial: boolean = false; // Tourelle spéciale rapide (toutes les 3 tourelles, 2 PV et tir ultra rapide)
 
   private rotAngle: number = 0;
   private rotSpeed: number = 0;
@@ -538,6 +539,9 @@ export class Enemy {
     // 1.2 RENDU DE LA TOURELLE ENNEMIE DE COIN (MODE ARÈNE DÉFENSE)
     if (this.type === 'corner_turret') {
       const radius = Math.max(16, (this.width / 2) * s);
+      const isRapid = this.isRapidSpecial;
+      const themeColor = isRapid ? '#FFE600' : '#FF0055';
+      const eyeCoreColor = isRapid ? '#FFAA00' : '#660022';
 
       ctx.save();
       ctx.translate(pt.x, pt.y);
@@ -545,9 +549,9 @@ export class Enemy {
       // Calcul de l'angle de visée vers le Cargo central (270, 480)
       const aimAngle = Math.atan2(GAME_CONFIG.CARGO_CENTER_Y - this.y, GAME_CONFIG.CARGO_CENTER_X - this.x);
 
-      // A. Aura rougeoyante menaçante
+      // A. Aura menaçante (rouge vif ou doré-foudre selon la variante)
       const haloGrad = ctx.createRadialGradient(0, 0, radius * 0.3, 0, 0, radius * 1.5);
-      haloGrad.addColorStop(0, isHit ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 0, 85, 0.35)');
+      haloGrad.addColorStop(0, isHit ? 'rgba(255, 255, 255, 0.4)' : (isRapid ? 'rgba(255, 230, 0, 0.45)' : 'rgba(255, 0, 85, 0.35)'));
       haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = haloGrad;
       ctx.beginPath();
@@ -557,8 +561,8 @@ export class Enemy {
       // B. Double canon orienté vers le cargo
       ctx.save();
       ctx.rotate(aimAngle);
-      ctx.fillStyle = isHit ? '#FFFFFF' : '#1A0410';
-      ctx.strokeStyle = isHit ? '#FFFFFF' : '#FF0055';
+      ctx.fillStyle = isHit ? '#FFFFFF' : (isRapid ? '#1A1804' : '#1A0410');
+      ctx.strokeStyle = isHit ? '#FFFFFF' : themeColor;
       ctx.lineWidth = Math.max(1.5, 2 * s);
 
       // Canons gauche et droite
@@ -568,21 +572,21 @@ export class Enemy {
       ctx.strokeRect(radius * 0.3, radius * 0.16, radius * 0.75, radius * 0.22);
 
       // Embouts de plasma lumineux
-      ctx.fillStyle = '#FF5500';
+      ctx.fillStyle = isRapid ? '#FFFFFF' : '#FF5500';
       ctx.beginPath();
       ctx.arc(radius * 1.05, -radius * 0.27, radius * 0.12, 0, Math.PI * 2);
       ctx.arc(radius * 1.05, radius * 0.27, radius * 0.12, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
-      // C. Châssis Cyber-Blindé hexagonal
+      // C. Châssis Cyber-Blindé hexagonal (rotation plus vive si tourelle rapide)
       ctx.fillStyle = isHit ? '#FFFFFF' : '#0B0F19';
-      ctx.strokeStyle = isHit ? '#FFFFFF' : '#FF0055';
+      ctx.strokeStyle = isHit ? '#FFFFFF' : themeColor;
       ctx.lineWidth = Math.max(2, 3 * s);
       ctx.beginPath();
       const numSides = 6;
       for (let i = 0; i < numSides; i++) {
-        const a = (i * Math.PI * 2) / numSides + this.phase * 0.8;
+        const a = (i * Math.PI * 2) / numSides + this.phase * (isRapid ? 1.6 : 0.8);
         const px = Math.cos(a) * radius;
         const py = Math.sin(a) * radius;
         if (i === 0) ctx.moveTo(px, py);
@@ -592,24 +596,24 @@ export class Enemy {
       ctx.fill();
       ctx.stroke();
 
-      // D. Cœur / Œil de visée central rouge pulsant
+      // D. Cœur / Œil de visée central pulsant
       const coreR = radius * 0.45;
       const eyeGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, coreR);
       eyeGrad.addColorStop(0, '#FFFFFF');
-      eyeGrad.addColorStop(0.5, '#FF0055');
-      eyeGrad.addColorStop(1, '#660022');
+      eyeGrad.addColorStop(0.5, themeColor);
+      eyeGrad.addColorStop(1, eyeCoreColor);
       ctx.fillStyle = eyeGrad;
       ctx.beginPath();
       ctx.arc(0, 0, coreR, 0, Math.PI * 2);
       ctx.fill();
 
       // E. Badge de Points de Vie bien visible au-dessus
-      const badgeW = Math.max(52, 68 * s);
+      const badgeW = Math.max(54, 70 * s);
       const badgeH = Math.max(16, 20 * s);
       const badgeY = -radius - badgeH - 6 * s;
 
-      ctx.fillStyle = 'rgba(6, 10, 20, 0.92)';
-      ctx.strokeStyle = '#FF0055';
+      ctx.fillStyle = isRapid ? 'rgba(25, 22, 5, 0.95)' : 'rgba(6, 10, 20, 0.92)';
+      ctx.strokeStyle = themeColor;
       ctx.lineWidth = Math.max(1, 1.5 * s);
       ctx.beginPath();
       ctx.roundRect(-badgeW / 2, badgeY, badgeW, badgeH, 4 * s);
@@ -619,7 +623,7 @@ export class Enemy {
       // Jauge de PV interne dans le badge
       const hpRatio = Math.max(0, Math.min(1, this.hp / this.maxHp));
       const gaugeW = Math.max(0, (badgeW - 4) * hpRatio);
-      ctx.fillStyle = '#FF0055';
+      ctx.fillStyle = themeColor;
       ctx.beginPath();
       ctx.roundRect(-badgeW / 2 + 2, badgeY + 2, gaugeW, badgeH - 4, 2 * s);
       ctx.fill();
@@ -628,7 +632,8 @@ export class Enemy {
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`❤️ ${Math.ceil(this.hp)} / ${this.maxHp}`, 0, badgeY + badgeH / 2);
+      const hpBadgeText = isRapid ? `⚡ ${Math.ceil(this.hp)} / ${this.maxHp}` : `❤️ ${Math.ceil(this.hp)} / ${this.maxHp}`;
+      ctx.fillText(hpBadgeText, 0, badgeY + badgeH / 2);
 
       ctx.restore();
       return;
