@@ -460,8 +460,9 @@ export class MenuHangar {
     const handleResetTest = () => {
       this.store.resetChallengeAttempts();
       this.updateChallengesDisplay();
-      if (this.selectedChallengeId) {
-        this.openChallengeBriefingModal(this.selectedChallengeId);
+      // Si la modale de briefing est actuellement ouverte, rafraîchir son affichage sans rouvrir
+      if (this.selectedChallengeId && this.elModalChallengeBriefing && !this.elModalChallengeBriefing.classList.contains('hidden')) {
+        this.updateChallengeModalDisplay();
       }
       this.showHudToast('🔄 Essais de défis réinitialisés (2/2) !', false);
     };
@@ -2127,10 +2128,8 @@ export class MenuHangar {
 
   public openChallengeBriefingModal(id: 'bars' | 'dust') {
     this.selectedChallengeId = id;
-    const maxVisible = SectorSystem.getMaxVisibleChallengeLevel(this.store.data.maxUnlockedMission);
-    if (this.selectedChallengeLevel < 1 || this.selectedChallengeLevel > maxVisible) {
-      this.selectedChallengeLevel = 1;
-    }
+    // Sélectionne automatiquement le plus haut niveau disponible (débloqué)
+    this.selectedChallengeLevel = SectorSystem.getHighestUnlockedChallengeLevel(this.store.data.maxUnlockedMission);
     this.updateChallengeModalDisplay();
     this.elModalChallengeBriefing?.classList.remove('hidden');
   }

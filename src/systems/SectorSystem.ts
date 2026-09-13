@@ -166,6 +166,19 @@ export class SectorSystem {
   }
 
   /**
+   * Retourne le plus haut niveau de défi débloqué pour le joueur (1 à 5).
+   */
+  public static getHighestUnlockedChallengeLevel(maxUnlockedMission: number): number {
+    let highestUnlocked = 1;
+    for (const cfg of CHALLENGE_LEVELS_CONFIG) {
+      if (this.isChallengeLevelUnlocked(cfg.level, maxUnlockedMission)) {
+        highestUnlocked = Math.max(highestUnlocked, cfg.level);
+      }
+    }
+    return highestUnlocked;
+  }
+
+  /**
    * Retourne le nom grec du secteur (ex: "Alpha", "Beta", "Delta"...)
    */
   public static getSectorName(sector: number): string {
