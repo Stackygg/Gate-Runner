@@ -11,6 +11,7 @@ import { RescuedShip, SHIP_RANKS } from '../entities/RescuedShip';
 export interface CollisionResults {
   diamondsEarned: number;
   enemiesKilled: number;
+  shootingShipsKilled: number;
   gatesPassed: number;
   highestGauntletMultiplier: number;
   screenShake: number;
@@ -35,6 +36,7 @@ export class CollisionSystem {
     const results: CollisionResults = {
       diamondsEarned: 0,
       enemiesKilled: 0,
+      shootingShipsKilled: 0,
       gatesPassed: 0,
       highestGauntletMultiplier: 1.0,
       screenShake: 0,
@@ -133,6 +135,10 @@ export class CollisionSystem {
 
           if (isKilled) {
             results.enemiesKilled++;
+            const isShootingShipOrBoss = enemy.isBossType() || enemy.type === 'corner_turret' || enemy.type === 'drone' || enemy.type === 'fast' || enemy.type === 'heavy';
+            if (isShootingShipOrBoss) {
+              results.shootingShipsKilled++;
+            }
             results.screenShake = Math.max(results.screenShake, enemy.isBossType() ? 20 : (enemy.type === 'prison' ? 14 : 6));
             sound.playExplosion(enemy.isBossType() || enemy.type === 'prison');
 

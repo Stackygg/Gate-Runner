@@ -347,12 +347,19 @@
               <span class="version-text">v1.0.0</span>
             </div>
 
-            <!-- Bouton Quêtes & Succès en bas à droite -->
-            <button id="btn-main-quests" class="main-screen-quests-btn" title="Quêtes Quotidiennes & Succès" type="button">
-              <span class="quests-btn-icon">📜</span>
-              <span class="quests-btn-text">QUÊTES</span>
-              <span id="quests-badge-count" class="quests-badge-pill hidden">0</span>
-            </button>
+            <!-- Actions en bas : Nouveautés à gauche, Quêtes à droite (surélevés au-dessus de la version) -->
+            <div class="main-screen-bottom-actions">
+              <button id="btn-main-news" class="main-screen-action-btn news-btn" title="Nouveautés & Mises à jour" type="button">
+                <span class="action-btn-icon">📢</span>
+                <span class="action-btn-text">NOUVEAUTÉS</span>
+              </button>
+
+              <button id="btn-main-quests" class="main-screen-action-btn quests-btn" title="Quêtes Quotidiennes & Succès" type="button">
+                <span class="action-btn-icon">📜</span>
+                <span class="action-btn-text">QUÊTES</span>
+                <span id="quests-badge-count" class="quests-badge-pill hidden">0</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1665,19 +1672,16 @@
 
             <!-- Contenu Onglet 1 : Quêtes Quotidiennes -->
             <div id="tab-pane-quests" class="quests-tab-pane active">
-              <div class="quests-pane-hero">
-                <div class="quests-pane-hero-left">
-                  <span class="quests-hero-icon">⚔️</span>
-                  <div>
-                    <h3 class="quests-pane-title">QUÊTES QUOTIDIENNES</h3>
-                    <p class="quests-pane-desc">Accomplissez ces objectifs chaque jour pour maximiser vos ressources.</p>
-                  </div>
+              <div class="quests-pane-hero clean-hero">
+                <div class="quests-hero-header-wrap">
+                  <h3 id="quests-pane-main-title" class="quests-pane-title">QUÊTES QUOTIDIENNES 0/5</h3>
+                  <div id="quests-reset-timer" class="quests-clean-timer">-- H -- Min</div>
                 </div>
-                <div class="quests-timer-chip" title="Heure de réinitialisation (fuseau France/Belgique)">
-                  <span class="timer-chip-icon">⏳</span>
-                  <span class="timer-chip-label">Reset dans</span>
-                  <span id="quests-reset-timer" class="timer-chip-val">-- heures -- min</span>
-                </div>
+              </div>
+
+              <!-- Carte Coffre Quotidien -->
+              <div id="quests-daily-chest-card" class="daily-chest-card-wrap">
+                <!-- Rendu dynamique via MenuHangar.ts -->
               </div>
 
               <div id="quests-daily-list" class="quests-cards-list">
@@ -1721,6 +1725,53 @@
 
             <div class="inbox-messages-container" id="inbox-messages-list">
               <!-- Rendu dynamique des messages via MenuHangar.ts -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             MODALE : NOUVEAUTÉS DE MISE À JOUR (PATCH NOTES)
+             ================================================================== -->
+        <div id="modal-news" class="modal-overlay hidden">
+          <div class="modal-card news-modal-card">
+            <div class="quests-modal-header">
+              <button id="btn-close-news-modal" class="btn-hangar-back" title="Fermer">
+                <span>◀ RETOUR</span>
+              </button>
+              <div class="quests-modal-title-wrap">
+                <h2 class="quests-modal-main-title">JOURNAL DES MISES À JOUR 📢</h2>
+              </div>
+              <div class="quests-header-spacer"></div>
+            </div>
+
+            <div class="news-modal-body">
+              <div class="news-version-entry current">
+                <div class="news-version-header">
+                  <div class="news-version-tag">VERSION 1.0.0</div>
+                  <span class="news-version-badge">ACTUELLE</span>
+                </div>
+                <div class="news-version-title">Quêtes Quotidiennes, Succès & Économie Galactique</div>
+                <ul class="news-version-list">
+                  <li><strong>Quêtes & Coffre Quotidien</strong> : 5 nouveaux objectifs quotidiens avec accès progressif selon les fonctionnalités débloquées et Coffre Quotidien offrant 1 Iridium.</li>
+                  <li><strong>Compte à Rebours Minuit</strong> : Timer en direct calé sur le fuseau horaire France / Belgique (reset chaque nuit à minuit).</li>
+                  <li><strong>Succès Galactiques</strong> : Nouveaux hauts-faits permanents avec récompenses à récupérer.</li>
+                  <li><strong>Boîte de Réception</strong> : Transmission des ordres de mission et récompenses de bienvenue de l'état-major.</li>
+                  <li><strong>Fluidité 60 FPS</strong> : Élimination des gels d'animation lors de la récupération des récompenses.</li>
+                  <li><strong>Économie d'Iridium</strong> : Réajustement de la rareté de l'Iridium et introduction des Crédits galactiques.</li>
+                </ul>
+              </div>
+
+              <div class="news-version-entry past">
+                <div class="news-version-header">
+                  <div class="news-version-tag">VERSION 0.9.8</div>
+                  <span class="news-version-date">PRÉCÉDENTE</span>
+                </div>
+                <div class="news-version-title">Convoi d'Iridium & Défis 360°</div>
+                <ul class="news-version-list">
+                  <li><strong>Mode Arène 360°</strong> : Défense de Cargo stellaire contre des vagues d'astéroïdes et tourelles ennemies.</li>
+                  <li><strong>Fonderie & Raffinerie</strong> : Transformation des surplus de diamants en poudre et lingots.</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

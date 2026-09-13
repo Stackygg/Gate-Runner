@@ -2,7 +2,6 @@
 
 import { UpgradeStore } from '../systems/UpgradeStore';
 import { AdService } from '../services/AdService';
-import confetti from 'canvas-confetti';
 
 export class ShopModal {
   private store: UpgradeStore;
@@ -31,6 +30,7 @@ export class ShopModal {
       AdService.showRewardedAd('+50 DIAMANTS 💎', () => {
         this.store.recordDailyAdWatch();
         this.store.addDiamonds(50);
+        this.store.recordDailyQuestProgress('shop_purchase', 1);
         this.celebrateReward('+50 💎 AJOUTÉS !');
         this.render();
         this.onRefreshCallback?.();
@@ -43,6 +43,7 @@ export class ShopModal {
       AdService.showRewardedAd('+1 IRIDIUM QUANTIQUE', () => {
         this.store.recordDailyAdWatch();
         this.store.addIridium(1);
+        this.store.recordDailyQuestProgress('shop_purchase', 1);
         this.celebrateReward('+1 <span class="icon-iridium"></span> IRIDIUM AJOUTÉ !');
         this.render();
         this.onRefreshCallback?.();
@@ -54,6 +55,7 @@ export class ShopModal {
       if (this.store.data.noAdsPurchased) return;
       // Simulation d'achat Store
       this.store.buyNoAds();
+      this.store.recordDailyQuestProgress('shop_purchase', 1);
       this.celebrateReward('🛡️ PASS VIP NO-ADS ACTIVÉ !');
       this.render();
       this.onRefreshCallback?.();
@@ -64,6 +66,7 @@ export class ShopModal {
       btn.addEventListener('click', (e) => {
         const amount = parseInt((e.currentTarget as HTMLElement).dataset.amount || '10', 10);
         this.store.addIridium(amount);
+        this.store.recordDailyQuestProgress('shop_purchase', 1);
         this.celebrateReward(`+${amount} <span class="icon-iridium"></span> IRIDIUM ACHETÉ !`);
         this.render();
         this.onRefreshCallback?.();
@@ -75,6 +78,7 @@ export class ShopModal {
       btn.addEventListener('click', (e) => {
         const amount = parseInt((e.currentTarget as HTMLElement).dataset.amount || '250', 10);
         this.store.addDiamonds(amount);
+        this.store.recordDailyQuestProgress('shop_purchase', 1);
         this.celebrateReward(`+${amount} 💎 DIAMANTS ACHETÉS !`);
         this.render();
         this.onRefreshCallback?.();
@@ -83,15 +87,6 @@ export class ShopModal {
   }
 
   private celebrateReward(text: string) {
-    try {
-      confetti({
-        particleCount: 60,
-        spread: 60,
-        origin: { y: 0.5 },
-        colors: ['#00F0FF', '#FF007A', '#FFE600', '#A855F7']
-      });
-    } catch {}
-
     const toast = document.createElement('div');
     toast.className = 'shop-reward-toast';
     toast.innerHTML = text;

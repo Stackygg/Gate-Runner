@@ -1,6 +1,5 @@
 // Contrôleur du Menu Principal & du Hangar / Armurerie Stellaire
 
-import confetti from 'canvas-confetti';
 import { UpgradeStore, getParisCountdownToMidnight } from '../systems/UpgradeStore';
 import { SKINS_CONFIG, ShipSkin } from '../config';
 import { ModalConfirmCrystal } from './ModalConfirmCrystal';
@@ -221,6 +220,11 @@ export class MenuHangar {
   private elBtnChestClaimItem = document.getElementById('btn-chest-claim-item');
   private elHangarChestsCountPill = document.getElementById('hangar-chests-count-pill');
 
+  // Nouveautés (News)
+  private elBtnMainNews = document.getElementById('btn-main-news');
+  private elModalNews = document.getElementById('modal-news');
+  private elBtnCloseNewsModal = document.getElementById('btn-close-news-modal');
+
   // Quêtes & Succès
   private elBtnMainQuests = document.getElementById('btn-main-quests');
   private elModalQuestsAchievements = document.getElementById('modal-quests-achievements');
@@ -229,7 +233,9 @@ export class MenuHangar {
   private elTabBtnAchievements = document.getElementById('tab-btn-achievements');
   private elTabPaneQuests = document.getElementById('tab-pane-quests');
   private elTabPaneAchievements = document.getElementById('tab-pane-achievements');
+  private elQuestsPaneMainTitle = document.getElementById('quests-pane-main-title');
   private elQuestsResetTimer = document.getElementById('quests-reset-timer');
+  private elQuestsDailyChestCard = document.getElementById('quests-daily-chest-card');
   private elQuestsDailyList = document.getElementById('quests-daily-list');
   private elAchievementsList = document.getElementById('achievements-list');
   private elQuestsBadgeCount = document.getElementById('quests-badge-count');
@@ -279,6 +285,17 @@ export class MenuHangar {
   }
 
   private setupListeners() {
+    // Bouton Nouveautés / News
+    this.elBtnMainNews?.addEventListener('click', () => {
+      this.sound.playClick();
+      this.openNewsModal();
+    });
+
+    this.elBtnCloseNewsModal?.addEventListener('click', () => {
+      this.sound.playClick();
+      this.closeNewsModal();
+    });
+
     // Bouton Quêtes & Succès (Bas à droite)
     this.elBtnMainQuests?.addEventListener('click', () => {
       this.sound.playClick();
@@ -2806,6 +2823,7 @@ export class MenuHangar {
     if (!this.currentChestItem || !this.currentRevealedItem) return;
     const item = this.currentRevealedItem;
     this.store.openChest(this.currentChestItem.id, item);
+    this.store.recordDailyQuestProgress('open_chest', 1);
     this.closeChestModal();
     this.refreshCurrencies();
     this.renderShipSlots();
@@ -2861,17 +2879,94 @@ export class MenuHangar {
   private renderQuestsTab() {
     if (!this.elQuestsDailyList) return;
     const quests = this.store.getDailyQuests();
+    const feasibleQuests = quests.filter(q => q.isUnlocked);
+    const completedFeasibleCount = feasibleQuests.filter(q => q.isCompleted).length;
+    const totalFeasibleCount = feasibleQuests.length;
+
+    if (this.elQuestsPaneMainTitle) {
+      this.elQuestsPaneMainTitle.textContent = `Quêtes quotidiennes ${completedFeasibleCount}/${totalFeasibleCount}`;
+    }
     this.updateQuestsTimer();
+
+    // Rendu de la carte du Coffre Quotidien
+    if (this.elQuestsDailyChestCard) {
+      const isChestUnlocked = this.store.isDailyChestUnlocked();
+      const isChestClaimed = this.store.isDailyChestClaimed();
+
+      let chestBtnHtml = '';
+      let statusBadge = '';
+      if (isChestClaimed) {
+        statusBadge = `<span class="daily-chest-status-tag claimed">RÉCUPÉRÉ ✅</span>`;
+        chestBtnHtml = `<button class="btn-daily-chest claimed" disabled>RÉCUPÉRÉ ✅</button>`;
+      } else if (isChestUnlocked) {
+        statusBadge = `<span class="daily-chest-status-tag ready">DISPONIBLE !</span>`;
+        chestBtnHtml = `<button id="btn-claim-daily-chest" class="btn-daily-chest ready pulse">OUVRIR LE COFFRE 🎁</button>`;
+      } else {
+        statusBadge = `<span class="daily-chest-status-tag pending">${completedFeasibleCount}/${totalFeasibleCount} QUÊTES</span>`;
+        chestBtnHtml = `<button class="btn-daily-chest pending" disabled>BLOQUÉ 🔒</button>`;
+      }
+
+      this.elQuestsDailyChestCard.innerHTML = `
+        <div class="daily-chest-item-card ${isChestClaimed ? 'claimed' : isChestUnlocked ? 'ready' : 'pending'}">
+          <div class="daily-chest-left">
+            <div class="daily-chest-icon-wrap">
+              <span class="daily-chest-icon">🎁</span>
+            </div>
+            <div class="daily-chest-info">
+              <div class="daily-chest-title-row">
+                <span class="daily-chest-title">COFFRE QUOTIDIEN</span>
+                ${statusBadge}
+              </div>
+              <div class="daily-chest-desc">Complétez toutes les quêtes quotidiennes débloquées pour ouvrir ce coffre d'Iridium rare.</div>
+            </div>
+          </div>
+          <div class="daily-chest-right">
+            <div class="quest-reward-pill-box special-iridium" title="1 Iridium">
+              <span>+1</span>
+              <span class="icon-iridium"></span>
+            </div>
+            ${chestBtnHtml}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('btn-claim-daily-chest')?.addEventListener('click', () => {
+        this.handleClaimDailyChest();
+      });
+    }
 
     this.elQuestsDailyList.innerHTML = quests.map(q => {
       const isCompleted = q.isCompleted;
       const isClaimed = q.isClaimed;
+      const isUnlocked = q.isUnlocked;
       const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
 
       let rewardIcon = '💎';
       if (q.reward.type === 'crystals') rewardIcon = '<span class="icon-iridium"></span>';
       else if (q.reward.type === 'bars') rewardIcon = '<span class="icon-iridium-bar"></span>';
       else if (q.reward.type === 'dust') rewardIcon = '<span class="icon-diamond-dust"></span>';
+      else if (q.reward.type === 'credits') rewardIcon = '<span class="icon-credits">🪙</span>';
+
+      if (!isUnlocked) {
+        return `
+          <div class="quest-item-card locked-quest">
+            <div class="quest-card-left">
+              <div class="quest-card-header">
+                <span class="quest-card-title">🔒 ${q.title}</span>
+                <span class="quest-locked-pill">VERROUILLÉ</span>
+              </div>
+              <div class="quest-card-desc locked-text">${q.unlockRequirementText || 'Fonctionnalité non débloquée'}</div>
+            </div>
+            <div class="quest-card-right">
+              <div class="quest-reward-pill-box locked-pill">
+                <span>+${q.reward.amount}</span>
+                <span>${rewardIcon}</span>
+              </div>
+              <button class="btn-quest-claim locked" disabled>BLOQUÉ 🔒</button>
+            </div>
+          </div>
+        `;
+      }
 
       let buttonHtml = '';
       if (isClaimed) {
@@ -2917,6 +3012,17 @@ export class MenuHangar {
     });
   }
 
+  private handleClaimDailyChest() {
+    const res = this.store.claimDailyChest();
+    if (res.success && res.reward) {
+      this.sound.playLevelUp();
+      this.renderQuestsTab();
+      this.updateQuestsNotificationBadges();
+      this.refreshCurrencies();
+      this.showHudToast(`✨ COFFRE QUOTIDIEN OBTENU : +${res.reward.amount} IRIDIUM RARE !`, false);
+    }
+  }
+
   private renderAchievementsTab() {
     if (!this.elAchievementsList) return;
     const achievements = this.store.getAchievements();
@@ -2930,6 +3036,7 @@ export class MenuHangar {
       if (a.reward.type === 'crystals') rewardIcon = '<span class="icon-iridium"></span>';
       else if (a.reward.type === 'bars') rewardIcon = '<span class="icon-iridium-bar"></span>';
       else if (a.reward.type === 'dust') rewardIcon = '<span class="icon-diamond-dust"></span>';
+      else if (a.reward.type === 'credits') rewardIcon = '<span class="icon-credits">🪙</span>';
 
       let buttonHtml = '';
       if (isClaimed) {
@@ -2979,9 +3086,6 @@ export class MenuHangar {
     const res = this.store.claimDailyQuest(questId);
     if (res.success && res.reward) {
       this.sound.playLevelUp();
-      try {
-        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-      } catch {}
       this.renderQuestsTab();
       this.updateQuestsNotificationBadges();
       this.refreshCurrencies();
@@ -2993,9 +3097,6 @@ export class MenuHangar {
     const res = this.store.claimAchievement(achId);
     if (res.success && res.reward) {
       this.sound.playLevelUp();
-      try {
-        confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
-      } catch {}
       this.renderAchievementsTab();
       this.updateQuestsNotificationBadges();
       this.refreshCurrencies();
@@ -3099,9 +3200,6 @@ export class MenuHangar {
     const res = this.store.claimInboxMessage(msgId);
     if (res.success && res.reward) {
       this.sound.playLevelUp();
-      try {
-        confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
-      } catch {}
       this.renderInbox();
       this.updateInboxNotificationDot();
       this.refreshCurrencies();
@@ -3115,6 +3213,14 @@ export class MenuHangar {
       if (unreadInbox > 0) this.elInboxNotificationDot.classList.remove('hidden');
       else this.elInboxNotificationDot.classList.add('hidden');
     }
+  }
+
+  public openNewsModal() {
+    this.elModalNews?.classList.remove('hidden');
+  }
+
+  public closeNewsModal() {
+    this.elModalNews?.classList.add('hidden');
   }
 }
 

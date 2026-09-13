@@ -647,16 +647,14 @@ export class GameApp {
       }
 
       // Quêtes & Succès : progression Défi
-      this.store.recordDailyQuestProgress('challenges_played', 1);
       if (isVictory) {
+        this.store.recordDailyQuestProgress('challenges', 1);
         this.store.recordAchievementProgress('challenges_won', 1);
       }
       if (this.sessionKills > 0) {
-        this.store.recordDailyQuestProgress('enemies_killed', this.sessionKills);
         this.store.recordAchievementProgress('total_enemies', this.sessionKills);
       }
       if (this.fleet) {
-        this.store.recordDailyQuestProgress('fleet_size', this.fleet.shipCount);
         this.store.recordAchievementProgress('max_fleet', this.fleet.shipCount, true);
       }
 
@@ -708,14 +706,14 @@ export class GameApp {
     }
 
     // Quêtes & Succès : progression Mission
-    this.store.recordDailyQuestProgress('missions_played', 1);
+    if (isVictory) {
+      this.store.recordDailyQuestProgress('campaign_missions', 1);
+    }
     this.store.recordAchievementProgress('max_mission', this.store.data.maxUnlockedMission, true);
     if (this.sessionKills > 0) {
-      this.store.recordDailyQuestProgress('enemies_killed', this.sessionKills);
       this.store.recordAchievementProgress('total_enemies', this.sessionKills);
     }
     if (this.fleet) {
-      this.store.recordDailyQuestProgress('fleet_size', this.fleet.shipCount);
       this.store.recordAchievementProgress('max_fleet', this.fleet.shipCount, true);
     }
     if (earnedIridium > 0) {
@@ -1083,8 +1081,8 @@ export class GameApp {
     this.sessionDiamonds += collisionResults.diamondsEarned;
     this.sessionKills += collisionResults.enemiesKilled;
     this.fleetDamageTakenInRun += collisionResults.fleetDamageTaken;
-    if (collisionResults.gatesPassed > 0) {
-      this.store.recordDailyQuestProgress('gates_passed', collisionResults.gatesPassed);
+    if (collisionResults.shootingShipsKilled > 0) {
+      this.store.recordDailyQuestProgress('shooting_enemies', collisionResults.shootingShipsKilled);
     }
     if (collisionResults.highestGauntletMultiplier > this.maxMultiplierAchieved) {
       this.maxMultiplierAchieved = collisionResults.highestGauntletMultiplier;
