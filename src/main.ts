@@ -461,8 +461,13 @@ export class GameApp {
     // Réinitialisation du quota de passage de palier gratuit par essai
     this.store.resetSessionTierAllowance();
 
-    // Affichage du Dock d'améliorations en bas
-    this.bottomUpgradeDock.show();
+    // Affichage du Dock d'améliorations en bas (uniquement en mode classique/runner)
+    if (isArena) {
+      this.bottomUpgradeDock.hide();
+      this.launchFlight();
+    } else {
+      this.bottomUpgradeDock.show();
+    }
 
     // Mise à jour du HUD
     this.updateHudStats();
@@ -682,6 +687,7 @@ export class GameApp {
   }
 
   private updatePreFlight(dt: number) {
+    this.input.update(dt);
     if (this.currentLevelData?.gameplayType === 'arena_defense') {
       const pos = this.input.getPosition();
       this.fleet.updateArena(dt, pos.x, pos.y, []);
@@ -689,7 +695,7 @@ export class GameApp {
       this.particles.update(dt);
       return;
     }
-    const targetX = this.input.update(dt);
+    const targetX = this.input.getPositionX();
     this.fleet.update(dt, targetX);
     this.particles.update(dt);
   }
@@ -1196,6 +1202,7 @@ export class GameApp {
   // --- DÉFI SPÉCIAL : CONVOI D'IRIDIUM (MODE ARÈNE DÉFENSE 360°) ---
   private updateArenaDefense(dt: number) {
     // 1. Déplacement 2D libre du joueur et auto-ciblage des astéroïdes
+    this.input.update(dt);
     const pos = this.input.getPosition();
     const newBullets = this.fleet.updateArena(dt, pos.x, pos.y, this.enemies);
     if (newBullets.length > 0) {

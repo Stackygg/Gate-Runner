@@ -34,6 +34,18 @@ export class InputManager {
     }
   }
 
+  public clientToWorld(clientX: number, clientY: number): { x: number; y: number } {
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight;
+    const scale = Math.min(windowW / GAME_CONFIG.WORLD_WIDTH, windowH / GAME_CONFIG.WORLD_HEIGHT) || 1;
+    const offsetX = (windowW - GAME_CONFIG.WORLD_WIDTH * scale) / 2;
+    const offsetY = (windowH - GAME_CONFIG.WORLD_HEIGHT * scale) / 2;
+
+    const x = (clientX - offsetX) / scale;
+    const y = (clientY - offsetY) / scale;
+    return { x, y };
+  }
+
   private setupListeners() {
     // --- CONTRÔLES TACTILES MOBILES (Déplacement relatif par glissement au doigt) ---
     this.canvas.addEventListener('touchstart', (e) => {
@@ -54,20 +66,24 @@ export class InputManager {
         this.lastClientX = clientX;
         this.lastClientY = clientY;
 
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = GAME_CONFIG.WORLD_WIDTH / (rect.width || 1);
-        const scaleY = GAME_CONFIG.WORLD_HEIGHT / (rect.height || 1);
-        const sensitivity = 1.25;
-
-        this.targetWorldX = Math.max(
-          GAME_CONFIG.ROAD_MARGIN,
-          Math.min(GAME_CONFIG.WORLD_WIDTH - GAME_CONFIG.ROAD_MARGIN, this.targetWorldX + deltaX * scaleX * sensitivity)
-        );
+        const windowW = window.innerWidth;
+        const windowH = window.innerHeight;
+        const scale = Math.min(windowW / GAME_CONFIG.WORLD_WIDTH, windowH / GAME_CONFIG.WORLD_HEIGHT) || 1;
+        const sensitivity = 1.35;
 
         if (this.isArenaMode) {
+          this.targetWorldX = Math.max(
+            35,
+            Math.min(GAME_CONFIG.WORLD_WIDTH - 35, this.targetWorldX + (deltaX / scale) * sensitivity)
+          );
           this.targetWorldY = Math.max(
-            70,
-            Math.min(GAME_CONFIG.WORLD_HEIGHT - 70, this.targetWorldY + deltaY * scaleY * sensitivity)
+            60,
+            Math.min(GAME_CONFIG.WORLD_HEIGHT - 60, this.targetWorldY + (deltaY / scale) * sensitivity)
+          );
+        } else {
+          this.targetWorldX = Math.max(
+            GAME_CONFIG.ROAD_MARGIN,
+            Math.min(GAME_CONFIG.WORLD_WIDTH - GAME_CONFIG.ROAD_MARGIN, this.targetWorldX + (deltaX / scale) * sensitivity)
           );
         }
       }
@@ -87,33 +103,36 @@ export class InputManager {
       this.isPointerDown = true;
       this.lastClientX = e.clientX;
       this.lastClientY = e.clientY;
+      if (this.isArenaMode) {
+        const world = this.clientToWorld(e.clientX, e.clientY);
+        this.targetWorldX = Math.max(35, Math.min(GAME_CONFIG.WORLD_WIDTH - 35, world.x));
+        this.targetWorldY = Math.max(60, Math.min(GAME_CONFIG.WORLD_HEIGHT - 60, world.y));
+      }
     });
 
     window.addEventListener('mousemove', (e) => {
+      if (this.isArenaMode) {
+        // Mode arène : la souris dirige directement le vaisseau dans tout l'espace 360°
+        const world = this.clientToWorld(e.clientX, e.clientY);
+        this.targetWorldX = Math.max(35, Math.min(GAME_CONFIG.WORLD_WIDTH - 35, world.x));
+        this.targetWorldY = Math.max(60, Math.min(GAME_CONFIG.WORLD_HEIGHT - 60, world.y));
+        return;
+      }
+
       if (this.isPointerDown) {
         const clientX = e.clientX;
-        const clientY = e.clientY;
         const deltaX = clientX - this.lastClientX;
-        const deltaY = clientY - this.lastClientY;
         this.lastClientX = clientX;
-        this.lastClientY = clientY;
 
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = GAME_CONFIG.WORLD_WIDTH / (rect.width || 1);
-        const scaleY = GAME_CONFIG.WORLD_HEIGHT / (rect.height || 1);
+        const windowW = window.innerWidth;
+        const windowH = window.innerHeight;
+        const scale = Math.min(windowW / GAME_CONFIG.WORLD_WIDTH, windowH / GAME_CONFIG.WORLD_HEIGHT) || 1;
         const sensitivity = 1.25;
 
         this.targetWorldX = Math.max(
           GAME_CONFIG.ROAD_MARGIN,
-          Math.min(GAME_CONFIG.WORLD_WIDTH - GAME_CONFIG.ROAD_MARGIN, this.targetWorldX + deltaX * scaleX * sensitivity)
+          Math.min(GAME_CONFIG.WORLD_WIDTH - GAME_CONFIG.ROAD_MARGIN, this.targetWorldX + (deltaX / scale) * sensitivity)
         );
-
-        if (this.isArenaMode) {
-          this.targetWorldY = Math.max(
-            70,
-            Math.min(GAME_CONFIG.WORLD_HEIGHT - 70, this.targetWorldY + deltaY * scaleY * sensitivity)
-          );
-        }
       } else {
         this.lastClientX = e.clientX;
         this.lastClientY = e.clientY;
@@ -145,10 +164,9 @@ export class InputManager {
     }
 
     if (dirX !== 0) {
-      this.targetWorldX = Math.max(
-        GAME_CONFIG.ROAD_MARGIN,
-        Math.min(GAME_CONFIG.WORLD_WIDTH - GAME_CONFIG.ROAD_MARGIN, this.targetWorldX + dirX * 650 * dt)
-      );
+      const minX = this.isArenaMode ? 35 : GAME_CONFIG.ROAD_MARGIN;
+      const maxX = this.isArenaMode ? GAME_CONFIG.WORLD_WIDTH - 35 : GAME_CONFIG.WORLD_WIDTH - GAME_CONFIG.ROAD_MARGIN;
+      this.targetWorldX = Math.max(minX, Math.min(maxX, this.targetWorldX + dirX * 800 * dt));
     }
 
     // Prise en compte du clavier axe Y en mode arène
@@ -162,14 +180,14 @@ export class InputManager {
       }
       if (dirY !== 0) {
         this.targetWorldY = Math.max(
-          70,
-          Math.min(GAME_CONFIG.WORLD_HEIGHT - 70, this.targetWorldY + dirY * 650 * dt)
+          60,
+          Math.min(GAME_CONFIG.WORLD_HEIGHT - 60, this.targetWorldY + dirY * 800 * dt)
         );
       }
     }
 
     // Interpolation douce et ultra-réactive vers la position cible
-    const lerpSpeed = 24;
+    const lerpSpeed = this.isArenaMode ? 35 : 24;
     this.currentWorldX += (this.targetWorldX - this.currentWorldX) * Math.min(1, lerpSpeed * dt);
     if (this.isArenaMode) {
       this.currentWorldY += (this.targetWorldY - this.currentWorldY) * Math.min(1, lerpSpeed * dt);

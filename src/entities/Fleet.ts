@@ -478,14 +478,13 @@ export class Fleet {
     const spawnedProjectiles: Projectile[] = [];
     if (this.shipCount <= 0 || this.ships.length === 0) return spawnedProjectiles;
 
-    // Déplacement 2D fluide de la flotte amirale
+    // Déplacement 2D direct et ultra-réactif de la flotte amirale
     const deltaX = targetX - this.centerX;
-    const deltaY = targetY - this.centerY;
-    this.centerX += deltaX * Math.min(1, 22 * dt);
-    this.centerY += deltaY * Math.min(1, 22 * dt);
+    this.centerX = targetX;
+    this.centerY = targetY;
 
-    const targetTilt = Math.max(-0.4, Math.min(0.4, deltaX * 0.05));
-    this.bankAngle += (targetTilt - this.bankAngle) * Math.min(1, 15 * dt);
+    const targetTilt = Math.max(-0.4, Math.min(0.4, deltaX * 0.08));
+    this.bankAngle += (targetTilt - this.bankAngle) * Math.min(1, 20 * dt);
 
     // Auto-ciblage : détection de l'astéroïde / ennemi actif le plus proche
     let closestEnemy: { x: number; y: number } | null = null;
@@ -520,13 +519,19 @@ export class Fleet {
 
     for (let i = 0; i < this.ships.length; i++) {
       const ship = this.ships[i];
-      const rotOffX = ship.targetOffsetX * cosR - ship.targetOffsetY * sinR;
-      const rotOffY = ship.targetOffsetX * sinR + ship.targetOffsetY * cosR;
-      const targetShipX = this.centerX + rotOffX;
-      const targetShipY = this.centerY + rotOffY;
+      if (i === 0) {
+        // Vaisseau amiral suit immédiatement le curseur / doigt
+        ship.x = this.centerX;
+        ship.y = this.centerY;
+      } else {
+        const rotOffX = ship.targetOffsetX * cosR - ship.targetOffsetY * sinR;
+        const rotOffY = ship.targetOffsetX * sinR + ship.targetOffsetY * cosR;
+        const targetShipX = this.centerX + rotOffX;
+        const targetShipY = this.centerY + rotOffY;
 
-      ship.x += (targetShipX - ship.x) * Math.min(1, 22 * dt);
-      ship.y += (targetShipY - ship.y) * Math.min(1, 22 * dt);
+        ship.x += (targetShipX - ship.x) * Math.min(1, 35 * dt);
+        ship.y += (targetShipY - ship.y) * Math.min(1, 35 * dt);
+      }
       ship.tilt = this.bankAngle;
     }
 
