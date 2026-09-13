@@ -108,7 +108,7 @@ export class GameOverModal {
           if (this.elBtnDoubleAd) {
             this.elBtnDoubleAd.setAttribute('disabled', 'true');
             this.elBtnDoubleAd.classList.add('disabled');
-            this.elBtnDoubleAd.innerHTML = '<span class="ad-icon-big">✅</span><span class="ad-label-big">x2 🎁 (BUTIN DOUBLÉ !)</span>';
+            this.elBtnDoubleAd.innerHTML = '<span class="ad-icon-big">✅</span><span class="ad-label-big">x2</span>';
           }
 
           try {
@@ -206,13 +206,11 @@ export class GameOverModal {
       if (this.elEarnedDiamonds) this.elEarnedDiamonds.textContent = `+0`;
       if (this.elEarnedCrystals) this.elEarnedCrystals.textContent = `+0`;
 
-      // En cas de victoire dans le défi : possibilité de lancer la pub pour doubler le butin
+      // En cas de victoire dans le défi : possibilité de lancer la pub pour doubler le butin (bouton avec icône et texte "x2")
       if (stats.isVictory && stats.challengeReward && this.elBtnDoubleAd) {
         this.elBtnDoubleAd.removeAttribute('disabled');
         this.elBtnDoubleAd.classList.remove('disabled');
-        const isBars = stats.challengeReward.type === 'bars';
-        const rName = isBars ? "BARRES (x2)" : "POUDRE (x2)";
-        this.elBtnDoubleAd.innerHTML = `<span class="ad-icon-big">🎬</span><span class="ad-label-big">DOUBLER LE BUTIN (${rName})</span>`;
+        this.elBtnDoubleAd.innerHTML = `<span class="ad-icon-big">🎬</span><span class="ad-label-big">x2</span>`;
         this.elBtnDoubleAd.style.display = 'flex';
       } else {
         if (this.elBtnDoubleAd) this.elBtnDoubleAd.style.display = 'none';
@@ -224,11 +222,13 @@ export class GameOverModal {
       if (elTopRewards) elTopRewards.style.display = 'none';
       if (elTopDivider) elTopDivider.style.display = 'none';
 
-      // En mode défi : on affiche uniquement la récompense du défi (ex: Barres d'Iridium), pas de diamants, pas d'iridium classique, pas de coffre
+      // En mode défi : on affiche uniquement la récompense du défi (sans icône de sac)
       if (stats.isVictory && stats.challengeReward && this.elLootBox && this.elLootGrid) {
         this.elLootBox.classList.remove('hidden');
         const headerTitle = this.elLootBox.querySelector('.loot-header-title');
         if (headerTitle) headerTitle.textContent = 'RÉCOMPENSE DU DÉFI';
+        const headerIcon = this.elLootBox.querySelector('.loot-header-icon') as HTMLElement;
+        if (headerIcon) headerIcon.style.display = 'none';
 
         const isBars = stats.challengeReward.type === 'bars';
         const iconHtml = isBars
@@ -376,6 +376,10 @@ export class GameOverModal {
     if (this.elLootBox && this.elLootGrid) {
       if (stats.isVictory) {
         this.elLootBox.classList.remove('hidden');
+        const headerTitle = this.elLootBox.querySelector('.loot-header-title');
+        if (headerTitle) headerTitle.textContent = 'BUTIN DE LA MISSION';
+        const headerIcon = this.elLootBox.querySelector('.loot-header-icon') as HTMLElement;
+        if (headerIcon) headerIcon.style.display = '';
 
         const rawLoot: EquipmentItem[] = stats.rewardLoot
           ? (Array.isArray(stats.rewardLoot) ? stats.rewardLoot : [stats.rewardLoot])

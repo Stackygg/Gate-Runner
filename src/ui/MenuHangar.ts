@@ -2087,7 +2087,10 @@ export class MenuHangar {
       const btn = document.querySelector(`button.btn-launch-challenge[data-challenge-id="${id}"]`) as HTMLButtonElement | null;
 
       if (pill) {
-        if (attemptsLeft === 2) {
+        if (id === 'bars') {
+          pill.className = 'challenge-attempts-pill';
+          pill.textContent = 'ILLIMITÉ ♾️';
+        } else if (attemptsLeft === 2) {
           pill.className = 'challenge-attempts-pill';
           pill.textContent = '2 / 2 RESTANTS';
         } else if (attemptsLeft === 1) {
@@ -2229,13 +2232,18 @@ export class MenuHangar {
 
     // Affichage des tentatives restantes
     if (this.elChallengeModalAttemptsLeft) {
-      this.elChallengeModalAttemptsLeft.textContent = `${attemptsLeft} / 2 RESTANTE${attemptsLeft > 1 ? 'S' : ''}`;
-      if (attemptsLeft <= 0) {
-        this.elChallengeModalAttemptsLeft.style.color = '#FF4466';
-      } else if (attemptsLeft === 1) {
-        this.elChallengeModalAttemptsLeft.style.color = '#FFAA00';
+      if (id === 'bars') {
+        this.elChallengeModalAttemptsLeft.textContent = 'ILLIMITÉ ♾️';
+        this.elChallengeModalAttemptsLeft.style.color = '#00F0FF';
       } else {
-        this.elChallengeModalAttemptsLeft.style.color = '#00FF88';
+        this.elChallengeModalAttemptsLeft.textContent = `${attemptsLeft} / 2 RESTANTE${attemptsLeft > 1 ? 'S' : ''}`;
+        if (attemptsLeft <= 0) {
+          this.elChallengeModalAttemptsLeft.style.color = '#FF4466';
+        } else if (attemptsLeft === 1) {
+          this.elChallengeModalAttemptsLeft.style.color = '#FFAA00';
+        } else {
+          this.elChallengeModalAttemptsLeft.style.color = '#00FF88';
+        }
       }
     }
 

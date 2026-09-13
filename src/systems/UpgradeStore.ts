@@ -1027,15 +1027,18 @@ export class UpgradeStore {
 
   public getChallengeAttemptsLeft(challengeId: string): number {
     this.checkDailyChallengesReset();
+    if (challengeId === 'bars') return 999; // Défi Convoi d'Iridium jouable indéfiniment
     const used = this.data.dailyChallenges.attempts[challengeId] || 0;
     return Math.max(0, 2 - used);
   }
 
   public canPlayChallenge(challengeId: string): boolean {
+    if (challengeId === 'bars') return true; // Rejouable indéfiniment
     return this.getChallengeAttemptsLeft(challengeId) > 0;
   }
 
   public consumeChallengeAttempt(challengeId: string): boolean {
+    if (challengeId === 'bars') return true; // Tentatives illimitées pour le convoi d'Iridium
     if (!this.canPlayChallenge(challengeId)) return false;
     const used = this.data.dailyChallenges.attempts[challengeId] || 0;
     this.data.dailyChallenges.attempts[challengeId] = used + 1;

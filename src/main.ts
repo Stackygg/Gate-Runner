@@ -592,6 +592,15 @@ export class GameApp {
   }
 
   private handleNextOrRetry() {
+    const isArena = (this.currentLevelData?.gameplayType === 'arena_defense') || (this.store.getActiveChallenge()?.id === 'bars');
+    if (isArena) {
+      const activeChallenge = this.store.getActiveChallenge();
+      const chLvl = this.currentLevelData?.challengeLevel || (activeChallenge ? activeChallenge.level : 1);
+      this.store.setActiveChallenge({ id: 'bars', level: chLvl });
+      this.enterMissionPreparation();
+      this.launchFlight();
+      return;
+    }
     this.enterMissionPreparation();
   }
 
@@ -1355,18 +1364,18 @@ export class GameApp {
       const available = cornerAnchors.filter(c => !occupied.has(c.cornerIndex));
       if (available.length > 0) {
         this.cornerTurretSpawnCount++;
-        // Toutes les 3 tourelles : variante spéciale rapide qui n'a que 2 PV et cadence fulgurante
+        // Toutes les 3 tourelles : variante spéciale rapide qui n'a que 1 PV et cadence EXTRÊMEMENT rapide
         const isRapid = (this.cornerTurretSpawnCount % 3 === 0);
         const spot = available[Math.floor(Math.random() * available.length)];
-        const turretHp = isRapid ? 2 : (5 + (lvl - 1) * 3);
+        const turretHp = isRapid ? 1 : (5 + (lvl - 1) * 3);
         const turret = new Enemy(spot.x, spot.y, 42, 42, 'corner_turret', turretHp);
         turret.cornerIndex = spot.cornerIndex;
         turret.isRapidSpecial = isRapid;
-        turret.shootInterval = isRapid ? 0.65 : Math.max(1.8, 2.6 - (lvl - 1) * 0.2);
-        turret.shootTimer = isRapid ? 0.3 : 0.8;
+        turret.shootInterval = isRapid ? 0.22 : Math.max(1.8, 2.6 - (lvl - 1) * 0.2);
+        turret.shootTimer = isRapid ? 0.18 : 0.8;
         this.enemies.push(turret);
         this.particles.spawnWarpRing(spot.x, spot.y, isRapid ? '#FFE600' : '#FF0055');
-        this.sound.playLaser();
+        this.sound.playLaser(isRapid ? 1.3 : 1.0);
       }
     }
 
@@ -1379,15 +1388,15 @@ export class GameApp {
         const targetY = this.cargoShip ? this.cargoShip.y : GAME_CONFIG.CARGO_CENTER_Y;
         const angle = Math.atan2(targetY - turret.y, targetX - turret.x);
         const isRapid = !!turret.isRapidSpecial;
-        const bulletSpeed = isRapid ? (260 + (lvl - 1) * 15) : (190 + (lvl - 1) * 15);
+        const bulletSpeed = isRapid ? (310 + (lvl - 1) * 15) : (190 + (lvl - 1) * 15);
         const vx = Math.cos(angle) * bulletSpeed;
         const vy = Math.sin(angle) * bulletSpeed;
-        const bulletDmg = isRapid ? 2 : (5 + (lvl - 1));
+        const bulletDmg = isRapid ? 1.5 : (5 + (lvl - 1));
         const bulletColor = isRapid ? '#FFE600' : '#FF0055';
 
         const enemyBullet = new Projectile(turret.x, turret.y, vx, vy, bulletDmg, 'enemy_bullet', bulletColor);
         this.enemyProjectiles.push(enemyBullet);
-        this.sound.playLaser();
+        this.sound.playLaser(isRapid ? 1.4 : 1.0);
         this.particles.spawnHitSparks(turret.x, turret.y, bulletColor);
       }
     }
