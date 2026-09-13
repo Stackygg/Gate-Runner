@@ -6876,26 +6876,27 @@ html, body {
 .daily-challenges-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
 }
 
 @media (min-width: 580px) {
   .daily-challenges-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 14px;
   }
 }
 
 .daily-challenge-card {
-  background: linear-gradient(135deg, rgba(16, 24, 60, 0.9) 0%, rgba(8, 12, 34, 0.95) 100%);
-  border: 1px solid rgba(0, 240, 255, 0.28);
-  border-radius: 12px;
-  padding: 10px;
+  background: linear-gradient(135deg, rgba(16, 24, 60, 0.92) 0%, rgba(8, 12, 34, 0.96) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.32);
+  border-radius: 14px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 8px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  gap: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
   transition: all 0.2s ease;
 }
 
@@ -6955,10 +6956,8 @@ html, body {
   background: rgba(0, 0, 0, 0.4);
 }
 
-.crystals-icon-box { border-color: rgba(168, 85, 247, 0.5); box-shadow: 0 0 10px rgba(168, 85, 247, 0.25); }
-.diamonds-icon-box { border-color: rgba(56, 189, 248, 0.5); box-shadow: 0 0 10px rgba(56, 189, 248, 0.25); }
-.dust-icon-box { border-color: rgba(236, 72, 153, 0.5); box-shadow: 0 0 10px rgba(236, 72, 153, 0.25); }
-.bars-icon-box { border-color: rgba(234, 179, 8, 0.5); box-shadow: 0 0 10px rgba(234, 179, 8, 0.25); }
+.dust-icon-box { border-color: rgba(56, 189, 248, 0.6); box-shadow: 0 0 12px rgba(56, 189, 248, 0.35); }
+.bars-icon-box { border-color: rgba(168, 85, 247, 0.6); box-shadow: 0 0 12px rgba(168, 85, 247, 0.35); }
 
 .challenge-card-info {
   display: flex;

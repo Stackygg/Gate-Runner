@@ -2036,7 +2036,7 @@ export class MenuHangar {
       this.elChallengesResetCountdown.textContent = this.getCountdownToMidnight();
     }
 
-    const challenges = ['crystals', 'diamonds', 'dust', 'bars'];
+    const challenges = ['bars', 'dust'];
     challenges.forEach(id => {
       const attemptsLeft = this.store.getChallengeAttemptsLeft(id);
       const pill = document.getElementById(`challenge-attempts-${id}`);
@@ -2078,16 +2078,12 @@ export class MenuHangar {
 
     // Attribue la récompense de base du défi
     const rewardsMap: Record<string, { type: string; amt: number }> = {
-      crystals: { type: 'crystals', amt: 350 },
-      diamonds: { type: 'diamonds', amt: 40 },
-      dust: { type: 'dust', amt: 15 },
-      bars: { type: 'bars', amt: 2 }
+      bars: { type: 'bars', amt: 2 },
+      dust: { type: 'dust', amt: 15 }
     };
 
-    const r = rewardsMap[id] || { type: 'crystals', amt: 350 };
-    if (r.type === 'crystals') this.store.addCrystals(r.amt);
-    else if (r.type === 'diamonds') this.store.addDiamonds(r.amt);
-    else if (r.type === 'dust') this.store.addDiamondDust(r.amt);
+    const r = rewardsMap[id] || { type: 'bars', amt: 2 };
+    if (r.type === 'dust') this.store.addDiamondDust(r.amt);
     else if (r.type === 'bars') this.store.addIridiumBars(r.amt);
 
     this.refreshCurrencies();
@@ -2098,33 +2094,21 @@ export class MenuHangar {
   private openChallengeVictoryModal(id: string) {
     this.currentWonChallengeId = id;
     const infoMap: Record<string, { title: string; icon: string; rewardText: string; shortText: string }> = {
-      crystals: {
-        title: "RAID D'IRIDIUM ACCOMPLI !",
-        icon: '🔮',
-        rewardText: "+350 Minerais d'Iridium bruts",
-        shortText: "+350 Minerais"
-      },
-      diamonds: {
-        title: 'MOISSON DE DIAMANTS ACCOMPLIE !',
-        icon: '💎',
-        rewardText: '+40 Diamants de mission',
-        shortText: '+40 Diamants'
-      },
-      dust: {
-        title: 'POUSSIÈRE DE DIAMANT RÉCOLTÉE !',
-        icon: '💎',
-        rewardText: '+15 Poudre de Diamant pour vos équipements',
-        shortText: '+15 Poudre'
-      },
       bars: {
         title: "CONVOI D'IRIDIUM ESCORTÉ !",
         icon: '🟦',
         rewardText: "+2 Barres d'Iridium raffiné",
         shortText: "+2 Barres"
+      },
+      dust: {
+        title: 'RAID DE DIAMANT ACCOMPLI !',
+        icon: '💎',
+        rewardText: '+15 Poudre de Diamant pour vos équipements',
+        shortText: '+15 Poudre'
       }
     };
 
-    const info = infoMap[id] || infoMap.crystals;
+    const info = infoMap[id] || infoMap.bars;
 
     if (this.elChallengeVictoryIcon) {
       if (id === 'dust') {
@@ -2166,16 +2150,12 @@ export class MenuHangar {
       'DOUBLER DÉFI QUOTIDIEN (x2)',
       () => {
         const rewardsMap: Record<string, { type: string; amt: number }> = {
-          crystals: { type: 'crystals', amt: 350 },
-          diamonds: { type: 'diamonds', amt: 40 },
-          dust: { type: 'dust', amt: 15 },
-          bars: { type: 'bars', amt: 2 }
+          bars: { type: 'bars', amt: 2 },
+          dust: { type: 'dust', amt: 15 }
         };
 
-        const r = rewardsMap[id] || { type: 'crystals', amt: 350 };
-        if (r.type === 'crystals') this.store.addCrystals(r.amt);
-        else if (r.type === 'diamonds') this.store.addDiamonds(r.amt);
-        else if (r.type === 'dust') this.store.addDiamondDust(r.amt);
+        const r = rewardsMap[id] || { type: 'bars', amt: 2 };
+        if (r.type === 'dust') this.store.addDiamondDust(r.amt);
         else if (r.type === 'bars') this.store.addIridiumBars(r.amt);
 
         this.store.markChallengeDoubled(id);
