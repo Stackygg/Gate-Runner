@@ -8710,3 +8710,61 @@ html, body {
   }
 }
 
+/* Boutons de Réinitialisation des Essais de Défi (Outil de Test) */
+.btn-challenge-reset-test {
+  background: rgba(255, 170, 0, 0.15);
+  border: 1px dashed #FFAA00;
+  color: #FFAA00;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.btn-challenge-reset-test:hover {
+  background: rgba(255, 170, 0, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(255, 170, 0, 0.4);
+}
+
+.btn-challenge-reset-mini {
+  background: rgba(255, 170, 0, 0.15);
+  border: 1px dashed #FFAA00;
+  color: #FFAA00;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  margin-left: 12px;
+  transition: all 0.2s ease;
+}
+
+.btn-challenge-reset-mini:hover {
+  background: rgba(255, 170, 0, 0.35);
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.4);
+}
+
+/* Bouton Relancer défi grisé si tentatives épuisées */
+#modal-gameover .modal-actions-row .btn-primary:disabled,
+#modal-gameover .modal-actions-row .btn-primary.disabled {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  filter: grayscale(1) !important;
+  transform: none !important;
+  opacity: 0.55 !important;
+}
+
+

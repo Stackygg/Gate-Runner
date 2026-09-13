@@ -20,6 +20,7 @@ export interface GameOverStats {
   rewardLoot?: EquipmentItem | EquipmentItem[] | null;
   isChallenge?: boolean;
   challengeReward?: { type: 'bars' | 'dust'; amount: number; label: string };
+  challengeAttemptsLeft?: number;
 }
 
 export class GameOverModal {
@@ -67,6 +68,9 @@ export class GameOverModal {
 
   private setupListeners() {
     this.elBtnNext?.addEventListener('click', () => {
+      if (this.elBtnNext?.hasAttribute('disabled') || this.elBtnNext?.classList.contains('disabled')) {
+        return;
+      }
       this.hide();
       this.onNextCallback();
     });
@@ -94,7 +98,7 @@ export class GameOverModal {
         const isBars = reward.type === 'bars';
         const label = isBars ? "BARRES D'IRIDIUM" : "POUDRE DE DIAMANT";
 
-        AdService.showRewardedAd(`DOUBLER LE BUTIN (x2 ${label}) 🎁`, () => {
+        AdService.showRewardedAd('x2', () => {
           this.isDoubled = true;
           const bonusAmount = reward.amount;
           reward.amount *= 2;
@@ -150,7 +154,7 @@ export class GameOverModal {
         if (this.elBtnDoubleAd) {
           this.elBtnDoubleAd.setAttribute('disabled', 'true');
           this.elBtnDoubleAd.classList.add('disabled');
-          this.elBtnDoubleAd.innerHTML = '<span class="ad-icon-big">✅</span><span class="ad-label-big">x2 💎 (DOUBLÉ !)</span>';
+          this.elBtnDoubleAd.innerHTML = '<span class="ad-icon-big">✅</span><span class="ad-label-big">x2 💎</span>';
         }
 
         try {
@@ -172,14 +176,18 @@ export class GameOverModal {
     this.currentStats = { ...stats };
     this.isDoubled = false;
 
+    if (this.elBtnHangar) {
+      this.elBtnHangar.textContent = 'MENU PRINCIPAL';
+    }
+
     if (stats.isChallenge) {
+      const attempts = stats.challengeAttemptsLeft !== undefined ? stats.challengeAttemptsLeft : 0;
       if (stats.isVictory) {
         if (this.elBadge) {
           this.elBadge.className = 'modal-badge victory';
           this.elBadge.textContent = 'DÉFI SURVÉCU !';
         }
         if (this.elTitle) this.elTitle.textContent = "CONVOI D'IRIDIUM DÉFENDU";
-        if (this.elBtnNext) this.elBtnNext.textContent = 'CONTINUER 🚀';
 
         try {
           confetti({
@@ -197,7 +205,17 @@ export class GameOverModal {
         if (this.elTitle) {
           this.elTitle.textContent = (stats.defeatReason === 'MOTHERSHIP_DESTROYED') ? "CARGO D'IRIDIUM DÉTRUIT" : 'FLOTTE ANÉANTIE';
         }
-        if (this.elBtnNext) this.elBtnNext.textContent = 'RÉESSAYER LE DÉFI 🔄';
+      }
+
+      if (this.elBtnNext) {
+        this.elBtnNext.textContent = `Relancer ${attempts}/2`;
+        if (attempts <= 0) {
+          this.elBtnNext.setAttribute('disabled', 'true');
+          this.elBtnNext.classList.add('disabled');
+        } else {
+          this.elBtnNext.removeAttribute('disabled');
+          this.elBtnNext.classList.remove('disabled');
+        }
       }
 
       if (this.elFinalFleet) this.elFinalFleet.textContent = `${stats.survivingFleet} vaisseau(x)`;
@@ -252,6 +270,11 @@ export class GameOverModal {
 
       this.elModal?.classList.remove('hidden');
       return;
+    }
+
+    if (this.elBtnNext) {
+      this.elBtnNext.removeAttribute('disabled');
+      this.elBtnNext.classList.remove('disabled');
     }
 
     if (stats.isVictory) {

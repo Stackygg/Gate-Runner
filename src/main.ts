@@ -594,6 +594,10 @@ export class GameApp {
   private handleNextOrRetry() {
     const isArena = (this.currentLevelData?.gameplayType === 'arena_defense') || (this.store.getActiveChallenge()?.id === 'bars');
     if (isArena) {
+      if (!this.store.canPlayChallenge('bars')) {
+        this.showHangar();
+        return;
+      }
       const activeChallenge = this.store.getActiveChallenge();
       const chLvl = this.currentLevelData?.challengeLevel || (activeChallenge ? activeChallenge.level : 1);
       this.store.setActiveChallenge({ id: 'bars', level: chLvl });
@@ -659,7 +663,8 @@ export class GameApp {
         newlyCompletedQuests: [],
         rewardLoot: null,
         isChallenge: true,
-        challengeReward
+        challengeReward,
+        challengeAttemptsLeft: this.store.getChallengeAttemptsLeft(challengeId)
       });
       return;
     }

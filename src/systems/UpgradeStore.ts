@@ -1027,23 +1027,39 @@ export class UpgradeStore {
 
   public getChallengeAttemptsLeft(challengeId: string): number {
     this.checkDailyChallengesReset();
-    if (challengeId === 'bars') return 999; // Défi Convoi d'Iridium jouable indéfiniment
     const used = this.data.dailyChallenges.attempts[challengeId] || 0;
     return Math.max(0, 2 - used);
   }
 
   public canPlayChallenge(challengeId: string): boolean {
-    if (challengeId === 'bars') return true; // Rejouable indéfiniment
     return this.getChallengeAttemptsLeft(challengeId) > 0;
   }
 
   public consumeChallengeAttempt(challengeId: string): boolean {
-    if (challengeId === 'bars') return true; // Tentatives illimitées pour le convoi d'Iridium
     if (!this.canPlayChallenge(challengeId)) return false;
     const used = this.data.dailyChallenges.attempts[challengeId] || 0;
     this.data.dailyChallenges.attempts[challengeId] = used + 1;
     this.save();
     return true;
+  }
+
+  public resetChallengeAttempts(challengeId?: string): void {
+    if (!this.data.dailyChallenges) {
+      this.data.dailyChallenges = {
+        date: new Date().toISOString().split('T')[0],
+        attempts: {},
+        doubledRuns: {},
+        completions: {}
+      };
+    }
+    if (challengeId) {
+      delete this.data.dailyChallenges.attempts[challengeId];
+      delete this.data.dailyChallenges.doubledRuns[challengeId];
+    } else {
+      this.data.dailyChallenges.attempts = {};
+      this.data.dailyChallenges.doubledRuns = {};
+    }
+    this.save();
   }
 
   public canDoubleChallengeReward(challengeId: string): boolean {

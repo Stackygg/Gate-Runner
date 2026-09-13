@@ -456,6 +456,19 @@ export class MenuHangar {
       this.handleSimulateSelectedChallenge();
     });
 
+    // Réinitialisation de test des essais de défis
+    const handleResetTest = () => {
+      this.store.resetChallengeAttempts();
+      this.updateChallengesDisplay();
+      if (this.selectedChallengeId) {
+        this.openChallengeBriefingModal(this.selectedChallengeId);
+      }
+      this.showHudToast('🔄 Essais de défis réinitialisés (2/2) !', false);
+    };
+
+    document.getElementById('btn-reset-challenge-attempts')?.addEventListener('click', handleResetTest);
+    document.getElementById('btn-reset-challenge-briefing-attempts')?.addEventListener('click', handleResetTest);
+
     // Événements Tournoi & Classement Saisonniers
     this.elTabEventLeaderboard?.addEventListener('click', () => {
       this.switchEventSubtab('leaderboard');
@@ -2087,10 +2100,7 @@ export class MenuHangar {
       const btn = document.querySelector(`button.btn-launch-challenge[data-challenge-id="${id}"]`) as HTMLButtonElement | null;
 
       if (pill) {
-        if (id === 'bars') {
-          pill.className = 'challenge-attempts-pill';
-          pill.textContent = 'ILLIMITÉ ♾️';
-        } else if (attemptsLeft === 2) {
+        if (attemptsLeft === 2) {
           pill.className = 'challenge-attempts-pill';
           pill.textContent = '2 / 2 RESTANTS';
         } else if (attemptsLeft === 1) {
@@ -2232,18 +2242,13 @@ export class MenuHangar {
 
     // Affichage des tentatives restantes
     if (this.elChallengeModalAttemptsLeft) {
-      if (id === 'bars') {
-        this.elChallengeModalAttemptsLeft.textContent = 'ILLIMITÉ ♾️';
-        this.elChallengeModalAttemptsLeft.style.color = '#00F0FF';
+      this.elChallengeModalAttemptsLeft.textContent = `${attemptsLeft} / 2 RESTANTE${attemptsLeft > 1 ? 'S' : ''}`;
+      if (attemptsLeft <= 0) {
+        this.elChallengeModalAttemptsLeft.style.color = '#FF4466';
+      } else if (attemptsLeft === 1) {
+        this.elChallengeModalAttemptsLeft.style.color = '#FFAA00';
       } else {
-        this.elChallengeModalAttemptsLeft.textContent = `${attemptsLeft} / 2 RESTANTE${attemptsLeft > 1 ? 'S' : ''}`;
-        if (attemptsLeft <= 0) {
-          this.elChallengeModalAttemptsLeft.style.color = '#FF4466';
-        } else if (attemptsLeft === 1) {
-          this.elChallengeModalAttemptsLeft.style.color = '#FFAA00';
-        } else {
-          this.elChallengeModalAttemptsLeft.style.color = '#00FF88';
-        }
+        this.elChallengeModalAttemptsLeft.style.color = '#00FF88';
       }
     }
 
