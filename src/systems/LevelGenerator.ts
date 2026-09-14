@@ -447,7 +447,7 @@ export class LevelGenerator {
     // Configuration selon le secteur
     let bossType: 'boss_alpharion' | 'boss_betapulsar' | 'boss_gammargantua' = 'boss_alpharion';
     let bossName = 'ALPHARION';
-    let bossHp = 95000;
+    let bossHp = 450;
     let bossWidth = 220;
     let bossHeight = 125;
     let nextGreek = 'Β';
@@ -456,7 +456,7 @@ export class LevelGenerator {
     if (levelNum === 9) {
       bossType = 'boss_betapulsar';
       bossName = 'BETAPULSAR';
-      bossHp = 240000;
+      bossHp = 1500;
       bossWidth = 235;
       bossHeight = 130;
       nextGreek = 'Γ';
@@ -464,7 +464,7 @@ export class LevelGenerator {
     } else if (levelNum === 15) {
       bossType = 'boss_gammargantua';
       bossName = 'GAMMARGANTUA';
-      bossHp = 580000;
+      bossHp = 4500;
       bossWidth = 260;
       bossHeight = 150;
       nextGreek = 'Δ';
@@ -481,38 +481,38 @@ export class LevelGenerator {
 
     // 3. Mécaniques Uniques Spécifiques par Boss
     if (levelNum === 4) {
-      // --- ALPHARION : Escadron de Minions Solaires initiaux ---
-      const m1 = new Enemy(180, 20, 54, 44, 'boss_minion', 180, 'DRONE SOLAIRE');
-      const m2 = new Enemy(330, -30, 58, 48, 'boss_minion', 240, 'DRONE COMMANDANT');
-      const m3 = new Enemy(480, 20, 54, 44, 'boss_minion', 180, 'DRONE SOLAIRE');
+      // --- ALPHARION : Escadron de Minions Solaires initiaux (5 PV max au début) ---
+      const m1 = new Enemy(180, 20, 54, 44, 'boss_minion', 5, 'DRONE SOLAIRE');
+      const m2 = new Enemy(330, -30, 58, 48, 'boss_minion', 5, 'DRONE COMMANDANT');
+      const m3 = new Enemy(480, 20, 54, 44, 'boss_minion', 5, 'DRONE SOLAIRE');
       enemies.push(m1, m2, m3);
     } else if (levelNum === 9) {
-      // --- BETAPULSAR : Deux Générateurs Magnétiques créant un bouclier infranchissable ---
+      // --- BETAPULSAR : Deux Générateurs Magnétiques (10 PV max pour les premiers) ---
       bossEnemy.isInvulnerable = true;
 
-      const genLeft = new Enemy(155, -95, 80, 80, 'shield_generator', 14000, 'GÉNÉRATEUR ALPHA');
+      const genLeft = new Enemy(155, -95, 80, 80, 'shield_generator', 10, 'GÉNÉRATEUR ALPHA');
       genLeft.generatorSide = 'left';
       genLeft.targetBoss = bossEnemy;
 
-      const genRight = new Enemy(505, -95, 80, 80, 'shield_generator', 14000, 'GÉNÉRATEUR BETA');
+      const genRight = new Enemy(505, -95, 80, 80, 'shield_generator', 10, 'GÉNÉRATEUR BETA');
       genRight.generatorSide = 'right';
       genRight.targetBoss = bossEnemy;
 
       bossEnemy.connectedGenerators = [genLeft, genRight];
       enemies.push(genLeft, genRight);
     } else if (levelNum === 15) {
-      // --- GAMMARGANTUA : Trois Pylônes d'Ancrage Gravitationnel et drones kamikazes ---
+      // --- GAMMARGANTUA : Trois Pylônes d'Ancrage Gravitationnel (50 PV max) ---
       bossEnemy.isInvulnerable = true;
 
-      const ancLeft = new Enemy(150, -95, 85, 85, 'shield_generator', 24000, 'ANCRE OMEGA 1');
+      const ancLeft = new Enemy(150, -95, 85, 85, 'shield_generator', 50, 'ANCRE OMEGA 1');
       ancLeft.generatorSide = 'left';
       ancLeft.targetBoss = bossEnemy;
 
-      const ancCenter = new Enemy(330, -70, 90, 90, 'shield_generator', 32000, 'NŒUD SINGULARITÉ');
+      const ancCenter = new Enemy(330, -70, 90, 90, 'shield_generator', 50, 'NŒUD SINGULARITÉ');
       ancCenter.generatorSide = 'center';
       ancCenter.targetBoss = bossEnemy;
 
-      const ancRight = new Enemy(510, -95, 85, 85, 'shield_generator', 24000, 'ANCRE OMEGA 2');
+      const ancRight = new Enemy(510, -95, 85, 85, 'shield_generator', 50, 'ANCRE OMEGA 2');
       ancRight.generatorSide = 'right';
       ancRight.targetBoss = bossEnemy;
 

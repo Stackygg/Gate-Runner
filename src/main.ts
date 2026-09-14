@@ -1283,17 +1283,17 @@ export class GameApp {
         activeBoss.minionSpawnTimer += dt;
         if (activeBoss.minionSpawnTimer >= 5.0 && activeBoss.y >= 50) {
           activeBoss.minionSpawnTimer = 0;
+          activeBoss.minionWaveIndex++;
           this.sound.playWarp();
           this.particles.spawnFloatingText(activeBoss.x, activeBoss.y + 70, '⚡ MINIONS DÉPLOYÉS !', '#FFE600', 22);
 
-          const isGamma = activeBoss.type === 'boss_gammargantua';
-          const hpSide = isGamma ? 320 : 180;
-          const hpCenter = isGamma ? 400 : 240;
-          const minionName = isGamma ? 'DRONE GRAVITATIONNEL' : 'DRONE SOLAIRE';
+          // Règle utilisateur : 5 PV max au début, puis augmentent 5 par 5 en PV à chaque vague
+          const waveHp = 5 + activeBoss.minionWaveIndex * 5;
+          const minionName = (activeBoss.type === 'boss_gammargantua') ? 'DRONE GRAVITATIONNEL' : 'DRONE SOLAIRE';
 
-          const mLeft = new Enemy(activeBoss.x - 140, activeBoss.y + 40, 54, 44, 'boss_minion', hpSide, minionName);
-          const mCenter = new Enemy(activeBoss.x, activeBoss.y + 75, 58, 48, 'boss_minion', hpCenter, minionName);
-          const mRight = new Enemy(activeBoss.x + 140, activeBoss.y + 40, 54, 44, 'boss_minion', hpSide, minionName);
+          const mLeft = new Enemy(activeBoss.x - 140, activeBoss.y + 40, 54, 44, 'boss_minion', waveHp, minionName);
+          const mCenter = new Enemy(activeBoss.x, activeBoss.y + 75, 58, 48, 'boss_minion', waveHp, minionName);
+          const mRight = new Enemy(activeBoss.x + 140, activeBoss.y + 40, 54, 44, 'boss_minion', waveHp, minionName);
 
           this.enemies.push(mLeft, mCenter, mRight);
         }

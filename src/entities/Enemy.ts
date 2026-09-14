@@ -26,6 +26,7 @@ export class Enemy {
   public connectedGenerators: Enemy[] = []; // Générateurs magnétiques alimentant le bouclier
   public shieldAlpha: number = 1.0;
   public minionSpawnTimer: number = 0;
+  public minionWaveIndex: number = 0; // Index de vague pour augmenter les PV 5 par 5
   public diamondReward: number = 0;
   public generatorSide?: 'left' | 'center' | 'right';
   public targetBoss?: Enemy;
