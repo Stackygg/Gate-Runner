@@ -1115,7 +1115,12 @@ export class MenuHangar {
     const launchBtn = document.getElementById('btn-missions-launch');
     const launchText = launchBtn?.querySelector('.launch-text');
     if (launchText) {
-      launchText.textContent = 'DÉPLOYER LA FLOTTE';
+      if (SectorSystem.isSectorBossMission(mission)) {
+        const bInfo = SectorSystem.getSectorBossForMission(mission);
+        launchText.textContent = bInfo ? `ENGAGER LE BOSS [${bInfo.bossName.toUpperCase()}] 👑` : 'ENGAGER LE BOSS FINAL 👑';
+      } else {
+        launchText.textContent = 'DÉPLOYER LA FLOTTE';
+      }
     }
 
     // Mise à jour de l'état des flèches de Secteur
@@ -1174,7 +1179,22 @@ export class MenuHangar {
 
     if (this.elMissionStatus) {
       const type = LevelGenerator.getMissionType(mission);
-      if (type === 'escort') {
+      const isBoss = SectorSystem.isSectorBossMission(mission);
+      const bossInfo = SectorSystem.getSectorBossForMission(mission);
+
+      if (isBoss && bossInfo) {
+        this.elMissionStatus.textContent = `👑 NIVEAU FINAL // BOSS : ${bossInfo.bossName.toUpperCase()}`;
+        this.elMissionStatus.className = 'mission-type-tag boss';
+      } else if (type === 'interception') {
+        this.elMissionStatus.textContent = '🎯 INTERCEPTION // CONVOI';
+        this.elMissionStatus.className = 'mission-type-tag interception';
+      } else if (type === 'flare_run') {
+        this.elMissionStatus.textContent = '☀️ RUN // TEMPÊTE SOLAIRE';
+        this.elMissionStatus.className = 'mission-type-tag flare';
+      } else if (type === 'gauntlet') {
+        this.elMissionStatus.textContent = '💥 GAUNTLET // STATION FORTIFIÉE';
+        this.elMissionStatus.className = 'mission-type-tag gauntlet';
+      } else if (type === 'escort') {
         this.elMissionStatus.textContent = '🛡️ DÉFENSE // ESCORTE';
         this.elMissionStatus.className = 'mission-type-tag escort';
       } else if (type === 'raid') {

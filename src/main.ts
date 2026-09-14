@@ -23,6 +23,7 @@ import { BottomUpgradeDock } from './ui/BottomUpgradeDock';
 import { ShopModal } from './ui/ShopModal';
 import { AdService } from './services/AdService';
 import { SplashScreen } from './ui/SplashScreen';
+import { Stargate } from './entities/Stargate';
 
 export type GameState = 'MENU' | 'PRE_FLIGHT' | 'PLAYING' | 'BOSS' | 'GAUNTLET' | 'GAMEOVER' | 'PAUSED';
 
@@ -52,6 +53,8 @@ export class GameApp {
   private rescuedShips: RescuedShip[] = [];
   private gates: Gate[] = [];
   private enemies: Enemy[] = [];
+  private stargate: Stargate | null = null;
+  private stargateWarpTimer: number = 0;
   private currentLevelData!: LevelData;
   private traveledDistance: number = 0;
   private sessionDiamonds: number = 0;
@@ -439,6 +442,9 @@ export class GameApp {
 
     this.gates = this.currentLevelData.gates;
     this.enemies = [...this.currentLevelData.enemies];
+    this.stargate = null;
+    this.stargateWarpTimer = 0;
+    this.victoryDelayTimer = undefined;
     this.forceFieldTimer = this.currentLevelData.isFunLevel ? 10.0 : 0;
     this.currentRaidRightTier = 1;
 
@@ -720,6 +726,10 @@ export class GameApp {
       this.store.recordAchievementProgress('total_crystals', this.store.data.violetCrystals, true);
     }
 
+    const isSectorBoss = SectorSystem.isSectorBossMission(this.lastPlayedMission);
+    const bossInfo = SectorSystem.getSectorBossForMission(this.lastPlayedMission);
+    const newlyUnlockedFeatures = (isVictory && isSectorBoss) ? SectorSystem.getNewlyUnlockedFeaturesForMission(this.lastPlayedMission) : [];
+
     this.gameOverModal.show({
       isVictory,
       survivingFleet: Math.max(0, this.fleet ? this.fleet.shipCount : 0),
@@ -731,7 +741,12 @@ export class GameApp {
       defeatReason,
       quests: this.store.getQuestsForMission(this.lastPlayedMission),
       newlyCompletedQuests,
-      rewardLoot
+      rewardLoot,
+      isSectorBoss,
+      sectorBossName: bossInfo?.bossName,
+      nextSectorName: bossInfo?.nextSectorName,
+      nextSectorGreek: bossInfo?.nextSectorGreek,
+      newlyUnlockedFeatures
     });
   }
 
@@ -1262,15 +1277,51 @@ export class GameApp {
     // Victoire : Uniquement si le boss final est anéanti (ou si mission sans boss et distance atteinte)
     if (this.currentLevelData.bossEnemy) {
       if (this.currentLevelData.bossEnemy.isDead) {
-        if (this.victoryDelayTimer === undefined) {
-          this.victoryDelayTimer = 1.8;
-          this.sound.playWarp();
-        }
-        this.victoryDelayTimer -= dt;
-        if (this.victoryDelayTimer <= 0) {
-          this.maxMultiplierAchieved = this.finalBossMultiplier;
-          this.triggerGameOver(true);
+        if (this.currentLevelData.isSectorBossDuel) {
+          // --- SÉQUENCE STARGATE DE TRANSIT INTERSTELLAIRE ---
+          if (!this.stargate) {
+            const nextGreek = this.currentLevelData.nextSectorGreek || 'Β';
+            const nextSecName = this.currentLevelData.nextSectorName || 'Beta';
+            const gateY = Math.min(this.fleet.centerY - 320, 220);
+            this.stargate = new Stargate(330, gateY, nextGreek, nextSecName);
+            this.stargateWarpTimer = 3.2;
+            this.sound.playWarp();
+            this.renderer.addScreenShake(15);
+            this.particles.spawnFloatingText(330, this.fleet.centerY - 160, `🌀 PORTE INTERSTELLAIRE VERS LE SECTEUR ${nextSecName.toUpperCase()} OUVERTE !`, '#00F0FF', 24);
+          }
+
+          this.stargate.update(dt);
+
+          if (this.stargate.isFullyOpen && !this.stargate.isEngulfing) {
+            this.stargate.startEngulfing();
+          }
+
+          if (this.stargate.isEngulfing) {
+            // Accélération de la flotte vers le cœur de la Stargate
+            this.fleet.centerX += (this.stargate.x - this.fleet.centerX) * 3.5 * dt;
+            this.fleet.centerY -= 180 * dt;
+            this.particles.spawnGems(this.fleet.centerX, this.fleet.centerY + 25, 2);
+            this.particles.spawnExplosion(this.fleet.centerX, this.fleet.centerY, '#00F0FF', 1);
+          }
+
+          this.stargateWarpTimer -= dt;
+          if (this.stargateWarpTimer <= 0) {
+            this.maxMultiplierAchieved = this.finalBossMultiplier;
+            this.triggerGameOver(true);
+            return;
+          }
           return;
+        } else {
+          if (this.victoryDelayTimer === undefined) {
+            this.victoryDelayTimer = 1.8;
+            this.sound.playWarp();
+          }
+          this.victoryDelayTimer -= dt;
+          if (this.victoryDelayTimer <= 0) {
+            this.maxMultiplierAchieved = this.finalBossMultiplier;
+            this.triggerGameOver(true);
+            return;
+          }
         }
       }
     } else if (this.traveledDistance >= this.currentLevelData.totalDistance) {
@@ -1654,6 +1705,11 @@ export class GameApp {
     // 8. Dessin des Vaisseaux Prototypes Libérés & Bonus
     for (let i = 0; i < this.rescuedShips.length; i++) {
       this.rescuedShips[i].draw3D(this.renderer.ctx, this.renderer);
+    }
+
+    // 8.5 Dessin de la Porte Stellaire (Stargate) lors du transit de fin de secteur
+    if (this.stargate) {
+      this.stargate.draw3D(this.renderer.ctx, this.renderer);
     }
 
     // 9. Dessin de la Flotte du Joueur

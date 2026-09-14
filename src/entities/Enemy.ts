@@ -5,7 +5,7 @@ import { Renderer } from '../engine/Renderer';
 import { SHIP_RANKS } from './RescuedShip';
 import { GAME_CONFIG } from '../config';
 
-export type EnemyType = 'block' | 'drone' | 'fast' | 'heavy' | 'black_hole' | 'prison' | 'boss_v1' | 'boss_v2' | 'boss_v3' | 'boss_final' | 'gauntlet_wall' | 'corner_turret';
+export type EnemyType = 'block' | 'drone' | 'fast' | 'heavy' | 'black_hole' | 'prison' | 'boss_v1' | 'boss_v2' | 'boss_v3' | 'boss_final' | 'boss_alpharion' | 'boss_betapulsar' | 'boss_gammargantua' | 'gauntlet_wall' | 'corner_turret';
 
 export class Enemy {
   public x: number;
@@ -81,7 +81,8 @@ export class Enemy {
   }
 
   public isBossType(): boolean {
-    return this.type === 'boss_v1' || this.type === 'boss_v2' || this.type === 'boss_v3' || this.type === 'boss_final';
+    return this.type === 'boss_v1' || this.type === 'boss_v2' || this.type === 'boss_v3' || this.type === 'boss_final' ||
+           this.type === 'boss_alpharion' || this.type === 'boss_betapulsar' || this.type === 'boss_gammargantua';
   }
 
   public update(dt: number, scrollSpeed: number, playerX?: number, targetCombatY: number = 310, isEscortMode: boolean = false): Projectile[] {
@@ -129,7 +130,12 @@ export class Enemy {
           this.recoilShakeAmount = Math.max(0, this.recoilShakeAmount - dt * 12);
         } else {
           // En dehors du tir : vol stationnaire et strafe fluide sans glitch
-          const strafeAmplitude = (this.type === 'boss_final') ? 60 : 80;
+          let strafeAmplitude = 80;
+          if (this.type === 'boss_final') strafeAmplitude = 60;
+          else if (this.type === 'boss_gammargantua') strafeAmplitude = 50;
+          else if (this.type === 'boss_betapulsar') strafeAmplitude = 95;
+          else if (this.type === 'boss_alpharion') strafeAmplitude = 75;
+
           this.targetCombatX = 330 + Math.sin(this.phase * 0.6) * strafeAmplitude;
           this.x += (this.targetCombatX - this.x) * 2.2 * dt;
           // Flottement et maintien doux à targetCombatY (ancrage stable sans dérive)
@@ -146,17 +152,14 @@ export class Enemy {
     }
 
     // Tirs de Boss : Salves rythmées avec patterns uniques (actif UNIQUEMENT une fois arrivé en position de combat targetCombatY)
-    // Cela garantit que le joueur a tout le temps de tirer sur le boss pendant son approche depuis l'horizon avant qu'il n'attaque
     if (this.isBossType() && this.y >= targetCombatY - 5 && this.y < 680) {
       this.combatTimer += dt;
 
-      // Calcul de la cadence de tir :
-      // Pour le Boss Final, la cadence s'accélère progressivement au bout de 10 secondes de combat
+      // Calcul de la cadence de tir
       let effectiveInterval = this.shootInterval;
-      if (this.type === 'boss_final') {
+      if (this.type === 'boss_final' || this.type === 'boss_gammargantua') {
         if (this.combatTimer > 10.0) {
           const overTime = this.combatTimer - 10.0;
-          // Accélération continue après 10s : passe de 2.0s à 1.25s à 20s, 0.88s à 25s, et plafonne à 0.50s à 30s+
           effectiveInterval = Math.max(0.50, this.shootInterval - overTime * 0.075);
         }
       }
@@ -164,17 +167,15 @@ export class Enemy {
       this.shootTimer += dt;
       if (this.shootTimer >= effectiveInterval) {
         this.shootTimer = 0;
-        // Déclenche la stabilisation d'ancrage et la micro-vibration de recul mécanique
         this.recoilTimer = Math.min(0.35, effectiveInterval * 0.35);
-        this.recoilShakeAmount = (this.type === 'boss_final') ? 6.0 : 5.0;
+        this.recoilShakeAmount = (this.type === 'boss_final' || this.type === 'boss_gammargantua') ? 6.0 : 5.0;
 
+        // 1. PATTERNS DU BOSS FINAL GÉNÉRAL (TITAN OVERLORD)
         if (this.type === 'boss_final') {
-          // PATTERNS EXCLUSIFS DU BOSS FINAL (TITAN OVERLORD) : +1 munition et spread colossal
           this.salvoPattern = (this.salvoPattern + 1) % 3;
           const bulletSpeed = 360;
 
           if (this.salvoPattern === 0) {
-            // Pattern 0 : 7 tirs en étoile radiale (au lieu de 6) couvrant tout l'arc 180°
             const angles = [-90, -60, -30, 0, 30, 60, 90];
             for (const ang of angles) {
               const rad = (ang * Math.PI) / 180;
@@ -183,7 +184,6 @@ export class Enemy {
               );
             }
           } else if (this.salvoPattern === 1) {
-            // Pattern 1 : 5 tirs (3 tirs lourds centraux + 2 tirs satellites ultra-larges)
             spawnedProjectiles.push(
               new Projectile(this.x - 35, this.y + 45, -20, bulletSpeed * 1.1, 1, 'enemy_bullet', '#FFE600'),
               new Projectile(this.x, this.y + 50, 0, bulletSpeed * 1.15, 1, 'enemy_bullet', '#FFE600'),
@@ -192,7 +192,6 @@ export class Enemy {
               new Projectile(this.x + 120, this.y + 20, 130, bulletSpeed, 1, 'enemy_bullet', '#00F0FF')
             );
           } else {
-            // Pattern 2 : Salve balayante en V à 5 munitions ultra-large
             const vOffsets = [
               { x: -90, vx: -170 },
               { x: -45, vx: -80 },
@@ -206,14 +205,99 @@ export class Enemy {
               );
             }
           }
+
+        // 2. PATTERNS D'ALPHARION (SECTEUR 1 ALPHA : CANONS SOLAIRES & ÉVENTAIL STELLAIRE)
+        } else if (this.type === 'boss_alpharion') {
+          this.salvoPattern = (this.salvoPattern + 1) % 2;
+          const bulletSpeed = 360;
+
+          if (this.salvoPattern === 0) {
+            // Salve A : Double Railgun Solaire perçant + 4 flèches plasma latérales
+            spawnedProjectiles.push(
+              new Projectile(this.x - 28, this.y + 45, -15, bulletSpeed * 1.15, 1, 'enemy_bullet', '#FFE600'),
+              new Projectile(this.x + 28, this.y + 45, 15, bulletSpeed * 1.15, 1, 'enemy_bullet', '#FFE600'),
+              new Projectile(this.x - 85, this.y + 30, -140, bulletSpeed * 0.95, 1, 'enemy_bullet', '#FFAA00'),
+              new Projectile(this.x - 45, this.y + 38, -65, bulletSpeed, 1, 'enemy_bullet', '#FFAA00'),
+              new Projectile(this.x + 45, this.y + 38, 65, bulletSpeed, 1, 'enemy_bullet', '#FFAA00'),
+              new Projectile(this.x + 85, this.y + 30, 140, bulletSpeed * 0.95, 1, 'enemy_bullet', '#FFAA00')
+            );
+          } else {
+            // Salve B : Nova Solaire en éventail radial 6 tirs
+            const solarAngles = [-60, -36, -12, 12, 36, 60];
+            for (const ang of solarAngles) {
+              const rad = (ang * Math.PI) / 180;
+              spawnedProjectiles.push(
+                new Projectile(this.x, this.y + 40, Math.sin(rad) * 200, Math.cos(rad) * bulletSpeed, 1, 'enemy_bullet', '#FFE600')
+              );
+            }
+          }
+
+        // 3. PATTERNS DE BETAPULSAR (SECTEUR 2 BETA : ONDES CYCLOTRON & PULSARS MAGNÉTIQUES)
+        } else if (this.type === 'boss_betapulsar') {
+          this.salvoPattern = (this.salvoPattern + 1) % 2;
+          const bulletSpeed = 370;
+
+          if (this.salvoPattern === 0) {
+            // Salve A : Vague d'impulsions pulsar cyan à haute vitesse
+            const waveOffsets = [
+              { x: -90, vx: -160, c: '#00F0FF' },
+              { x: -50, vx: -80,  c: '#38BDF8' },
+              { x: -18, vx: -20,  c: '#00F0FF' },
+              { x: 18,  vx: 20,   c: '#00F0FF' },
+              { x: 50,  vx: 80,   c: '#38BDF8' },
+              { x: 90,  vx: 160,  c: '#00F0FF' }
+            ];
+            for (const w of waveOffsets) {
+              spawnedProjectiles.push(
+                new Projectile(this.x + w.x, this.y + 36, w.vx, bulletSpeed, 1, 'enemy_bullet', w.c)
+              );
+            }
+          } else {
+            // Salve B : Doubles tirs convergents accélérés vers la position du joueur
+            const aimVx = playerX !== undefined ? Math.min(80, Math.max(-80, (playerX - this.x) * 0.35)) : 0;
+            spawnedProjectiles.push(
+              new Projectile(this.x - 42, this.y + 44, aimVx - 40, bulletSpeed * 1.15, 1, 'enemy_bullet', '#00F0FF'),
+              new Projectile(this.x + 42, this.y + 44, aimVx + 40, bulletSpeed * 1.15, 1, 'enemy_bullet', '#00F0FF'),
+              new Projectile(this.x - 70, this.y + 25, -120, bulletSpeed, 1, 'enemy_bullet', '#38BDF8'),
+              new Projectile(this.x + 70, this.y + 25, 120, bulletSpeed, 1, 'enemy_bullet', '#38BDF8'),
+              new Projectile(this.x, this.y + 50, aimVx, bulletSpeed * 1.2, 1, 'enemy_bullet', '#FFFFFF')
+            );
+          }
+
+        // 4. PATTERNS DE GAMMARGANTUA (SECTEUR 3 GAMMA : ANNIHILATION GRAVITATIONNELLE & SIÈGE HYPERBEAM)
+        } else if (this.type === 'boss_gammargantua') {
+          this.salvoPattern = (this.salvoPattern + 1) % 2;
+          const bulletSpeed = 380;
+
+          if (this.salvoPattern === 0) {
+            // Salve A : Pulsation de singularité gravitationnelle 7 orbes de matière noire
+            const gravAngles = [-75, -50, -25, 0, 25, 50, 75];
+            for (const ang of gravAngles) {
+              const rad = (ang * Math.PI) / 180;
+              const col = Math.abs(ang) <= 25 ? '#FF007A' : '#A855F7';
+              spawnedProjectiles.push(
+                new Projectile(this.x, this.y + 45, Math.sin(rad) * 220, Math.cos(rad) * bulletSpeed, 1, 'enemy_bullet', col)
+              );
+            }
+          } else {
+            // Salve B : Tir de barrage d'artillerie lourde (4 tirs centraux massifs + 2 tirs de flanc)
+            spawnedProjectiles.push(
+              new Projectile(this.x - 60, this.y + 40, -25, bulletSpeed * 1.1, 1, 'enemy_bullet', '#FF0055'),
+              new Projectile(this.x - 20, this.y + 48, -10, bulletSpeed * 1.15, 1, 'enemy_bullet', '#A855F7'),
+              new Projectile(this.x + 20, this.y + 48, 10, bulletSpeed * 1.15, 1, 'enemy_bullet', '#A855F7'),
+              new Projectile(this.x + 60, this.y + 40, 25, bulletSpeed * 1.1, 1, 'enemy_bullet', '#FF0055'),
+              new Projectile(this.x - 110, this.y + 20, -150, bulletSpeed * 0.95, 1, 'enemy_bullet', '#7928CA'),
+              new Projectile(this.x + 110, this.y + 20, 150, bulletSpeed * 0.95, 1, 'enemy_bullet', '#7928CA')
+            );
+          }
+
+        // 5. PATTERNS STANDARDS V1, V2, V3
         } else {
-          // Bosses V1, V2, V3 : Salves de 5 tirs (au lieu de 4) avec spread très large balayant tout l'écran
           this.salvoPattern = (this.salvoPattern + 1) % 2;
           const bulletColor = (this.type === 'boss_v3') ? '#FF007A' : (this.type === 'boss_v2' ? '#00F0FF' : '#FFAA00');
           const bulletSpeed = (this.type === 'boss_v3') ? 370 : ((this.type === 'boss_v2') ? 350 : 330);
 
           if (this.salvoPattern === 0) {
-            // Salve A : 5 tirs en large éventail balayant l'ensemble de l'écran (gauche à droite)
             const spreadAngles = [
               { xOff: -65, vx: -185 },
               { xOff: -30, vx: -90 },
@@ -227,7 +311,6 @@ export class Enemy {
               );
             }
           } else {
-            // Salve B : 5 tirs en rideau balayant déployé en V (impossibilité de camper sur les flancs)
             const wideOffsets = [
               { xOff: -85, vx: -150 },
               { xOff: -40, vx: -65 },
@@ -880,7 +963,183 @@ export class Enemy {
         });
 
       // ========================================================
-      // B. BOSS V3 : CUIRASSÉS TRIDENT (Battleship Nova & Battleship Dread)
+      // B. BOSS DE SECTEUR 1 : ALPHARION (Dreadnought Solaire & Crystalline Wings)
+      // ========================================================
+      } else if (this.type === 'boss_alpharion') {
+        if (Renderer.enableGlow) {
+          ctx.shadowColor = '#FFE600';
+          ctx.shadowBlur = 30 * s;
+        }
+
+        ctx.fillStyle = isHit ? '#FFFFFF' : '#1A1202';
+        ctx.strokeStyle = isHit ? '#FFFFFF' : '#FFE600';
+        ctx.lineWidth = Math.max(2.5, 4 * s);
+
+        // Châssis Flèche Solaire Alpharion
+        ctx.beginPath();
+        ctx.moveTo(pt.x, top + drawH * 1.08); // Pointe centrale effilée
+        ctx.lineTo(left + drawW * 0.25, top + drawH * 0.65);
+        ctx.lineTo(left - drawW * 0.05, top + drawH * 0.35); // Aile solaire gauche
+        ctx.lineTo(left + drawW * 0.2, top);
+        ctx.lineTo(pt.x - drawW * 0.1, top + drawH * 0.15);
+        ctx.lineTo(pt.x, top); // Crête supérieure
+        ctx.lineTo(pt.x + drawW * 0.1, top + drawH * 0.15);
+        ctx.lineTo(left + drawW * 0.8, top);
+        ctx.lineTo(left + drawW * 1.05, top + drawH * 0.35); // Aile solaire droite
+        ctx.lineTo(left + drawW * 0.75, top + drawH * 0.65);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Gravures & Lignes de panneaux solaires
+        ctx.strokeStyle = '#FFAA00';
+        ctx.lineWidth = Math.max(1, 1.8 * s);
+        ctx.beginPath();
+        ctx.moveTo(left + drawW * 0.1, top + drawH * 0.25);
+        ctx.lineTo(left + drawW * 0.3, top + drawH * 0.55);
+        ctx.moveTo(left + drawW * 0.9, top + drawH * 0.25);
+        ctx.lineTo(left + drawW * 0.7, top + drawH * 0.55);
+        ctx.stroke();
+
+        // Double Canons Railgun Solaires
+        ctx.fillStyle = '#FFE600';
+        ctx.fillRect(pt.x - 30 * s, top + drawH * 0.82, 6 * s, 18 * s);
+        ctx.fillRect(pt.x + 24 * s, top + drawH * 0.82, 6 * s, 18 * s);
+
+        // Cœur Solaire Fusionnel Alpharion
+        const sunRadius = 18 * s;
+        const sunGrad = ctx.createRadialGradient(pt.x, top + drawH * 0.45, 2, pt.x, top + drawH * 0.45, sunRadius);
+        sunGrad.addColorStop(0, '#FFFFFF');
+        sunGrad.addColorStop(0.3, '#FFE600');
+        sunGrad.addColorStop(0.7, '#FF6600');
+        sunGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = sunGrad;
+        ctx.beginPath();
+        ctx.arc(pt.x, top + drawH * 0.45, sunRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+      // ========================================================
+      // C. BOSS DE SECTEUR 2 : BETAPULSAR (Dreadnought Catamaran & Pulsar Strobe)
+      // ========================================================
+      } else if (this.type === 'boss_betapulsar') {
+        if (Renderer.enableGlow) {
+          ctx.shadowColor = '#00F0FF';
+          ctx.shadowBlur = 32 * s;
+        }
+
+        ctx.fillStyle = isHit ? '#FFFFFF' : '#031726';
+        ctx.strokeStyle = isHit ? '#FFFFFF' : '#00F0FF';
+        ctx.lineWidth = Math.max(2.5, 4 * s);
+
+        // Double Fuselage Catamaran Pulsar
+        ctx.beginPath();
+        ctx.moveTo(left + drawW * 0.18, top + drawH * 1.05); // Ponton gauche proue
+        ctx.lineTo(left - drawW * 0.02, top + drawH * 0.4);
+        ctx.lineTo(left + drawW * 0.22, top);
+        ctx.lineTo(pt.x - drawW * 0.08, top + drawH * 0.25);
+        ctx.lineTo(pt.x, top + drawH * 0.45); // Arche magnétique centrale
+        ctx.lineTo(pt.x + drawW * 0.08, top + drawH * 0.25);
+        ctx.lineTo(left + drawW * 0.78, top);
+        ctx.lineTo(left + drawW * 1.02, top + drawH * 0.4);
+        ctx.lineTo(left + drawW * 0.82, top + drawH * 1.05); // Ponton droit proue
+        ctx.lineTo(left + drawW * 0.68, top + drawH * 0.7);
+        ctx.lineTo(left + drawW * 0.32, top + drawH * 0.7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Anneaux de confinement magnétique rotatifs
+        ctx.save();
+        ctx.translate(pt.x, top + drawH * 0.48);
+        ctx.rotate(this.phase * 3);
+        ctx.strokeStyle = '#38BDF8';
+        ctx.lineWidth = Math.max(1.5, 2.5 * s);
+        ctx.beginPath();
+        ctx.arc(0, 0, 22 * s, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Cœur Pulsar Stroboscopique
+        const pulseR = 16 * s * (0.85 + Math.sin(this.phase * 6) * 0.25);
+        const pulsarGrad = ctx.createRadialGradient(pt.x, top + drawH * 0.48, 1, pt.x, top + drawH * 0.48, pulseR);
+        pulsarGrad.addColorStop(0, '#FFFFFF');
+        pulsarGrad.addColorStop(0.4, '#00F0FF');
+        pulsarGrad.addColorStop(0.8, '#0284C7');
+        pulsarGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = pulsarGrad;
+        ctx.beginPath();
+        ctx.arc(pt.x, top + drawH * 0.48, pulseR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Émetteurs Cyclotron doubles
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(left + drawW * 0.18, top + drawH * 1.02, 5 * s, 0, Math.PI * 2);
+        ctx.arc(left + drawW * 0.82, top + drawH * 1.02, 5 * s, 0, Math.PI * 2);
+        ctx.fill();
+
+      // ========================================================
+      // D. BOSS DE SECTEUR 3 : GAMMARGANTUA (Forteresse Gravitationnelle Monolithique)
+      // ========================================================
+      } else if (this.type === 'boss_gammargantua') {
+        if (Renderer.enableGlow) {
+          ctx.shadowColor = '#FF007A';
+          ctx.shadowBlur = 38 * s;
+        }
+
+        ctx.fillStyle = isHit ? '#FFFFFF' : '#0F021A';
+        ctx.strokeStyle = isHit ? '#FFFFFF' : '#A855F7';
+        ctx.lineWidth = Math.max(3, 4.5 * s);
+
+        // Châssis Forteresse Monolithique Gammargantua
+        ctx.beginPath();
+        ctx.moveTo(pt.x, top + drawH * 1.12); // Pique gravitationnelle centrale
+        ctx.lineTo(left + drawW * 0.2, top + drawH * 0.85);
+        ctx.lineTo(left - drawW * 0.12, top + drawH * 0.5); // Éperon lourd gauche
+        ctx.lineTo(left, top + drawH * 0.1);
+        ctx.lineTo(pt.x - drawW * 0.2, top - drawH * 0.1);
+        ctx.lineTo(pt.x, top);
+        ctx.lineTo(pt.x + drawW * 0.2, top - drawH * 0.1);
+        ctx.lineTo(left + drawW, top + drawH * 0.1);
+        ctx.lineTo(left + drawW * 1.12, top + drawH * 0.5); // Éperon lourd droit
+        ctx.lineTo(left + drawW * 0.8, top + drawH * 0.85);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Disque d'accrétion gravitationnelle autour de la singularité
+        const singX = pt.x;
+        const singY = top + drawH * 0.5;
+        const accR = 26 * s;
+
+        ctx.save();
+        ctx.translate(singX, singY);
+        ctx.rotate(-this.phase * 2);
+        const diskGrad = ctx.createRadialGradient(0, 0, 8 * s, 0, 0, accR);
+        diskGrad.addColorStop(0, '#000000');
+        diskGrad.addColorStop(0.4, '#FF007A');
+        diskGrad.addColorStop(0.7, '#A855F7');
+        diskGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = diskGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, accR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cœur Singularité Noir Absolu
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(0, 0, 10 * s, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Quadruple Canons de Siège Hyperbeam
+        ctx.fillStyle = '#FF007A';
+        [-45 * s, -18 * s, 18 * s, 45 * s].forEach(ox => {
+          ctx.fillRect(pt.x + ox - 3 * s, top + drawH * 0.88, 6 * s, 16 * s);
+        });
+
+      // ========================================================
+      // E. BOSS V3 : CUIRASSÉS TRIDENT (Battleship Nova & Battleship Dread)
       // ========================================================
       } else if (this.type === 'boss_v3') {
         const isDread = this.bossName.includes('DREAD');
@@ -913,7 +1172,7 @@ export class Enemy {
         ctx.fill();
 
       // ========================================================
-      // C. BOSS V2 : DESTROYERS JUMEAUX (Destroyer Alpha & Destroyer Omega)
+      // F. BOSS V2 : DESTROYERS JUMEAUX (Destroyer Alpha & Destroyer Omega)
       // ========================================================
       } else if (this.type === 'boss_v2') {
         const isOmega = this.bossName.includes('OMEGA');
@@ -947,7 +1206,7 @@ export class Enemy {
         ctx.fillRect(left + drawW * 0.75, top + 2 * s, 10 * s, 8 * s);
 
       // ========================================================
-      // D. BOSS V1 : CHASSEUR LOURD VANGUARD-01
+      // G. BOSS V1 : CHASSEUR LOURD VANGUARD-01
       // ========================================================
       } else {
         if (Renderer.enableGlow) {
@@ -1003,6 +1262,18 @@ export class Enemy {
         hpGrad.addColorStop(0, '#FF007A');
         hpGrad.addColorStop(0.5, '#FFE600');
         hpGrad.addColorStop(1, '#00F0FF');
+      } else if (this.type === 'boss_alpharion') {
+        hpGrad.addColorStop(0, '#FFAA00');
+        hpGrad.addColorStop(0.5, '#FFE600');
+        hpGrad.addColorStop(1, '#FFFFFF');
+      } else if (this.type === 'boss_betapulsar') {
+        hpGrad.addColorStop(0, '#0066FF');
+        hpGrad.addColorStop(0.5, '#00F0FF');
+        hpGrad.addColorStop(1, '#E0F2FE');
+      } else if (this.type === 'boss_gammargantua') {
+        hpGrad.addColorStop(0, '#FF007A');
+        hpGrad.addColorStop(0.5, '#A855F7');
+        hpGrad.addColorStop(1, '#3B82F6');
       } else if (this.type === 'boss_v3') {
         hpGrad.addColorStop(0, '#FF0055');
         hpGrad.addColorStop(1, '#A855F7');

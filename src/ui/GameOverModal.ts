@@ -21,6 +21,11 @@ export interface GameOverStats {
   isChallenge?: boolean;
   challengeReward?: { type: 'bars' | 'dust'; amount: number; label: string };
   challengeAttemptsLeft?: number;
+  isSectorBoss?: boolean;
+  sectorBossName?: string;
+  nextSectorName?: string;
+  nextSectorGreek?: string;
+  newlyUnlockedFeatures?: string[];
 }
 
 export class GameOverModal {
@@ -41,6 +46,8 @@ export class GameOverModal {
   private elLootGrid = document.getElementById('gameover-loot-grid') || document.getElementById('gameover-loot-list');
   private elLootDetails = document.getElementById('gameover-loot-details');
   private elBtnLootToHangar = document.getElementById('btn-gameover-to-hangar');
+  private elUnlockedBox = document.getElementById('gameover-unlocked-box');
+  private elUnlockedList = document.getElementById('gameover-unlocked-list');
 
   private onNextCallback: () => void;
   private onHangarCallback: () => void;
@@ -278,20 +285,31 @@ export class GameOverModal {
     }
 
     if (stats.isVictory) {
-      if (this.elBadge) {
-        this.elBadge.className = 'modal-badge victory';
-        this.elBadge.textContent = 'VICTOIRE ÉCLATANTE !';
+      if (stats.isSectorBoss) {
+        if (this.elBadge) {
+          this.elBadge.className = 'modal-badge victory';
+          this.elBadge.textContent = '🌌 SECTEUR CONQUIS !';
+        }
+        if (this.elTitle) this.elTitle.textContent = `BOSS DÉFAIT : ${stats.sectorBossName?.toUpperCase() || 'BOSS'}`;
+        const nextSecName = stats.nextSectorName ? stats.nextSectorName.toUpperCase() : 'SUIVANT';
+        const nextGreek = stats.nextSectorGreek ? `[${stats.nextSectorGreek}] ` : '';
+        if (this.elBtnNext) this.elBtnNext.textContent = `FRANCHIR LA PORTE ➔ SECTEUR ${nextSecName} ${nextGreek}▶`;
+      } else {
+        if (this.elBadge) {
+          this.elBadge.className = 'modal-badge victory';
+          this.elBadge.textContent = 'VICTOIRE ÉCLATANTE !';
+        }
+        if (this.elTitle) this.elTitle.textContent = 'MISSION ACCOMPLIE';
+        const nextSecInfo = SectorSystem.getSectorInfo(stats.nextLevelNum);
+        const nextSecGreek = SectorSystem.getSectorName(nextSecInfo.sector).toUpperCase();
+        if (this.elBtnNext) this.elBtnNext.textContent = `CONTINUER (SECTEUR ${nextSecGreek} • NIVEAU ${nextSecInfo.levelInSector}) ▶`;
       }
-      if (this.elTitle) this.elTitle.textContent = 'MISSION ACCOMPLIE';
-      const nextSecInfo = SectorSystem.getSectorInfo(stats.nextLevelNum);
-      const nextSecGreek = SectorSystem.getSectorName(nextSecInfo.sector).toUpperCase();
-      if (this.elBtnNext) this.elBtnNext.textContent = `CONTINUER (SECTEUR ${nextSecGreek} • NIVEAU ${nextSecInfo.levelInSector}) ▶`;
 
       // Explosion de confettis cyberpunk
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: stats.isSectorBoss ? 120 : 80,
+          spread: stats.isSectorBoss ? 85 : 70,
           origin: { y: 0.6 },
           colors: ['#00F0FF', '#FF007A', '#FFE600', '#7928CA']
         });
@@ -509,6 +527,21 @@ export class GameOverModal {
         if (this.elLootGrid) this.elLootGrid.innerHTML = '';
         if (this.elLootDetails) this.elLootDetails.innerHTML = '';
       }
+    }
+
+    // Rendu des Fonctionnalités Nouvellement Débloquées (Porte Stellaire / Boss de Secteur)
+    if (stats.isVictory && stats.newlyUnlockedFeatures && stats.newlyUnlockedFeatures.length > 0) {
+      if (this.elUnlockedBox) this.elUnlockedBox.classList.remove('hidden');
+      if (this.elUnlockedList) {
+        this.elUnlockedList.innerHTML = stats.newlyUnlockedFeatures.map(f => `
+          <div class="unlocked-feature-card">
+            <span class="unlocked-icon">✨</span>
+            <span class="unlocked-text">${f}</span>
+          </div>
+        `).join('');
+      }
+    } else {
+      if (this.elUnlockedBox) this.elUnlockedBox.classList.add('hidden');
     }
 
     this.elModal.classList.remove('hidden');

@@ -52,57 +52,97 @@ export function getGreekSectorName(sector: number): string {
   return `Secteur ${sector}`;
 }
 
-// Configuration extensible des Secteurs
+// Configuration extensible des Secteurs (progression escaladante : Alpha 4 missions, Beta 5, Gamma 6, Delta 7...)
+export interface SectorBossInfo {
+  sector: number;
+  bossName: string;
+  mission: number;
+  enemyType: 'boss_alpharion' | 'boss_betapulsar' | 'boss_gammargantua';
+  nextSectorGreek: string;
+  nextSectorName: string;
+  unlockedFeatures: string[];
+}
+
+export const SECTOR_BOSSES: Record<number, SectorBossInfo> = {
+  1: {
+    sector: 1,
+    bossName: 'Alpharion',
+    mission: 4,
+    enemyType: 'boss_alpharion',
+    nextSectorGreek: 'Β',
+    nextSectorName: 'Beta',
+    unlockedFeatures: ['Hangar de Gestion de Flotte', 'Défis Galactiques Quotidiens (Niveau 1)', 'Accès au Secteur Beta']
+  },
+  2: {
+    sector: 2,
+    bossName: 'Betapulsar',
+    mission: 9,
+    enemyType: 'boss_betapulsar',
+    nextSectorGreek: 'Γ',
+    nextSectorName: 'Gamma',
+    unlockedFeatures: ['Prototypes Rares Tier II', 'Missions de Convois & Éruptions', 'Accès au Secteur Gamma']
+  },
+  3: {
+    sector: 3,
+    bossName: 'Gammargantua',
+    mission: 15,
+    enemyType: 'boss_gammargantua',
+    nextSectorGreek: 'Δ',
+    nextSectorName: 'Delta',
+    unlockedFeatures: ['Raffinerie de Matière Noire', 'Défis Galactiques Difficiles (Niveau 2)', 'Accès au Secteur Delta']
+  }
+};
+
 export const SECTORS_CONFIG: SectorConfig[] = [
   {
     sector: 1,
     name: 'Secteur Alpha',
-    missions: [1, 2, 3]
+    missions: [1, 2, 3, 4] // Mission 4 = Boss Duel Alpharion
   },
   {
     sector: 2,
     name: 'Secteur Beta',
-    missions: [4, 5, 6]
+    missions: [5, 6, 7, 8, 9] // Mission 9 = Boss Duel Betapulsar
   },
   {
     sector: 3,
     name: 'Secteur Gamma',
-    missions: [7, 8, 9]
+    missions: [10, 11, 12, 13, 14, 15] // Mission 15 = Boss Duel Gammargantua
   },
   {
     sector: 4,
     name: 'Secteur Delta',
-    missions: [10, 11, 12]
+    missions: [16, 17, 18, 19, 20, 21, 22] // 7 missions
   },
   {
     sector: 5,
     name: 'Secteur Epsilon',
-    missions: [13, 14, 15]
+    missions: [23, 24, 25, 26, 27, 28, 29, 30] // 8 missions
   },
   {
     sector: 6,
     name: 'Secteur Zeta',
-    missions: [16, 17, 18]
+    missions: [31, 32, 33, 34, 35, 36, 37, 38, 39]
   },
   {
     sector: 7,
     name: 'Secteur Eta',
-    missions: [19, 20, 21]
+    missions: [40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
   },
   {
     sector: 8,
     name: 'Secteur Theta',
-    missions: [22, 23, 24]
+    missions: [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]
   },
   {
     sector: 9,
     name: 'Secteur Iota',
-    missions: [25, 26, 27]
+    missions: [61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72]
   },
   {
     sector: 10,
     name: 'Secteur Kappa',
-    missions: [28, 29, 30]
+    missions: [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85]
   }
 ];
 
@@ -128,10 +168,10 @@ export const CHALLENGE_LEVELS_CONFIG: ChallengeLevelConfig[] = [
 
 // Paliers de déblocage des fonctionnalités par Secteur
 export const FEATURE_UNLOCK_SECTORS: Record<GalacticFeature, number> = {
-  hangar: 2,      // Débloqué au Secteur Beta (atteinte du niveau 4 ou 5)
-  challenges: 2,  // Débloqué au Secteur Beta
-  refinery: 4,    // Débloqué au Secteur Delta (atteinte du niveau 10)
-  events: 5       // Débloqué au Secteur Epsilon (atteinte du niveau 15)
+  hangar: 2,      // Débloqué au Secteur Beta (Mission >= 5, après la victoire sur Alpharion)
+  challenges: 2,  // Débloqué au Secteur Beta (Mission >= 5)
+  refinery: 4,    // Débloqué au Secteur Delta (Mission >= 16, après la victoire sur Gammargantua)
+  events: 5       // Débloqué au Secteur Epsilon (Mission >= 23)
 };
 
 export class SectorSystem {
@@ -293,22 +333,54 @@ export class SectorSystem {
 
     if (currentSector > requiredSector) return true;
     if (currentSector === requiredSector) {
-      // Pour le Hangar et Défis (Secteur Beta / 2) : débloqué dès l'entrée au Secteur Beta (Mission >= 4 ou 5)
+      // Pour le Hangar et Défis (Secteur Beta / 2) : débloqué dès l'entrée au Secteur Beta (Mission >= 5, après Alpharion)
       if (feature === 'hangar' || feature === 'challenges') {
-        return maxUnlockedMission >= 4;
+        return maxUnlockedMission >= 5;
       }
-      // Pour la Raffinerie (Secteur Delta / 4) : débloqué dès la Mission 10 (début du Secteur Delta)
+      // Pour la Raffinerie (Secteur Delta / 4) : débloqué dès la Mission 16 (début du Secteur Delta, après Gammargantua)
       if (feature === 'refinery') {
-        return maxUnlockedMission >= 10;
+        return maxUnlockedMission >= 16;
       }
-      // Pour les Événements (Secteur Epsilon / 5) : débloqué dès la Mission 15 (apogée du Secteur Epsilon)
+      // Pour les Événements (Secteur Epsilon / 5) : débloqué dès la Mission 23 (début du Secteur Epsilon)
       if (feature === 'events') {
-        return maxUnlockedMission >= 15;
+        return maxUnlockedMission >= 23;
       }
       return true;
     }
 
     return false;
+  }
+
+  /**
+   * Vérifie si une mission est le combat de boss final de son secteur
+   */
+  public static isSectorBossMission(mission: number): boolean {
+    return Object.values(SECTOR_BOSSES).some(b => b.mission === mission);
+  }
+
+  /**
+   * Retourne la configuration du boss de secteur pour une mission donnée
+   */
+  public static getSectorBossForMission(mission: number): SectorBossInfo | null {
+    return Object.values(SECTOR_BOSSES).find(b => b.mission === mission) || null;
+  }
+
+  /**
+   * Retourne la configuration du boss pour un secteur donné (ex: 1 = Alpharion, 2 = Betapulsar, 3 = Gammargantua)
+   */
+  public static getSectorBossForSector(sector: number): SectorBossInfo | null {
+    return SECTOR_BOSSES[sector] || null;
+  }
+
+  /**
+   * Retourne les fonctionnalités nouvellement débloquées lorsqu'une mission est accomplie
+   */
+  public static getNewlyUnlockedFeaturesForMission(mission: number): string[] {
+    const boss = this.getSectorBossForMission(mission);
+    if (boss) {
+      return [...boss.unlockedFeatures];
+    }
+    return [];
   }
 
   /**

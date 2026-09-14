@@ -9544,5 +9544,99 @@ html, body {
   color: #38BDF8;
 }
 
+/* ==========================================================================
+   SECTOR BOSSES & STARGATE UNLOCKED FEATURES MODAL
+   ========================================================================== */
+.gameover-unlocked-box {
+  background: rgba(3, 15, 30, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  animation: pulseSectorGlow 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseSectorGlow {
+  0%, 100% { border-color: rgba(0, 240, 255, 0.45); box-shadow: 0 0 15px rgba(0, 240, 255, 0.15); }
+  50% { border-color: rgba(255, 230, 0, 0.65); box-shadow: 0 0 24px rgba(255, 230, 0, 0.25); }
+}
+
+.gameover-unlocked-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.unlocked-header-icon {
+  font-size: 1.1rem;
+}
+
+.unlocked-header-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.82rem;
+  letter-spacing: 1px;
+  color: #00F0FF;
+}
+
+.gameover-unlocked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.unlocked-feature-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.unlocked-feature-card .unlocked-icon {
+  color: #FFE600;
+  font-size: 0.95rem;
+}
+
+/* Mission status tags for Hangar */
+.mission-type-tag.boss {
+  background: linear-gradient(135deg, rgba(255, 0, 122, 0.25), rgba(255, 230, 0, 0.2));
+  border: 1px solid #FF007A;
+  color: #FFE600;
+  box-shadow: 0 0 14px rgba(255, 0, 122, 0.35);
+  animation: pulseBossTag 1.8s infinite alternate;
+}
+
+@keyframes pulseBossTag {
+  from { box-shadow: 0 0 10px rgba(255, 0, 122, 0.3); border-color: #FF007A; }
+  to { box-shadow: 0 0 20px rgba(255, 230, 0, 0.5); border-color: #FFE600; }
+}
+
+.mission-type-tag.interception {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid #00F0FF;
+  color: #00F0FF;
+}
+
+.mission-type-tag.flare {
+  background: rgba(255, 153, 0, 0.15);
+  border: 1px solid #FF9900;
+  color: #FFB703;
+}
+
+.mission-type-tag.gauntlet {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid #A855F7;
+  color: #C084FC;
+}
+
 
 

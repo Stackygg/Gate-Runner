@@ -3,8 +3,9 @@
 import { GAME_CONFIG, GameplayType } from '../config';
 import { Gate } from '../entities/Gate';
 import { Enemy } from '../entities/Enemy';
+import { SectorSystem } from './SectorSystem';
 
-export type MissionMode = 'expedition' | 'raid' | 'escort';
+export type MissionMode = 'expedition' | 'raid' | 'escort' | 'boss_duel' | 'interception' | 'flare_run' | 'gauntlet';
 
 export interface LevelData {
   levelNumber: number;
@@ -20,10 +21,26 @@ export interface LevelData {
   challengeId?: 'bars' | 'dust';
   challengeLevel?: number;
   survivalDuration?: number;
+  isSectorBossDuel?: boolean;
+  bossName?: string;
+  nextSectorGreek?: string;
+  nextSectorName?: string;
 }
 
 export class LevelGenerator {
   public static getMissionType(levelNum: number): MissionMode {
+    if (levelNum === 4 || levelNum === 9 || levelNum === 15) {
+      return 'boss_duel';
+    }
+    if (levelNum === 8) {
+      return 'interception';
+    }
+    if (levelNum === 13) {
+      return 'flare_run';
+    }
+    if (levelNum === 14) {
+      return 'gauntlet';
+    }
     const r = levelNum % 3;
     if (r === 1) return 'expedition';
     if (r === 2) return 'raid';
@@ -32,7 +49,15 @@ export class LevelGenerator {
 
   public static generateLevel(levelNum: number): LevelData {
     const type = this.getMissionType(levelNum);
-    if (type === 'escort') {
+    if (type === 'boss_duel') {
+      return this.generateBossDuelLevel(levelNum);
+    } else if (type === 'interception') {
+      return this.generateInterceptionLevel(levelNum);
+    } else if (type === 'flare_run') {
+      return this.generateFlareRunLevel(levelNum);
+    } else if (type === 'gauntlet') {
+      return this.generateStationGauntletLevel(levelNum);
+    } else if (type === 'escort') {
       return this.generateEscortLevel(levelNum);
     } else if (type === 'raid') {
       return this.generateFunLevel(levelNum);
@@ -407,6 +432,274 @@ export class LevelGenerator {
       challengeLevel: lvl,
       survivalDuration: duration,
       mothershipHp: cargoHp
+    };
+  }
+
+  // =========================================================================
+  // 👑 NIVEAUX FINAUX DE SECTEUR : DUELS DE BOSS UNIQUES (Alpharion, Betapulsar, Gammargantua)
+  // =========================================================================
+  private static generateBossDuelLevel(levelNum: number): LevelData {
+    const gates: Gate[] = [];
+    const enemies: Enemy[] = [];
+
+    // Configuration selon le secteur
+    let bossType: 'boss_alpharion' | 'boss_betapulsar' | 'boss_gammargantua' = 'boss_alpharion';
+    let bossName = 'ALPHARION';
+    let bossHp = 95000;
+    let bossWidth = 220;
+    let bossHeight = 125;
+    let bossY = -8200;
+    let totalDist = 9200;
+    let nextGreek = 'Β';
+    let nextSecName = 'Beta';
+
+    if (levelNum === 9) {
+      bossType = 'boss_betapulsar';
+      bossName = 'BETAPULSAR';
+      bossHp = 240000;
+      bossWidth = 235;
+      bossHeight = 130;
+      bossY = -9500;
+      totalDist = 10500;
+      nextGreek = 'Γ';
+      nextSecName = 'Gamma';
+    } else if (levelNum === 15) {
+      bossType = 'boss_gammargantua';
+      bossName = 'GAMMARGANTUA';
+      bossHp = 580000;
+      bossWidth = 260;
+      bossHeight = 150;
+      bossY = -11200;
+      totalDist = 12200;
+      nextGreek = 'Δ';
+      nextSecName = 'Delta';
+    }
+
+    // 1. Distribution de Portails préparatoires pour équiper la flotte avant l'affrontement
+    const gateConfigs = [
+      { y: 260,  type: 'ADD_SHIPS' as const,       val: 2,   lane: 120 },
+      { y: 120,  type: 'ADD_FIRERATE' as const,    val: 40,  lane: 420 },
+      { y: -240, type: 'ADD_DAMAGE' as const,      val: 50,  lane: 120 },
+      { y: -680, type: 'MULTIPLY_SHIPS' as const,  val: 2.0, lane: 270 },
+      { y: -1300, type: 'ADD_SHIPS' as const,      val: 5,   lane: 420 },
+      { y: -2100, type: 'ADD_FIRERATE' as const,   val: 50,  lane: 120 },
+      { y: -3100, type: 'ADD_DAMAGE' as const,     val: 75,  lane: 420 },
+      { y: -4400, type: 'MULTIPLY_SHIPS' as const, val: 2.0, lane: 270 },
+      { y: -5800, type: 'ADD_SHIPS' as const,      val: 8,   lane: 120 },
+      { y: -6900, type: 'ADD_DAMAGE' as const,     val: 100, lane: 420 }
+    ];
+
+    for (const g of gateConfigs) {
+      gates.push(new Gate(g.lane, g.y, 115, GAME_CONFIG.GATE_HEIGHT, g.type, g.val, false));
+    }
+
+    // Pour Beta et Gamma : Prisons spatiales pour libérer des vaisseaux prototypes avant le boss
+    if (levelNum === 9) {
+      enemies.push(new Enemy(140, -1800, 75, 75, 'prison', 45, '', 3));
+      enemies.push(new Enemy(400, -4800, 80, 80, 'prison', 80, '', 4));
+    } else if (levelNum === 15) {
+      enemies.push(new Enemy(130, -1800, 80, 80, 'prison', 60, '', 4));
+      enemies.push(new Enemy(410, -5200, 85, 85, 'prison', 120, '', 5));
+    }
+
+    // 2. Champ d'astéroïdes menaçant avant l'apparition du boss
+    let curY = 40;
+    while (curY > bossY + 800) {
+      const nearGates = gateConfigs.some(gc => Math.abs(curY - gc.y) < 80);
+      if (!nearGates) {
+        const posX = 110 + Math.random() * 320;
+        const size = 44 + Math.random() * 26;
+        const hp = LevelGenerator.calculateAsteroidHpByWave(curY, 'expedition', levelNum);
+        enemies.push(new Enemy(posX, curY, size, size * 0.82, 'block', hp));
+      }
+      curY -= (28 + Math.random() * 22);
+    }
+
+    // 3. Le Boss Suprême de Fin de Secteur
+    const bossEnemy = new Enemy(330, bossY, bossWidth, bossHeight, bossType, bossHp, bossName);
+    enemies.push(bossEnemy);
+
+    return {
+      levelNumber: levelNum,
+      missionType: 'boss_duel',
+      isFunLevel: false,
+      totalDistance: totalDist,
+      gates,
+      enemies,
+      hasBoss: true,
+      bossEnemy,
+      isSectorBossDuel: true,
+      bossName,
+      nextSectorGreek: nextGreek,
+      nextSectorName: nextSecName
+    };
+  }
+
+  // =========================================================================
+  // 🎯 MISSION 8 (SECTEUR BETA) : INTERCEPTION DE CONVOI PIRATE
+  // =========================================================================
+  private static generateInterceptionLevel(levelNum: number): LevelData {
+    const gates: Gate[] = [];
+    const enemies: Enemy[] = [];
+
+    // Portails de surcadençage pour la course-poursuite
+    const gatePositions = [
+      { y: 220,  type: 'ADD_SHIPS' as const,       val: 3,   lane: 120 },
+      { y: 60,   type: 'ADD_FIRERATE' as const,    val: 50,  lane: 420 },
+      { y: -600, type: 'MULTIPLY_SHIPS' as const,  val: 1.8, lane: 270 },
+      { y: -1800, type: 'ADD_DAMAGE' as const,     val: 60,  lane: 120 },
+      { y: -3200, type: 'MULTIPLY_SHIPS' as const, val: 2.0, lane: 270 },
+      { y: -4800, type: 'ADD_FIRERATE' as const,   val: 60,  lane: 420 },
+      { y: -6500, type: 'ADD_DAMAGE' as const,     val: 80,  lane: 120 },
+      { y: -8200, type: 'MULTIPLY_SHIPS' as const, val: 2.0, lane: 270 }
+    ];
+
+    for (const g of gatePositions) {
+      gates.push(new Gate(g.lane, g.y, 110, GAME_CONFIG.GATE_HEIGHT, g.type, g.val, false));
+    }
+
+    // 4 Vaisseaux Corsaires du Convoi lourdement armés
+    enemies.push(new Enemy(270, -1200, 160, 95, 'boss_v1', 4500, 'FRÉGATE PIRATE #1'));
+    enemies.push(new Enemy(270, -3800, 175, 100, 'boss_v2', 14000, 'DESTROYER PIRATE #2'));
+    enemies.push(new Enemy(270, -6200, 185, 105, 'boss_v3', 32000, 'CUIRASSÉ PIRATE #3'));
+
+    const flagship = new Enemy(270, -9600, 210, 120, 'boss_v3', 68000, 'FLAGSHIP CORSAIRE DREAD');
+    enemies.push(flagship);
+
+    // Escorte d'astéroïdes et mines pirates
+    let curY = 40;
+    while (curY > -9200) {
+      const nearBoss = (curY < -1000 && curY > -1400) || (curY < -3600 && curY > -4000) || (curY < -6000 && curY > -6400);
+      if (!nearBoss) {
+        const posX = 95 + Math.random() * 350;
+        const size = 42 + Math.random() * 24;
+        const hp = LevelGenerator.calculateAsteroidHpByWave(curY, 'expedition', levelNum);
+        enemies.push(new Enemy(posX, curY, size, size * 0.82, 'block', hp));
+      }
+      curY -= (26 + Math.random() * 20);
+    }
+
+    return {
+      levelNumber: levelNum,
+      missionType: 'interception',
+      isFunLevel: false,
+      totalDistance: 10800,
+      gates,
+      enemies,
+      hasBoss: true,
+      bossEnemy: flagship
+    };
+  }
+
+  // =========================================================================
+  // ☀️ MISSION 13 (SECTEUR GAMMA) : TEMPÊTE SOLAIRE / FLARE RUN
+  // Slalom à haute intensité dans des couloirs incandescents
+  // =========================================================================
+  private static generateFlareRunLevel(levelNum: number): LevelData {
+    const gates: Gate[] = [];
+    const enemies: Enemy[] = [];
+
+    // Portails solaires dorés
+    const flareGates = [
+      { y: 240,  type: 'ADD_SHIPS' as const,       val: 4,   lane: 130 },
+      { y: 50,   type: 'ADD_FIRERATE' as const,    val: 50,  lane: 410 },
+      { y: -700, type: 'ADD_DAMAGE' as const,      val: 60,  lane: 130 },
+      { y: -1600, type: 'MULTIPLY_SHIPS' as const, val: 2.0, lane: 270 },
+      { y: -2900, type: 'ADD_SHIPS' as const,      val: 6,   lane: 410 },
+      { y: -4500, type: 'ADD_FIRERATE' as const,   val: 60,  lane: 130 },
+      { y: -6200, type: 'MULTIPLY_SHIPS' as const, val: 2.0, lane: 270 },
+      { y: -7800, type: 'ADD_DAMAGE' as const,     val: 100, lane: 410 }
+    ];
+
+    for (const fg of flareGates) {
+      gates.push(new Gate(fg.lane, fg.y, 115, GAME_CONFIG.GATE_HEIGHT, fg.type, fg.val, false));
+    }
+
+    // Murs d'éruptions solaires alternant gauche/droite
+    let curY = 0;
+    let waveFlip = false;
+    while (curY > -8600) {
+      waveFlip = !waveFlip;
+      const wallMinX = waveFlip ? 60 : 310;
+      const wallMaxX = waveFlip ? 230 : 480;
+
+      for (let i = 0; i < 4; i++) {
+        const posX = wallMinX + Math.random() * (wallMaxX - wallMinX);
+        const size = 46 + Math.random() * 24;
+        const hp = LevelGenerator.calculateAsteroidHpByWave(curY, 'expedition', levelNum);
+        enemies.push(new Enemy(posX, curY + (Math.random() - 0.5) * 20, size, size * 0.85, 'block', hp));
+      }
+      curY -= (42 + Math.random() * 18);
+    }
+
+    // Miniboss au cœur de la tempête : Destroyer Solaire Nova
+    const flareBoss = new Enemy(270, -9000, 185, 110, 'boss_v2', 54000, 'DESTROYER SOLAIRE NOVA');
+    enemies.push(flareBoss);
+
+    return {
+      levelNumber: levelNum,
+      missionType: 'flare_run',
+      isFunLevel: false,
+      totalDistance: 10200,
+      gates,
+      enemies,
+      hasBoss: true,
+      bossEnemy: flareBoss
+    };
+  }
+
+  // =========================================================================
+  // 💥 MISSION 14 (SECTEUR GAMMA) : GAUNTLET DE STATION FORTIFIÉE
+  // Sas blindés, tourelles percutantes et forteresse
+  // =========================================================================
+  private static generateStationGauntletLevel(levelNum: number): LevelData {
+    const gates: Gate[] = [];
+    const enemies: Enemy[] = [];
+
+    // Portails de percée tactique
+    const gPositions = [
+      { y: 240,  type: 'ADD_SHIPS' as const,       val: 5,   lane: 120 },
+      { y: 80,   type: 'ADD_FIRERATE' as const,    val: 50,  lane: 420 },
+      { y: -1000, type: 'ADD_DAMAGE' as const,     val: 75,  lane: 270 },
+      { y: -3400, type: 'MULTIPLY_SHIPS' as const, val: 2.0, lane: 270 },
+      { y: -6000, type: 'ADD_SHIPS' as const,      val: 8,   lane: 120 },
+      { y: -8000, type: 'ADD_DAMAGE' as const,     val: 100, lane: 420 }
+    ];
+
+    for (const gp of gPositions) {
+      gates.push(new Gate(gp.lane, gp.y, 115, GAME_CONFIG.GATE_HEIGHT, gp.type, gp.val, false));
+    }
+
+    // Sas 1 : Mur Gauntlet (Y = -2000, 4000 PV, x1.5) + 2 Tourelles
+    enemies.push(new Enemy(270, -2000, 240, 50, 'gauntlet_wall', 4000, '', 1.5));
+    enemies.push(new Enemy(85, -2000, 60, 60, 'corner_turret', 150));
+    enemies.push(new Enemy(455, -2000, 60, 60, 'corner_turret', 150));
+
+    // Sas 2 : Mur Gauntlet (Y = -4600, 14000 PV, x2.0) + 2 Tourelles rapides
+    enemies.push(new Enemy(270, -4600, 240, 50, 'gauntlet_wall', 14000, '', 2.0));
+    const t1 = new Enemy(85, -4600, 60, 60, 'corner_turret', 250);
+    t1.isRapidSpecial = true;
+    const t2 = new Enemy(455, -4600, 60, 60, 'corner_turret', 250);
+    t2.isRapidSpecial = true;
+    enemies.push(t1, t2);
+
+    // Sas 3 : Mur Gauntlet (Y = -7200, 32000 PV, x2.5) + Prison Prototype Rang 4
+    enemies.push(new Enemy(270, -7200, 240, 50, 'gauntlet_wall', 32000, '', 2.5));
+    enemies.push(new Enemy(270, -6400, 80, 80, 'prison', 75, '', 4));
+
+    // Bastion Central de la Station Fortifiée
+    const fortressCore = new Enemy(270, -9800, 220, 125, 'boss_v3', 78000, 'CUIRASSÉ BASTION STATION');
+    enemies.push(fortressCore);
+
+    return {
+      levelNumber: levelNum,
+      missionType: 'gauntlet',
+      isFunLevel: false,
+      totalDistance: 11000,
+      gates,
+      enemies,
+      hasBoss: true,
+      bossEnemy: fortressCore
     };
   }
 }
