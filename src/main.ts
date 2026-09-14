@@ -473,6 +473,17 @@ export class GameApp {
       this.hud.hideMothership();
     }
 
+    // Bannière tactique explicative pour les Boss de Fin de Secteur
+    if (this.currentLevelData.isSectorBossDuel) {
+      if (this.currentLevelData.levelNumber === 4) {
+        this.hud.showPhaseBanner(1, "DUEL ALPHARION // ABATTEZ LES MINIONS POUR DES DIAMANTS 💎");
+      } else if (this.currentLevelData.levelNumber === 9) {
+        this.hud.showPhaseBanner(1, "DUEL BETAPULSAR // DÉTRUISEZ LES GÉNÉRATEURS MAGNÉTIQUES ⚡");
+      } else if (this.currentLevelData.levelNumber === 15) {
+        this.hud.showPhaseBanner(1, "DUEL GAMMARGANTUA // BRISEZ LES ANCRES GRAVITATIONNELLES 🌌");
+      }
+    }
+
     // Initialisation de la flotte (40 vaisseaux 4x10 pour niveaux Raid, 20 pour niveaux classiques et escorte)
     this.initFleet();
 
@@ -1258,6 +1269,38 @@ export class GameApp {
           this.sound.playWarp();
           this.renderer.addScreenShake(12);
           this.particles.spawnFloatingText(activeBoss.x, activeBoss.y + 65, '⚡ SURCHARGE DU TITAN : CADENCE ACCÉLÉRÉE ! ⚡', '#FF0055', 24);
+        }
+      }
+
+      // Mécanique unique de Boss de Secteur : Spawn de Minions toutes les 5s (Alpharion & Gammargantua)
+      if (activeBoss.type === 'boss_alpharion' || activeBoss.type === 'boss_gammargantua') {
+        activeBoss.minionSpawnTimer += dt;
+        if (activeBoss.minionSpawnTimer >= 5.0 && activeBoss.y >= 50) {
+          activeBoss.minionSpawnTimer = 0;
+          this.sound.playWarp();
+          this.particles.spawnFloatingText(activeBoss.x, activeBoss.y + 70, '⚡ MINIONS DÉPLOYÉS !', '#FFE600', 22);
+
+          const isGamma = activeBoss.type === 'boss_gammargantua';
+          const hpMinion = isGamma ? 450 : 250;
+          const minionName = isGamma ? 'DRONE GRAVITATIONNEL' : 'DRONE SOLAIRE';
+
+          const mLeft = new Enemy(activeBoss.x - 140, activeBoss.y + 40, 48, 38, 'boss_minion', hpMinion, minionName);
+          const mCenter = new Enemy(activeBoss.x, activeBoss.y + 75, 52, 42, 'boss_minion', hpMinion + 80, minionName);
+          const mRight = new Enemy(activeBoss.x + 140, activeBoss.y + 40, 48, 38, 'boss_minion', hpMinion, minionName);
+
+          this.enemies.push(mLeft, mCenter, mRight);
+        }
+      }
+
+      // Mécanique unique de Boss de Secteur : Vérification continue du bouclier magnétique
+      if (activeBoss.isInvulnerable && activeBoss.connectedGenerators.length > 0) {
+        const remainingGenerators = activeBoss.connectedGenerators.filter(g => !g.isDead);
+        if (remainingGenerators.length === 0) {
+          activeBoss.isInvulnerable = false;
+          this.sound.playExplosion(true);
+          this.renderer.addScreenShake(25);
+          this.particles.spawnFloatingText(activeBoss.x, activeBoss.y - 60, '💥 BOUCLIER DÉSACTIVÉ ! LE BOSS EST VULNÉRABLE !', '#00F0FF', 26);
+          this.particles.spawnExplosion(activeBoss.x, activeBoss.y, '#00F0FF', 60);
         }
       }
     } else {

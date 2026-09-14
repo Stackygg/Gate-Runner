@@ -436,7 +436,9 @@ export class LevelGenerator {
   }
 
   // =========================================================================
-  // 👑 NIVEAUX FINAUX DE SECTEUR : DUELS DE BOSS UNIQUES (Alpharion, Betapulsar, Gammargantua)
+  // 👑 NIVEAUX FINAUX DE SECTEUR   // =========================================================================
+  // 👑 NIVEAUX FINAUX DE SECTEUR : DUELS DE BOSS CENTRÉS SANS ASTÉROÏDES
+  // (Arène scénarisée : Alpharion & minions, Betapulsar & générateurs, Gammargantua & ancres)
   // =========================================================================
   private static generateBossDuelLevel(levelNum: number): LevelData {
     const gates: Gate[] = [];
@@ -448,8 +450,6 @@ export class LevelGenerator {
     let bossHp = 95000;
     let bossWidth = 220;
     let bossHeight = 125;
-    let bossY = -8200;
-    let totalDist = 9200;
     let nextGreek = 'Β';
     let nextSecName = 'Beta';
 
@@ -459,8 +459,6 @@ export class LevelGenerator {
       bossHp = 240000;
       bossWidth = 235;
       bossHeight = 130;
-      bossY = -9500;
-      totalDist = 10500;
       nextGreek = 'Γ';
       nextSecName = 'Gamma';
     } else if (levelNum === 15) {
@@ -469,61 +467,64 @@ export class LevelGenerator {
       bossHp = 580000;
       bossWidth = 260;
       bossHeight = 150;
-      bossY = -11200;
-      totalDist = 12200;
       nextGreek = 'Δ';
       nextSecName = 'Delta';
     }
 
-    // 1. Distribution de Portails préparatoires pour équiper la flotte avant l'affrontement
-    const gateConfigs = [
-      { y: 260,  type: 'ADD_SHIPS' as const,       val: 2,   lane: 120 },
-      { y: 120,  type: 'ADD_FIRERATE' as const,    val: 40,  lane: 420 },
-      { y: -240, type: 'ADD_DAMAGE' as const,      val: 50,  lane: 120 },
-      { y: -680, type: 'MULTIPLY_SHIPS' as const,  val: 2.0, lane: 270 },
-      { y: -1300, type: 'ADD_SHIPS' as const,      val: 5,   lane: 420 },
-      { y: -2100, type: 'ADD_FIRERATE' as const,   val: 50,  lane: 120 },
-      { y: -3100, type: 'ADD_DAMAGE' as const,     val: 75,  lane: 420 },
-      { y: -4400, type: 'MULTIPLY_SHIPS' as const, val: 2.0, lane: 270 },
-      { y: -5800, type: 'ADD_SHIPS' as const,      val: 8,   lane: 120 },
-      { y: -6900, type: 'ADD_DAMAGE' as const,     val: 100, lane: 420 }
-    ];
+    // 1. Portails de Ravitaillement Stratégique Initial (Choix tactique pour équiper la flotte immédiatement)
+    gates.push(new Gate(160, 310, 125, GAME_CONFIG.GATE_HEIGHT, 'ADD_SHIPS', 10, false));
+    gates.push(new Gate(500, 310, 125, GAME_CONFIG.GATE_HEIGHT, 'ADD_DAMAGE', 60, false));
 
-    for (const g of gateConfigs) {
-      gates.push(new Gate(g.lane, g.y, 115, GAME_CONFIG.GATE_HEIGHT, g.type, g.val, false));
-    }
-
-    // Pour Beta et Gamma : Prisons spatiales pour libérer des vaisseaux prototypes avant le boss
-    if (levelNum === 9) {
-      enemies.push(new Enemy(140, -1800, 75, 75, 'prison', 45, '', 3));
-      enemies.push(new Enemy(400, -4800, 80, 80, 'prison', 80, '', 4));
-    } else if (levelNum === 15) {
-      enemies.push(new Enemy(130, -1800, 80, 80, 'prison', 60, '', 4));
-      enemies.push(new Enemy(410, -5200, 85, 85, 'prison', 120, '', 5));
-    }
-
-    // 2. Champ d'astéroïdes menaçant avant l'apparition du boss
-    let curY = 40;
-    while (curY > bossY + 800) {
-      const nearGates = gateConfigs.some(gc => Math.abs(curY - gc.y) < 80);
-      if (!nearGates) {
-        const posX = 110 + Math.random() * 320;
-        const size = 44 + Math.random() * 26;
-        const hp = LevelGenerator.calculateAsteroidHpByWave(curY, 'expedition', levelNum);
-        enemies.push(new Enemy(posX, curY, size, size * 0.82, 'block', hp));
-      }
-      curY -= (28 + Math.random() * 22);
-    }
-
-    // 3. Le Boss Suprême de Fin de Secteur
-    const bossEnemy = new Enemy(330, bossY, bossWidth, bossHeight, bossType, bossHp, bossName);
+    // 2. Création Immédiate du Boss (apparaît directement dès le haut de l'écran à Y = -180)
+    const bossEnemy = new Enemy(330, -180, bossWidth, bossHeight, bossType, bossHp, bossName);
     enemies.push(bossEnemy);
+
+    // 3. Mécaniques Uniques Spécifiques par Boss
+    if (levelNum === 4) {
+      // --- ALPHARION : Escadron de Minions Solaires initiaux ---
+      const m1 = new Enemy(190, -30, 48, 38, 'boss_minion', 220, 'DRONE SOLAIRE');
+      const m2 = new Enemy(330, -80, 52, 42, 'boss_minion', 260, 'DRONE COMMANDANT');
+      const m3 = new Enemy(470, -30, 48, 38, 'boss_minion', 220, 'DRONE SOLAIRE');
+      enemies.push(m1, m2, m3);
+    } else if (levelNum === 9) {
+      // --- BETAPULSAR : Deux Générateurs Magnétiques créant un bouclier infranchissable ---
+      bossEnemy.isInvulnerable = true;
+
+      const genLeft = new Enemy(140, -180, 56, 56, 'shield_generator', 16000, 'GÉNÉRATEUR ALPHA');
+      genLeft.generatorSide = 'left';
+      genLeft.targetBoss = bossEnemy;
+
+      const genRight = new Enemy(520, -180, 56, 56, 'shield_generator', 16000, 'GÉNÉRATEUR BETA');
+      genRight.generatorSide = 'right';
+      genRight.targetBoss = bossEnemy;
+
+      bossEnemy.connectedGenerators = [genLeft, genRight];
+      enemies.push(genLeft, genRight);
+    } else if (levelNum === 15) {
+      // --- GAMMARGANTUA : Trois Pylônes d'Ancrage Gravitationnel et drones kamikazes ---
+      bossEnemy.isInvulnerable = true;
+
+      const ancLeft = new Enemy(140, -180, 58, 58, 'shield_generator', 26000, 'ANCRE OMEGA 1');
+      ancLeft.generatorSide = 'left';
+      ancLeft.targetBoss = bossEnemy;
+
+      const ancCenter = new Enemy(330, -260, 64, 64, 'shield_generator', 36000, 'NŒUD SINGULARITÉ');
+      ancCenter.generatorSide = 'center';
+      ancCenter.targetBoss = bossEnemy;
+
+      const ancRight = new Enemy(520, -180, 58, 58, 'shield_generator', 26000, 'ANCRE OMEGA 2');
+      ancRight.generatorSide = 'right';
+      ancRight.targetBoss = bossEnemy;
+
+      bossEnemy.connectedGenerators = [ancLeft, ancCenter, ancRight];
+      enemies.push(ancLeft, ancCenter, ancRight);
+    }
 
     return {
       levelNumber: levelNum,
       missionType: 'boss_duel',
       isFunLevel: false,
-      totalDistance: totalDist,
+      totalDistance: 1000,
       gates,
       enemies,
       hasBoss: true,

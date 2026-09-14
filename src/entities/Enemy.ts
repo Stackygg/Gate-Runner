@@ -5,7 +5,7 @@ import { Renderer } from '../engine/Renderer';
 import { SHIP_RANKS } from './RescuedShip';
 import { GAME_CONFIG } from '../config';
 
-export type EnemyType = 'block' | 'drone' | 'fast' | 'heavy' | 'black_hole' | 'prison' | 'boss_v1' | 'boss_v2' | 'boss_v3' | 'boss_final' | 'boss_alpharion' | 'boss_betapulsar' | 'boss_gammargantua' | 'gauntlet_wall' | 'corner_turret';
+export type EnemyType = 'block' | 'drone' | 'fast' | 'heavy' | 'black_hole' | 'prison' | 'boss_v1' | 'boss_v2' | 'boss_v3' | 'boss_final' | 'boss_alpharion' | 'boss_betapulsar' | 'boss_gammargantua' | 'gauntlet_wall' | 'corner_turret' | 'shield_generator' | 'boss_minion';
 
 export class Enemy {
   public x: number;
@@ -22,6 +22,13 @@ export class Enemy {
   public prisonRank: number = 2; // Rang du vaisseau prototype emprisonné (2 à 5)
   public cornerIndex?: number;   // Index de coin (0: HG, 1: HD, 2: BG, 3: BD)
   public isRapidSpecial: boolean = false; // Tourelle spéciale rapide (toutes les 3 tourelles, 2 PV et tir ultra rapide)
+  public isInvulnerable: boolean = false; // Bouclier protecteur rendant le boss insensible aux tirs directs
+  public connectedGenerators: Enemy[] = []; // Générateurs magnétiques alimentant le bouclier
+  public shieldAlpha: number = 1.0;
+  public minionSpawnTimer: number = 0;
+  public diamondReward: number = 0;
+  public generatorSide?: 'left' | 'center' | 'right';
+  public targetBoss?: Enemy;
 
   private rotAngle: number = 0;
   private rotSpeed: number = 0;
@@ -112,6 +119,44 @@ export class Enemy {
         // Cela permet de menacer les deux ailes et le centre du Vaisseau Mère sur toute sa largeur
         this.x += this.vx * dt;
       }
+    } else if (this.type === 'shield_generator') {
+      this.rotAngle += dt * 2.0;
+      if (this.targetBoss && !this.targetBoss.isDead) {
+        let xOff = 0;
+        let yOff = 15;
+        if (this.generatorSide === 'left') {
+          xOff = -190;
+        } else if (this.generatorSide === 'right') {
+          xOff = 190;
+        } else if (this.generatorSide === 'center') {
+          xOff = 0;
+          yOff = -65;
+        }
+        this.x += (this.targetBoss.x + xOff - this.x) * 4.5 * dt;
+        this.y += (this.targetBoss.y + yOff - this.y) * 4.5 * dt;
+      } else {
+        this.y += scrollSpeed * dt;
+      }
+
+      // Tirs défensifs périodiques
+      this.shootTimer += dt;
+      if (this.shootTimer >= 2.6 && this.y >= 40 && this.y < 650) {
+        this.shootTimer = 0;
+        const targetVx = (playerX !== undefined ? Math.max(-45, Math.min(45, (playerX - this.x) * 0.15)) : 0);
+        spawnedProjectiles.push(
+          new Projectile(this.x, this.y + 24, targetVx, 330, 1, 'enemy_bullet', '#00F0FF')
+        );
+      }
+    } else if (this.type === 'boss_minion') {
+      this.y += (scrollSpeed + 90) * dt;
+      this.x += Math.sin(this.phase * 2.5) * 120 * dt;
+      this.shootTimer += dt;
+      if (this.shootTimer >= 2.2 && this.y >= 50 && this.y < 620) {
+        this.shootTimer = 0;
+        spawnedProjectiles.push(
+          new Projectile(this.x, this.y + 14, 0, 310, 1, 'enemy_bullet', '#FFE600')
+        );
+      }
     } else if (this.isBossType()) {
       // Défilement du boss :
       // 1. Au loin (hors écran, y < -1200) : l'apparition du boss accélère avec le défilement général.
@@ -151,8 +196,11 @@ export class Enemy {
       this.hitBlinkTimer -= dt;
     }
 
-    // Tirs de Boss : Salves rythmées avec patterns uniques (actif UNIQUEMENT une fois arrivé en position de combat targetCombatY)
-    if (this.isBossType() && this.y >= targetCombatY - 5 && this.y < 680) {
+    // Tirs de Boss : Salves rythmées (pour les Boss de Secteur, engage le combat dès Y >= 45px à longue portée)
+    const isSectorBoss = (this.type === 'boss_alpharion' || this.type === 'boss_betapulsar' || this.type === 'boss_gammargantua');
+    const minShootY = isSectorBoss ? 45 : (targetCombatY - 5);
+
+    if (this.isBossType() && this.y >= minShootY && this.y < 680) {
       this.combatTimer += dt;
 
       // Calcul de la cadence de tir
@@ -332,6 +380,10 @@ export class Enemy {
   }
 
   public takeDamage(amount: number): boolean {
+    if (this.isInvulnerable) {
+      this.hitBlinkTimer = 0.08;
+      return false;
+    }
     this.hp -= amount;
     this.hitBlinkTimer = 0.08;
     if (this.hp <= 0) {
@@ -717,6 +769,130 @@ export class Enemy {
       ctx.textBaseline = 'middle';
       const hpBadgeText = isRapid ? `⚡ ${Math.ceil(this.hp)} / ${this.maxHp}` : `❤️ ${Math.ceil(this.hp)} / ${this.maxHp}`;
       ctx.fillText(hpBadgeText, 0, badgeY + badgeH / 2);
+
+      ctx.restore();
+      return;
+    }
+
+    // =========================================================================
+    // ⚡ RENDU DU GÉNÉRATEUR DE BOUCLIER MAGNÉTIQUE (Boss Duel Pylon)
+    // =========================================================================
+    if (this.type === 'shield_generator') {
+      const radius = Math.max(16, (this.width / 2) * s);
+      const isCenter = this.generatorSide === 'center';
+      const themeColor = isCenter ? '#A855F7' : '#00F0FF';
+
+      ctx.save();
+      ctx.translate(pt.x, pt.y);
+
+      if (Renderer.enableGlow) {
+        ctx.shadowColor = themeColor;
+        ctx.shadowBlur = 18 * s;
+      }
+
+      // 1. Anneaux Magnétiques Rotatifs (Pylône générateur)
+      ctx.strokeStyle = isHit ? '#FFFFFF' : themeColor;
+      ctx.lineWidth = Math.max(1.5, 2.5 * s);
+      for (let i = 0; i < 3; i++) {
+        const a = this.rotAngle + (i * Math.PI * 2) / 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 1.05, a, a + 1.2);
+        ctx.stroke();
+      }
+
+      // 2. Châssis Hexagonal Pylône
+      ctx.fillStyle = isHit ? '#FFFFFF' : '#041624';
+      ctx.strokeStyle = isHit ? '#FFFFFF' : themeColor;
+      ctx.lineWidth = Math.max(2, 3 * s);
+      ctx.beginPath();
+      for (let h = 0; h < 6; h++) {
+        const ha = (h * Math.PI) / 3;
+        const hx = Math.cos(ha) * (radius * 0.75);
+        const hy = Math.sin(ha) * (radius * 0.75);
+        if (h === 0) ctx.moveTo(hx, hy);
+        else ctx.lineTo(hx, hy);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 3. Cœur Plasma Energétique Pulsant
+      const coreGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, radius * 0.45);
+      coreGrad.addColorStop(0, '#FFFFFF');
+      coreGrad.addColorStop(0.5, themeColor);
+      coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. Barre de Vie du Générateur
+      const gBarW = Math.max(65, 80 * s);
+      const gBarH = Math.max(12, 14 * s);
+      const gBarY = -radius - gBarH - 8 * s;
+
+      ctx.fillStyle = 'rgba(2, 10, 20, 0.9)';
+      ctx.strokeStyle = themeColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(-gBarW / 2, gBarY, gBarW, gBarH, 3 * s);
+      ctx.fill();
+      ctx.stroke();
+
+      const gHpRatio = Math.max(0, Math.min(1, this.hp / this.maxHp));
+      ctx.fillStyle = themeColor;
+      ctx.beginPath();
+      ctx.roundRect(-gBarW / 2 + 1, gBarY + 1, (gBarW - 2) * gHpRatio, gBarH - 2, 2 * s);
+      ctx.fill();
+
+      ctx.font = `900 ${Math.max(8, Math.floor(9 * s))}px 'Orbitron', sans-serif`;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`⚡ GÉNÉRATEUR`, 0, gBarY + gBarH / 2);
+
+      ctx.restore();
+      return;
+    }
+
+    // =========================================================================
+    // 💎 RENDU DU VAISSEAU MINION DU BOSS (Lâcheur de Diamants)
+    // =========================================================================
+    if (this.type === 'boss_minion') {
+      const minionW = this.width * s;
+      const minionH = this.height * s;
+      ctx.save();
+      ctx.translate(pt.x, pt.y);
+
+      if (Renderer.enableGlow) {
+        ctx.shadowColor = '#FFE600';
+        ctx.shadowBlur = 12 * s;
+      }
+
+      // Châssis Vaisseau Minion Flèche Dorée
+      ctx.fillStyle = isHit ? '#FFFFFF' : '#1A1405';
+      ctx.strokeStyle = isHit ? '#FFFFFF' : '#FFE600';
+      ctx.lineWidth = Math.max(1.5, 2.5 * s);
+      ctx.beginPath();
+      ctx.moveTo(0, minionH * 0.6);
+      ctx.lineTo(-minionW * 0.5, -minionH * 0.4);
+      ctx.lineTo(0, -minionH * 0.1);
+      ctx.lineTo(minionW * 0.5, -minionH * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Réacteur solaire
+      ctx.fillStyle = '#FF9900';
+      ctx.beginPath();
+      ctx.arc(0, -minionH * 0.2, 4 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Indicateur diamant au-dessus
+      ctx.font = `${Math.max(9, Math.floor(11 * s))}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('💎', 0, -minionH * 0.5);
 
       ctx.restore();
       return;
@@ -1237,6 +1413,80 @@ export class Enemy {
       }
 
       ctx.restore();
+
+      // =========================================================================
+      // 🛡️ BOUCLIER MAGNÉTIQUE & ARCS ÉLECTRIQUES (Boss Invulnérable)
+      // =========================================================================
+      if (this.isInvulnerable) {
+        // 1. Arcs électriques reliant les générateurs au boss
+        for (const g of this.connectedGenerators) {
+          if (g.isDead) continue;
+          const gPt = renderer.project(g.x, g.y);
+          if (!gPt.isVisible) continue;
+
+          ctx.save();
+          ctx.strokeStyle = '#00F0FF';
+          ctx.lineWidth = Math.max(2, 3.2 * s);
+          if (Renderer.enableGlow) {
+            ctx.shadowColor = '#00F0FF';
+            ctx.shadowBlur = 16 * s;
+          }
+          ctx.beginPath();
+          ctx.moveTo(gPt.x, gPt.y);
+          const segments = 5;
+          for (let seg = 1; seg < segments; seg++) {
+            const t = seg / segments;
+            const midX = gPt.x + (pt.x - gPt.x) * t + (Math.sin(this.phase * 8 + seg) * 16 * s);
+            const midY = gPt.y + (pt.y - gPt.y) * t + (Math.cos(this.phase * 8 + seg) * 12 * s);
+            ctx.lineTo(midX, midY);
+          }
+          ctx.lineTo(pt.x, pt.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 2. Dôme de Force Hexagonal Pulsant
+        const shieldR = Math.max(drawW, drawH) * 0.72;
+        ctx.save();
+        ctx.translate(pt.x, pt.y);
+
+        const shAlpha = isHit ? 0.75 : 0.28 + Math.sin(this.phase * 5) * 0.12;
+        const shGrad = ctx.createRadialGradient(0, 0, shieldR * 0.65, 0, 0, shieldR);
+        shGrad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+        shGrad.addColorStop(0.7, `rgba(0, 240, 255, ${shAlpha * 0.5})`);
+        shGrad.addColorStop(1, `rgba(56, 189, 248, ${shAlpha})`);
+        ctx.fillStyle = shGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, shieldR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Contours hexagonaux
+        ctx.strokeStyle = isHit ? '#FFFFFF' : '#00F0FF';
+        ctx.lineWidth = Math.max(2, 3.5 * s);
+        if (Renderer.enableGlow) {
+          ctx.shadowColor = '#00F0FF';
+          ctx.shadowBlur = isHit ? 25 * s : 14 * s;
+        }
+        ctx.beginPath();
+        for (let h = 0; h < 6; h++) {
+          const ha = (h * Math.PI) / 3 + this.phase * 0.35;
+          const hx = Math.cos(ha) * shieldR;
+          const hy = Math.sin(ha) * shieldR;
+          if (h === 0) ctx.moveTo(hx, hy);
+          else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // Alerte holographique sous le bouclier
+        ctx.font = `900 ${Math.max(8, Math.floor(10 * s))}px 'Orbitron', sans-serif`;
+        ctx.fillStyle = '#00F0FF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('🛡️ CHAMP DE FORCE (DÉTRUISEZ LES GÉNÉRATEURS)', 0, shieldR + 6 * s);
+
+        ctx.restore();
+      }
 
       // --- BARRE DE VIE FLOTTANTE AU-DESSUS DE LA TÊTE DU BOSS ---
       const barW = Math.max(75, drawW * 1.15);

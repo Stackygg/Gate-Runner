@@ -106,12 +106,16 @@ export class CollisionSystem {
           proj.isDead = true;
         }
 
+        if (enemy.isInvulnerable) {
+          particles.spawnExplosion(proj.x, proj.y, '#00F0FF', 4);
+        }
+
         const isKilled = enemy.takeDamage(proj.damage);
         // Émission d'étincelles débouncée pour fluidité optimale et élimination du brouillard de particules
         const isHighHpBh = (enemy.type === 'black_hole' && enemy.hp > 80);
         const shouldSpark = isHighHpBh 
           ? (Math.random() < 0.15) 
-          : (Math.random() < 0.55 || enemy.isBossType() || enemy.type === 'prison');
+          : (Math.random() < 0.55 || enemy.isBossType() || enemy.type === 'prison' || enemy.type === 'shield_generator');
         if (shouldSpark) {
           particles.spawnExplosion(proj.x, proj.y, proj.isPiercing ? '#FFE600' : (proj.isExplosive ? '#FF6600' : '#00F0FF'), enemy.isBossType() ? 5 : 2);
         }
@@ -135,17 +139,45 @@ export class CollisionSystem {
 
           if (isKilled) {
             results.enemiesKilled++;
-            const isShootingShipOrBoss = enemy.isBossType() || enemy.type === 'corner_turret' || enemy.type === 'drone' || enemy.type === 'fast' || enemy.type === 'heavy';
+            const isShootingShipOrBoss = enemy.isBossType() || enemy.type === 'corner_turret' || enemy.type === 'drone' || enemy.type === 'fast' || enemy.type === 'heavy' || enemy.type === 'shield_generator' || enemy.type === 'boss_minion';
             if (isShootingShipOrBoss) {
               results.shootingShipsKilled++;
             }
-            results.screenShake = Math.max(results.screenShake, enemy.isBossType() ? 20 : (enemy.type === 'prison' ? 14 : 6));
-            sound.playExplosion(enemy.isBossType() || enemy.type === 'prison');
+            results.screenShake = Math.max(results.screenShake, enemy.isBossType() ? 20 : (enemy.type === 'prison' || enemy.type === 'shield_generator' ? 14 : 6));
+            sound.playExplosion(enemy.isBossType() || enemy.type === 'prison' || enemy.type === 'shield_generator');
 
             // Récompenses en Diamants 💎
             let diamondReward = 5;
 
-            if (enemy.type === 'prison') {
+            if (enemy.diamondReward > 0) {
+              diamondReward = enemy.diamondReward;
+            } else if (enemy.type === 'shield_generator') {
+              diamondReward = 35;
+              particles.spawnFloatingText(enemy.x, enemy.y, '⚡ GÉNÉRATEUR DÉTRUIT !', '#00F0FF', 24);
+              particles.spawnExplosion(enemy.x, enemy.y, '#00F0FF', 40);
+              particles.spawnGems(enemy.x, enemy.y, 8);
+
+              // Vérification du bouclier du boss connecté
+              if (enemy.targetBoss && enemy.targetBoss.connectedGenerators) {
+                const remainingGenerators = enemy.targetBoss.connectedGenerators.filter(g => !g.isDead && g !== enemy);
+                if (remainingGenerators.length === 0) {
+                  enemy.targetBoss.isInvulnerable = false;
+                  particles.spawnFloatingText(enemy.targetBoss.x, enemy.targetBoss.y - 60, '💥 BOUCLIER BRISÉ ! LE BOSS EST VULNÉRABLE !', '#00F0FF', 26);
+                  particles.spawnExplosion(enemy.targetBoss.x, enemy.targetBoss.y, '#00F0FF', 60);
+                  results.screenShake = 25;
+                  sound.playExplosion(true);
+                } else {
+                  particles.spawnFloatingText(enemy.targetBoss.x, enemy.targetBoss.y - 50, `⚡ GÉNÉRATEURS RESTANTS : ${remainingGenerators.length}`, '#00F0FF', 20);
+                }
+              }
+            } else if (enemy.type === 'boss_minion') {
+              diamondReward = 12;
+              particles.spawnFloatingText(enemy.x, enemy.y, '+12 💎', '#FFE600', 18);
+              particles.spawnGems(enemy.x, enemy.y, 5);
+              if (Math.random() < 0.25) {
+                CollisionSystem.spawnBossRewardGates(enemy, gates, particles);
+              }
+            } else if (enemy.type === 'prison') {
               diamondReward = 20;
               const rInfo = SHIP_RANKS[enemy.prisonRank] || SHIP_RANKS[2];
               particles.spawnFloatingText(enemy.x, enemy.y, `🔓 PRISON BRISÉE ! PROTOTYPE LIBÉRÉ !`, rInfo.color, 24);
@@ -159,6 +191,15 @@ export class CollisionSystem {
               particles.spawnExplosion(enemy.x, enemy.y, '#A855F7', 40);
             } else if (enemy.type === 'block') {
               diamondReward = Math.max(2, Math.min(15, Math.floor(enemy.maxHp / 5)));
+            } else if (enemy.type === 'boss_alpharion') {
+              diamondReward = 120;
+              particles.spawnFloatingText(enemy.x, enemy.y, '👑 ALPHARION ANÉANTI !', '#FFAA00', 28);
+            } else if (enemy.type === 'boss_betapulsar') {
+              diamondReward = 200;
+              particles.spawnFloatingText(enemy.x, enemy.y, '👑 BETAPULSAR NEUTRALISÉ !', '#00F0FF', 28);
+            } else if (enemy.type === 'boss_gammargantua') {
+              diamondReward = 350;
+              particles.spawnFloatingText(enemy.x, enemy.y, '👑 GAMMARGANTUA DÉTRUIT !', '#FF007A', 30);
             } else if (enemy.type === 'boss_v1') {
               diamondReward = 20;
               particles.spawnFloatingText(enemy.x, enemy.y, '🏆 VANGUARD VAINCU!', '#FFAA00', 24);
