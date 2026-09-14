@@ -1067,11 +1067,17 @@ export class GameApp {
     for (const enemy of this.enemies) {
       let targetCombatY = 220;
       if (enemy.isBossType()) {
-        const slotIdx = activeBosses.indexOf(enemy);
-        if (slotIdx >= 0 && slotIdx < bossSlotY.length) {
-          targetCombatY = bossSlotY[slotIdx];
-        } else if (slotIdx >= bossSlotY.length) {
-          targetCombatY = -30 - (slotIdx - 3) * 110;
+        if (this.currentLevelData?.isSectorBossDuel) {
+          // Les boss de duel de secteur restent ancrés tout en haut du niveau (Y = 85)
+          // pour laisser plus de 500px d'espace de combat afin d'abattre les générateurs et les minions
+          targetCombatY = 85;
+        } else {
+          const slotIdx = activeBosses.indexOf(enemy);
+          if (slotIdx >= 0 && slotIdx < bossSlotY.length) {
+            targetCombatY = bossSlotY[slotIdx];
+          } else if (slotIdx >= bossSlotY.length) {
+            targetCombatY = -30 - (slotIdx - 3) * 110;
+          }
         }
       }
 
@@ -1281,12 +1287,13 @@ export class GameApp {
           this.particles.spawnFloatingText(activeBoss.x, activeBoss.y + 70, '⚡ MINIONS DÉPLOYÉS !', '#FFE600', 22);
 
           const isGamma = activeBoss.type === 'boss_gammargantua';
-          const hpMinion = isGamma ? 450 : 250;
+          const hpSide = isGamma ? 320 : 180;
+          const hpCenter = isGamma ? 400 : 240;
           const minionName = isGamma ? 'DRONE GRAVITATIONNEL' : 'DRONE SOLAIRE';
 
-          const mLeft = new Enemy(activeBoss.x - 140, activeBoss.y + 40, 48, 38, 'boss_minion', hpMinion, minionName);
-          const mCenter = new Enemy(activeBoss.x, activeBoss.y + 75, 52, 42, 'boss_minion', hpMinion + 80, minionName);
-          const mRight = new Enemy(activeBoss.x + 140, activeBoss.y + 40, 48, 38, 'boss_minion', hpMinion, minionName);
+          const mLeft = new Enemy(activeBoss.x - 140, activeBoss.y + 40, 54, 44, 'boss_minion', hpSide, minionName);
+          const mCenter = new Enemy(activeBoss.x, activeBoss.y + 75, 58, 48, 'boss_minion', hpCenter, minionName);
+          const mRight = new Enemy(activeBoss.x + 140, activeBoss.y + 40, 54, 44, 'boss_minion', hpSide, minionName);
 
           this.enemies.push(mLeft, mCenter, mRight);
         }

@@ -123,14 +123,16 @@ export class Enemy {
       this.rotAngle += dt * 2.0;
       if (this.targetBoss && !this.targetBoss.isDead) {
         let xOff = 0;
-        let yOff = 15;
+        let yOff = 85; // Positionné devant le boss (plus proche du joueur à Y plus élevé)
         if (this.generatorSide === 'left') {
-          xOff = -190;
+          xOff = -175;
+          yOff = 85;
         } else if (this.generatorSide === 'right') {
-          xOff = 190;
+          xOff = 175;
+          yOff = 85;
         } else if (this.generatorSide === 'center') {
           xOff = 0;
-          yOff = -65;
+          yOff = 110;
         }
         this.x += (this.targetBoss.x + xOff - this.x) * 4.5 * dt;
         this.y += (this.targetBoss.y + yOff - this.y) * 4.5 * dt;
@@ -826,30 +828,30 @@ export class Enemy {
       ctx.arc(0, 0, radius * 0.45, 0, Math.PI * 2);
       ctx.fill();
 
-      // 4. Barre de Vie du Générateur
-      const gBarW = Math.max(65, 80 * s);
-      const gBarH = Math.max(12, 14 * s);
-      const gBarY = -radius - gBarH - 8 * s;
+      // 4. Barre de Vie Distincte du Générateur
+      const gBarW = Math.max(90, 115 * s);
+      const gBarH = Math.max(14, 17 * s);
+      const gBarY = -radius - gBarH - 10 * s;
 
-      ctx.fillStyle = 'rgba(2, 10, 20, 0.9)';
+      ctx.fillStyle = 'rgba(2, 10, 20, 0.95)';
       ctx.strokeStyle = themeColor;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = Math.max(1, 1.5 * s);
       ctx.beginPath();
-      ctx.roundRect(-gBarW / 2, gBarY, gBarW, gBarH, 3 * s);
+      ctx.roundRect(-gBarW / 2, gBarY, gBarW, gBarH, 4 * s);
       ctx.fill();
       ctx.stroke();
 
       const gHpRatio = Math.max(0, Math.min(1, this.hp / this.maxHp));
       ctx.fillStyle = themeColor;
       ctx.beginPath();
-      ctx.roundRect(-gBarW / 2 + 1, gBarY + 1, (gBarW - 2) * gHpRatio, gBarH - 2, 2 * s);
+      ctx.roundRect(-gBarW / 2 + 1, gBarY + 1, (gBarW - 2) * gHpRatio, gBarH - 2, 3 * s);
       ctx.fill();
 
-      ctx.font = `900 ${Math.max(8, Math.floor(9 * s))}px 'Orbitron', sans-serif`;
+      ctx.font = `900 ${Math.max(8, Math.floor(9.5 * s))}px 'Orbitron', sans-serif`;
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`⚡ GÉNÉRATEUR`, 0, gBarY + gBarH / 2);
+      ctx.fillText(`⚡ ${Math.ceil(this.hp).toLocaleString()} / ${this.maxHp.toLocaleString()}`, 0, gBarY + gBarH / 2);
 
       ctx.restore();
       return;
@@ -888,11 +890,35 @@ export class Enemy {
       ctx.arc(0, -minionH * 0.2, 4 * s, 0, Math.PI * 2);
       ctx.fill();
 
+      // Barre de PV Distincte du Minion au-dessus
+      const mBarW = Math.max(52, 64 * s);
+      const mBarH = Math.max(10, 12 * s);
+      const mBarY = -minionH * 0.55 - mBarH - 6 * s;
+
+      ctx.fillStyle = 'rgba(10, 10, 10, 0.9)';
+      ctx.strokeStyle = '#FFE600';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(-mBarW / 2, mBarY, mBarW, mBarH, 3 * s);
+      ctx.fill();
+      ctx.stroke();
+
+      const mHpRatio = Math.max(0, Math.min(1, this.hp / this.maxHp));
+      ctx.fillStyle = '#FFE600';
+      ctx.beginPath();
+      ctx.roundRect(-mBarW / 2 + 1, mBarY + 1, (mBarW - 2) * mHpRatio, mBarH - 2, 2 * s);
+      ctx.fill();
+
+      // Texte PV Minion
+      ctx.font = `900 ${Math.max(7, Math.floor(8.5 * s))}px 'Orbitron', sans-serif`;
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${Math.ceil(this.hp)} / ${this.maxHp}`, 0, mBarY + mBarH / 2);
+
       // Indicateur diamant au-dessus
       ctx.font = `${Math.max(9, Math.floor(11 * s))}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText('💎', 0, -minionH * 0.5);
+      ctx.fillText('💎', 0, mBarY - 2 * s);
 
       ctx.restore();
       return;

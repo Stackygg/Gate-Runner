@@ -75,9 +75,11 @@ export class CollisionSystem {
       }
     }
 
-    // 2. Tirs du joueur contre les Ennemis, Astéroïdes et Murs de Gauntlet
-    // Optimisation majeure : filtrage spatial des cibles actives dans la zone de tir (-1200 à 850)
-    const activeEnemies = enemies.filter(e => !e.isDead && e.y >= -1200 && e.y <= 850);
+    // Optimisation & Priorité Tactique : Tri du plus proche au plus éloigné (Y décroissant).
+    // Les cibles placées DEVANT (générateurs, minions) interceptent ainsi les tirs en premier avant le boss en arrière-plan !
+    const activeEnemies = enemies
+      .filter(e => !e.isDead && e.y >= -1200 && e.y <= 850)
+      .sort((a, b) => b.y - a.y);
 
     for (const proj of projectiles) {
       if (proj.isDead) continue;
@@ -85,7 +87,9 @@ export class CollisionSystem {
       for (const enemy of activeEnemies) {
         if (enemy.isDead) continue;
 
-        const hitPadding = enemy.isBossType() ? 45 : (enemy.type === 'prison' ? 18 : 8);
+        const hitPadding = (enemy.type === 'shield_generator')
+          ? 34
+          : (enemy.type === 'boss_minion' ? 22 : (enemy.isBossType() ? 45 : (enemy.type === 'prison' ? 18 : 8)));
         const halfH = enemy.height / 2 + hitPadding;
 
         // Élimination ultra-rapide par distance verticale Y

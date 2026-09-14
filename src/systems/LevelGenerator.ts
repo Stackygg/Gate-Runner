@@ -482,19 +482,19 @@ export class LevelGenerator {
     // 3. Mécaniques Uniques Spécifiques par Boss
     if (levelNum === 4) {
       // --- ALPHARION : Escadron de Minions Solaires initiaux ---
-      const m1 = new Enemy(190, -30, 48, 38, 'boss_minion', 220, 'DRONE SOLAIRE');
-      const m2 = new Enemy(330, -80, 52, 42, 'boss_minion', 260, 'DRONE COMMANDANT');
-      const m3 = new Enemy(470, -30, 48, 38, 'boss_minion', 220, 'DRONE SOLAIRE');
+      const m1 = new Enemy(180, 20, 54, 44, 'boss_minion', 180, 'DRONE SOLAIRE');
+      const m2 = new Enemy(330, -30, 58, 48, 'boss_minion', 240, 'DRONE COMMANDANT');
+      const m3 = new Enemy(480, 20, 54, 44, 'boss_minion', 180, 'DRONE SOLAIRE');
       enemies.push(m1, m2, m3);
     } else if (levelNum === 9) {
       // --- BETAPULSAR : Deux Générateurs Magnétiques créant un bouclier infranchissable ---
       bossEnemy.isInvulnerable = true;
 
-      const genLeft = new Enemy(140, -180, 56, 56, 'shield_generator', 16000, 'GÉNÉRATEUR ALPHA');
+      const genLeft = new Enemy(155, -95, 80, 80, 'shield_generator', 14000, 'GÉNÉRATEUR ALPHA');
       genLeft.generatorSide = 'left';
       genLeft.targetBoss = bossEnemy;
 
-      const genRight = new Enemy(520, -180, 56, 56, 'shield_generator', 16000, 'GÉNÉRATEUR BETA');
+      const genRight = new Enemy(505, -95, 80, 80, 'shield_generator', 14000, 'GÉNÉRATEUR BETA');
       genRight.generatorSide = 'right';
       genRight.targetBoss = bossEnemy;
 
@@ -504,15 +504,15 @@ export class LevelGenerator {
       // --- GAMMARGANTUA : Trois Pylônes d'Ancrage Gravitationnel et drones kamikazes ---
       bossEnemy.isInvulnerable = true;
 
-      const ancLeft = new Enemy(140, -180, 58, 58, 'shield_generator', 26000, 'ANCRE OMEGA 1');
+      const ancLeft = new Enemy(150, -95, 85, 85, 'shield_generator', 24000, 'ANCRE OMEGA 1');
       ancLeft.generatorSide = 'left';
       ancLeft.targetBoss = bossEnemy;
 
-      const ancCenter = new Enemy(330, -260, 64, 64, 'shield_generator', 36000, 'NŒUD SINGULARITÉ');
+      const ancCenter = new Enemy(330, -70, 90, 90, 'shield_generator', 32000, 'NŒUD SINGULARITÉ');
       ancCenter.generatorSide = 'center';
       ancCenter.targetBoss = bossEnemy;
 
-      const ancRight = new Enemy(520, -180, 58, 58, 'shield_generator', 26000, 'ANCRE OMEGA 2');
+      const ancRight = new Enemy(510, -95, 85, 85, 'shield_generator', 24000, 'ANCRE OMEGA 2');
       ancRight.generatorSide = 'right';
       ancRight.targetBoss = bossEnemy;
 
