@@ -104,7 +104,7 @@ export const RARITY_CONFIGS: Record<EquipmentRarity, RarityConfig> = {
 export const SLOT_INFO: Record<EquipmentSlotType, { label: string; icon: string; desc: string }> = {
   WEAPON: { label: 'Tourelle', icon: '🔫', desc: 'Armement offensif : tirs supplémentaires, perforation ou missiles lourds' },
   SHIELD: { label: 'Bouclier', icon: '🛡️', desc: 'Défense spatiale : dôme protecteur absorbant 1 à 4 impacts sans perte' },
-  ENGINE: { label: 'Moteur', icon: '⚡', desc: 'Propulsion cinétique : booste la cadence de tir de toute la flotte (+25% à +100%)' },
+  ENGINE: { label: 'Moteur', icon: '⚡', desc: 'Propulsion cinétique : booste la vitesse d\'attaque de toute la flotte (+25% à +100%)' },
   CORE: { label: 'Module', icon: '🔮', desc: 'Matrice de commandement : octroie 1 à 4 vaisseaux de renfort dès le décollage' },
   CHEST: { label: 'Coffre', icon: '📦', desc: 'Trésor spatial mystérieux scellé à ouvrir dans le Hangar' }
 };
@@ -331,8 +331,8 @@ export class EquipmentSystem {
         return {
           type: 'FLEET_RAPID_FIRE',
           value: val,
-          label: `★ Cadence Flotte : +${val}%`,
-          description: `Accélère la cadence de tir de TOUTE la flotte de +${val}%.`,
+          label: `★ Vitesse d'Attaque : +${val}%`,
+          description: `Accélère la vitesse d'attaque de TOUTE la flotte de +${val}%.`,
           icon: '⚡'
         };
 
@@ -536,7 +536,7 @@ export class EquipmentSystem {
         const val = primType === 'damage'
           ? Math.round((26 + Math.random() * 12) * multiplier)
           : Math.round((22 + Math.random() * 10) * multiplier);
-        const label = primType === 'damage' ? `+${val}% Dégâts Laser (Surchargé)` : `+${val}% Cadence de Tir (Surchargé)`;
+        const label = primType === 'damage' ? `+${val}% Puissance d'Attaque (Surchargé)` : `+${val}% Vitesse d'Attaque (Surchargé)`;
         stats.push({ type: primType, value: val, label });
         usedTypes.add(primType);
       } else if (slotType === 'SHIELD') {
@@ -545,7 +545,7 @@ export class EquipmentSystem {
         usedTypes.add('speed');
       } else if (slotType === 'ENGINE') {
         const val = Math.round((24 + Math.random() * 10) * multiplier);
-        stats.push({ type: 'fireRate', value: val, label: `+${val}% Vitesse de Tir (Surchargé)` });
+        stats.push({ type: 'fireRate', value: val, label: `+${val}% Vitesse d'Attaque (Surchargé)` });
         usedTypes.add('fireRate');
       } else {
         const val = Math.round((30 + Math.random() * 15) * multiplier);
@@ -586,11 +586,11 @@ export class EquipmentSystem {
     switch (type) {
       case 'damage': {
         const val = Math.round((5 + Math.random() * 6) * scale);
-        return { type, value: val, label: `+${val}% Dégâts Laser` };
+        return { type, value: val, label: `+${val}% Puissance d'Attaque` };
       }
       case 'fireRate': {
         const val = Math.round((4 + Math.random() * 5) * scale);
-        return { type, value: val, label: `+${val}% Cadence de Tir` };
+        return { type, value: val, label: `+${val}% Vitesse d'Attaque` };
       }
       case 'speed': {
         const val = Math.round((6 + Math.random() * 6) * scale);
@@ -639,8 +639,8 @@ export class EquipmentSystem {
         specialEffect: {
           type: 'FLEET_RAPID_FIRE',
           value: 25,
-          label: '★ Cadence Flotte : +25%',
-          description: 'Accélère la cadence de tir de TOUTE la flotte de +25%.',
+          label: '★ Vitesse d\'Attaque : +25%',
+          description: 'Accélère la vitesse d\'attaque de TOUTE la flotte de +25%.',
           icon: '⚡'
         },
         stats: [],

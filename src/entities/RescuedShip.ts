@@ -41,7 +41,7 @@ export const SHIP_RANKS: Record<number, ShipRankInfo> = {
     rank: 4,
     name: 'PHANTOM BOMBER',
     perkName: '+50% FIRE RATE',
-    description: '+50% cadence de tir et rafales rapides',
+    description: '+50% vitesse d\'attaque et rafales rapides',
     color: '#B026FF',
     glowColor: '#FF00DD'
   },

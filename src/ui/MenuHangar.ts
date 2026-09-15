@@ -1233,21 +1233,21 @@ export class MenuHangar {
       el.innerHTML = html;
     };
 
-    // 1. Cadence
+    // 1. Vitesse d'attaque (VA)
     const fr = lvl.upgradeTracks?.fireRate || { tier: 1, step: 0 };
-    if (this.elTrackFireRateTierBadge) this.elTrackFireRateTierBadge.textContent = `PALIER ${fr.tier}`;
+    if (this.elTrackFireRateTierBadge) this.elTrackFireRateTierBadge.textContent = `P${fr.tier}`;
     if (this.elTrackFireRateStepLabel) this.elTrackFireRateStepLabel.textContent = `${fr.step}/5`;
     renderPips(this.elTrackFireRatePips, fr.step);
 
-    // 2. Dégâts
+    // 2. Puissance d'attaque (PA)
     const dmg = lvl.upgradeTracks?.damage || { tier: 1, step: 0 };
-    if (this.elTrackDamageTierBadge) this.elTrackDamageTierBadge.textContent = `PALIER ${dmg.tier}`;
+    if (this.elTrackDamageTierBadge) this.elTrackDamageTierBadge.textContent = `P${dmg.tier}`;
     if (this.elTrackDamageStepLabel) this.elTrackDamageStepLabel.textContent = `${dmg.step}/5`;
     renderPips(this.elTrackDamagePips, dmg.step);
 
-    // 3. Diamants
+    // 3. Boost Diamants (BD)
     const dia = lvl.upgradeTracks?.diamondBoost || { tier: 1, step: 0 };
-    if (this.elTrackDiamondTierBadge) this.elTrackDiamondTierBadge.textContent = `PALIER ${dia.tier}`;
+    if (this.elTrackDiamondTierBadge) this.elTrackDiamondTierBadge.textContent = `P${dia.tier}`;
     if (this.elTrackDiamondStepLabel) this.elTrackDiamondStepLabel.textContent = `${dia.step}/5`;
     renderPips(this.elTrackDiamondPips, dia.step);
 
@@ -1530,10 +1530,10 @@ export class MenuHangar {
     const chips: string[] = [];
 
     const dmgBonus = Math.round((stats.damageMultiplier - 1.0) * 100);
-    if (dmgBonus > 0) chips.push(`<span class="stat-chip dmg">💥 Dégâts +${dmgBonus}%</span>`);
+    if (dmgBonus > 0) chips.push(`<span class="stat-chip dmg">💥 Puissance d'attaque +${dmgBonus}%</span>`);
 
     const frBonus = Math.round((stats.fireRateMultiplier - 1.0) * 100);
-    if (frBonus > 0) chips.push(`<span class="stat-chip fr">⚡ Cadence +${frBonus}%</span>`);
+    if (frBonus > 0) chips.push(`<span class="stat-chip fr">⚡ Vitesse d'attaque +${frBonus}%</span>`);
 
     const spdBonus = Math.round((stats.speedMultiplier - 1.0) * 100);
     if (spdBonus > 0) chips.push(`<span class="stat-chip spd">💨 Vitesse +${spdBonus}%</span>`);

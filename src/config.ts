@@ -82,7 +82,7 @@ export const SKINS_CONFIG: ShipSkin[] = [
     id: 'stacky_interceptor',
     name: 'STACKY INTERCEPTOR',
     archetype: 'Chasseur Éclaireur',
-    perkText: '⚡ Cadence de tir +10%',
+    perkText: '⚡ Vitesse d\'attaque +10%',
     primaryColor: '#00F0FF',
     secondaryColor: '#7928CA',
     glowColor: '#00F0FF',
@@ -96,7 +96,7 @@ export const SKINS_CONFIG: ShipSkin[] = [
     id: 'cyber_viper',
     name: 'CYBER VIPER',
     archetype: 'Intercepteur Furtif',
-    perkText: '🚀 Vitesse & Cadence +15%',
+    perkText: '🚀 Vitesse & Vitesse d\'attaque +15%',
     primaryColor: '#00FF88',
     secondaryColor: '#0088FF',
     glowColor: '#00FF88',
@@ -110,7 +110,7 @@ export const SKINS_CONFIG: ShipSkin[] = [
     id: 'void_dreadnought',
     name: 'VOID PHANTOM',
     archetype: 'Bombardier Plasma',
-    perkText: '💥 Dégâts Laser +25%',
+    perkText: '💥 Puissance d\'attaque +25%',
     primaryColor: '#FF007A',
     secondaryColor: '#7928CA',
     glowColor: '#FF007A',
@@ -167,7 +167,7 @@ export const SKINS_CONFIG: ShipSkin[] = [
 // Configuration des 3 améliorations à 5 échelons par palier
 export const UPGRADE_TRACKS_CONFIG = {
   fireRate: {
-    title: 'Vitesse de Tir',
+    title: 'Vitesse d\'attaque',
     icon: '⚡',
     baseStepCost: 8,
     costPerStep: 4,
@@ -175,7 +175,7 @@ export const UPGRADE_TRACKS_CONFIG = {
     getStatMultiplier: (tier: number, step: number) => 1.0 + (tier - 1) * 0.40 + step * 0.08
   },
   damage: {
-    title: 'Puissance Laser',
+    title: 'Puissance d\'attaque',
     icon: '💥',
     baseStepCost: 10,
     costPerStep: 5,
