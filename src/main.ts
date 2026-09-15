@@ -56,6 +56,7 @@ export class GameApp {
   private stargate: Stargate | null = null;
   private stargateWarpTimer: number = 0;
   private stargateFleetSpeed: number = 0;
+  private stargatePhaseTimer: number = 0;
   private currentLevelData!: LevelData;
   private traveledDistance: number = 0;
   private sessionDiamonds: number = 0;
@@ -445,6 +446,8 @@ export class GameApp {
     this.enemies = [...this.currentLevelData.enemies];
     this.stargate = null;
     this.stargateWarpTimer = 0;
+    this.stargateFleetSpeed = 0;
+    this.stargatePhaseTimer = 0;
     this.victoryDelayTimer = undefined;
     this.forceFieldTimer = this.currentLevelData.isFunLevel ? 10.0 : 0;
     this.currentRaidRightTier = 1;
@@ -820,11 +823,29 @@ export class GameApp {
   }
 
   private updateGame(dt: number) {
-    const targetX = this.stargate ? this.stargate.x : this.input.update(dt);
+    let targetX = this.fleet.centerX;
+    const isSectorBossDead = !!(this.currentLevelData?.isSectorBossDuel && this.currentLevelData.bossEnemy?.isDead);
 
-    // 1. Déplacement de la Flotte & Tir automatique
+    if (isSectorBossDead) {
+      // Ils doivent arrêter de tirer à ce moment là
+      this.fleet.canShoot = false;
+      this.stargatePhaseTimer += dt;
+
+      if (this.stargatePhaseTimer < 1.0) {
+        // Laisser le joueur bouger les vaisseaux encore pendant 1 seconde
+        targetX = this.input.update(dt);
+      } else {
+        // Après 1 seconde : les vaisseaux se mettent au milieu (X = 270)
+        this.fleet.centerX += (270 - this.fleet.centerX) * 4.5 * dt;
+        targetX = this.fleet.centerX;
+      }
+    } else {
+      targetX = this.input.update(dt);
+    }
+
+    // 1. Déplacement de la Flotte & Tir automatique (bloqué si canShoot est faux)
     const newBullets = this.fleet.update(dt, targetX);
-    if (newBullets.length > 0) {
+    if (this.fleet.canShoot && newBullets.length > 0) {
       this.projectiles.push(...newBullets);
       this.sound.playLaser();
     }
@@ -1374,7 +1395,6 @@ export class GameApp {
             // Le portail apparaît au milieu (X = 270), là où le boss a sa limite (Y = -500)
             const gateY = -500;
             this.stargate = new Stargate(270, gateY, nextGreek, nextSecName);
-            this.stargateWarpTimer = 2.5; // Le joueur a encore 2.5s pour bouger la flotte
             this.stargateFleetSpeed = 0;
             this.sound.playWarp();
             this.renderer.addScreenShake(20);
@@ -1387,23 +1407,21 @@ export class GameApp {
             this.stargate.startEngulfing();
           }
 
-          if (this.stargateWarpTimer > 0) {
-            // Le joueur a encore 2,5 secondes pour bouger la flotte, mais la flotte ralentit et se dirige vers le milieu
-            this.stargateWarpTimer -= dt;
-            this.fleet.centerX += (270 - this.fleet.centerX) * 1.8 * dt;
-            this.scrollSpeed = Math.max(20, this.scrollSpeed - 90 * dt);
-          } else {
-            // La flotte fonce vers le portail
-            this.stargateFleetSpeed = Math.min(880, this.stargateFleetSpeed + 350 * dt);
-            this.fleet.centerX += (this.stargate.x - this.fleet.centerX) * 6.0 * dt;
+          // Chronologie du transit :
+          // 0s à 1.0s : Joueur contrôle ses vaisseaux librement, tirs coupés.
+          // 1.0s à 2.2s : Vaisseaux se placent au milieu (X = 270) et ralentissent.
+          // 2.2s+ : Les vaisseaux foncent vers le portail en suivant la perspective 3D et rapetissent.
+          if (this.stargatePhaseTimer >= 2.2) {
+            this.stargateFleetSpeed = Math.min(1050, this.stargateFleetSpeed + 450 * dt);
             this.fleet.centerY -= this.stargateFleetSpeed * dt;
+            this.fleet.centerX += (this.stargate.x - this.fleet.centerX) * 5.0 * dt;
 
             this.particles.spawnGems(this.fleet.centerX, this.fleet.centerY + 25, 2);
             this.particles.spawnExplosion(this.fleet.centerX, this.fleet.centerY, '#00F0FF', 1);
 
-            // Le niveau se termine dès qu'on entre dans la stargate
+            // Le niveau se termine dès que la flotte atteint le centre du vortex
             const dist = Math.hypot(this.stargate.x - this.fleet.centerX, this.stargate.y - this.fleet.centerY);
-            if (dist < 40 || this.fleet.centerY <= this.stargate.y + 15) {
+            if (dist < 45 || this.fleet.centerY <= this.stargate.y + 20) {
               this.sound.playWarp();
               this.renderer.addScreenShake(30);
               this.particles.spawnExplosion(this.stargate.x, this.stargate.y, '#00F0FF', 100);
@@ -1411,6 +1429,8 @@ export class GameApp {
               this.triggerGameOver(true);
               return;
             }
+          } else if (this.stargatePhaseTimer >= 1.0) {
+            this.scrollSpeed = Math.max(0, this.scrollSpeed - 120 * dt);
           }
           return;
         } else {
@@ -1736,7 +1756,7 @@ export class GameApp {
       }
 
       // 4. Dessin de la Flotte du joueur
-      this.fleet.draw(this.renderer.ctx);
+      this.fleet.draw(this.renderer.ctx, this.renderer);
 
       // 5. Dessin des Particules et textes flottants
       this.particles.draw3D(this.renderer.ctx, this.renderer);
@@ -1814,8 +1834,8 @@ export class GameApp {
       this.stargate.draw3D(this.renderer.ctx, this.renderer);
     }
 
-    // 9. Dessin de la Flotte du Joueur
-    this.fleet.draw(this.renderer.ctx);
+    // 9. Dessin de la Flotte du Joueur (avec perspective 3D)
+    this.fleet.draw(this.renderer.ctx, this.renderer);
 
     // 10. Dessin des Particules, Gemmes récoltables et Textes Flottants (+1, +10, etc.)
     this.particles.draw3D(this.renderer.ctx, this.renderer);

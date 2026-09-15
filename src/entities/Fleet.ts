@@ -306,7 +306,7 @@ export class Fleet {
     const effectiveFireRate = this.fireRate * this.evolutionFireRateMultiplier * (1 + (this.leaderFireRateBonus * 0.4) / 100);
     const fireInterval = 1.0 / effectiveFireRate;
 
-    if (this.shootTimer >= fireInterval) {
+    if (this.canShoot && this.shootTimer >= fireInterval) {
       this.shootTimer = 0;
       
       // Point de convergence exact des tirs : vers la zone d'apparition des ennemis à l'horizon (Y = -1000)
@@ -697,124 +697,138 @@ export class Fleet {
     return spawnedProjectiles;
   }
 
-  public draw(ctx: CanvasRenderingContext2D) {
+  public canShoot: boolean = true;
+
+  public draw(ctx: CanvasRenderingContext2D, renderer?: Renderer) {
     for (let i = this.ships.length - 1; i >= 0; i--) {
       const ship = this.ships[i];
       const isLeader = (i === 0);
-      this.drawSingleShip(ctx, ship, isLeader);
+      this.drawSingleShip(ctx, ship, isLeader, renderer);
     }
 
     // Aura d'Invincibilité (Défi Convoi d'Iridium)
     if (this.isInvincible && this.ships.length > 0) {
       const leader = this.ships[0];
-      ctx.save();
-      ctx.translate(leader.x, leader.y);
-      const pulse = Math.sin(this.animationPhase * 4) * 3;
-      const invRadius = 26 + pulse;
+      const ptLeader = renderer ? renderer.project(leader.x, leader.y) : { x: leader.x, y: leader.y, scale: 1.0, isVisible: true };
+      if (ptLeader.isVisible) {
+        ctx.save();
+        ctx.translate(ptLeader.x, ptLeader.y);
+        ctx.scale(ptLeader.scale, ptLeader.scale);
+        const pulse = Math.sin(this.animationPhase * 4) * 3;
+        const invRadius = 26 + pulse;
 
-      ctx.strokeStyle = '#FFE600';
-      ctx.lineWidth = 2;
-      if (Renderer.enableGlow) {
-        ctx.shadowColor = '#FFE600';
-        ctx.shadowBlur = 12;
+        ctx.strokeStyle = '#FFE600';
+        ctx.lineWidth = 2;
+        if (Renderer.enableGlow) {
+          ctx.shadowColor = '#FFE600';
+          ctx.shadowBlur = 12;
+        }
+        ctx.fillStyle = 'rgba(255, 230, 0, 0.12)';
+        ctx.beginPath();
+        ctx.arc(0, 0, invRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Couronne protectrice cyan
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.arc(0, 0, invRadius + 5, this.animationPhase * 0.8, this.animationPhase * 0.8 + Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
       }
-      ctx.fillStyle = 'rgba(255, 230, 0, 0.12)';
-      ctx.beginPath();
-      ctx.arc(0, 0, invRadius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Couronne protectrice cyan
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
-      ctx.lineWidth = 1.2;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath();
-      ctx.arc(0, 0, invRadius + 5, this.animationPhase * 0.8, this.animationPhase * 0.8 + Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
     }
 
     // Bulle de Bouclier Énergétique autour du Vaisseau Amiral
     if (this.energyShieldHp > 0 && this.ships.length > 0) {
       const leader = this.ships[0];
-      ctx.save();
-      ctx.translate(leader.x, leader.y);
+      const ptLeader = renderer ? renderer.project(leader.x, leader.y) : { x: leader.x, y: leader.y, scale: 1.0, isVisible: true };
+      if (ptLeader.isVisible) {
+        ctx.save();
+        ctx.translate(ptLeader.x, ptLeader.y);
+        ctx.scale(ptLeader.scale, ptLeader.scale);
 
-      const pulse = Math.sin(this.animationPhase * 4) * 2;
-      const shieldRadius = 26 + pulse;
+        const pulse = Math.sin(this.animationPhase * 4) * 2;
+        const shieldRadius = 26 + pulse;
 
-      ctx.strokeStyle = '#00F0FF';
-      ctx.lineWidth = 2;
-      if (Renderer.enableGlow) {
-        ctx.shadowColor = '#00F0FF';
-        ctx.shadowBlur = 14;
+        ctx.strokeStyle = '#00F0FF';
+        ctx.lineWidth = 2;
+        if (Renderer.enableGlow) {
+          ctx.shadowColor = '#00F0FF';
+          ctx.shadowBlur = 14;
+        }
+
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
+        ctx.beginPath();
+        ctx.arc(0, 0, shieldRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Motifs hexagonaux de renfort
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let a = 0; a < 6; a++) {
+          const angle = (a * Math.PI) / 3 + this.animationPhase * 0.6;
+          const hx = Math.cos(angle) * (shieldRadius * 0.95);
+          const hy = Math.sin(angle) * (shieldRadius * 0.95);
+          if (a === 0) ctx.moveTo(hx, hy);
+          else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // Badge indicateur de PV de bouclier
+        const bW = 50;
+        const bH = 16;
+        const bX = -bW / 2;
+        const bY = -shieldRadius - 20;
+
+        ctx.fillStyle = 'rgba(10, 16, 32, 0.9)';
+        ctx.strokeStyle = '#00F0FF';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(bX, bY, bW, bH, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#00F0FF';
+        ctx.font = 'bold 11px Rajdhani, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`🛡️ ${this.energyShieldHp} PV`, 0, bY + bH / 2);
+
+        if (Renderer.enableGlow) {
+          ctx.shadowBlur = 0;
+        }
+        ctx.restore();
       }
-
-      ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
-      ctx.beginPath();
-      ctx.arc(0, 0, shieldRadius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Motifs hexagonaux de renfort
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let a = 0; a < 6; a++) {
-        const angle = (a * Math.PI) / 3 + this.animationPhase * 0.6;
-        const hx = Math.cos(angle) * (shieldRadius * 0.95);
-        const hy = Math.sin(angle) * (shieldRadius * 0.95);
-        if (a === 0) ctx.moveTo(hx, hy);
-        else ctx.lineTo(hx, hy);
-      }
-      ctx.closePath();
-      ctx.stroke();
-
-      // Badge indicateur de PV de bouclier
-      const bW = 50;
-      const bH = 16;
-      const bX = -bW / 2;
-      const bY = -shieldRadius - 20;
-
-      ctx.fillStyle = 'rgba(10, 16, 32, 0.9)';
-      ctx.strokeStyle = '#00F0FF';
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.roundRect(bX, bY, bW, bH, 4);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#00F0FF';
-      ctx.font = 'bold 11px Rajdhani, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`🛡️ ${this.energyShieldHp} PV`, 0, bY + bH / 2);
-
-      if (Renderer.enableGlow) {
-        ctx.shadowBlur = 0;
-      }
-      ctx.restore();
     }
   }
 
   private drawSingleShip(
     ctx: CanvasRenderingContext2D,
     ship: ShipUnit,
-    isLeader: boolean
+    isLeader: boolean,
+    renderer?: Renderer
   ) {
+    const pt = renderer ? renderer.project(ship.x, ship.y) : { x: ship.x, y: ship.y, scale: 1.0, isVisible: true };
+    if (!pt.isVisible) return;
+
     ctx.save();
-    ctx.translate(ship.x, ship.y);
+    ctx.translate(pt.x, pt.y);
     ctx.rotate(this.headingRotation + ship.tilt);
 
     const t = Math.min(10, Math.max(1, ship.tier));
     const theme = TIER_THEMES[t] || TIER_THEMES[1];
     const rank = this.evolutionRank; // Rang d'évolution visuel (1 à 5)
 
-    // Échelle selon le Tier, le Rang d'évolution et le rôle
+    // Échelle selon le Tier, le Rang d'évolution, le rôle et la perspective 3D (rapetisse en s'éloignant)
     const roleScale = isLeader ? 1.06 : 0.72;
     const rankScaleBonus = 1.0 + (rank - 1) * 0.08;
-    const tierScale = (1.0 + (t - 1) * 0.06) * roleScale * rankScaleBonus;
+    const tierScale = (1.0 + (t - 1) * 0.06) * roleScale * rankScaleBonus * pt.scale;
     ctx.scale(tierScale, tierScale);
 
     // Traits d'ailes selon le tier
