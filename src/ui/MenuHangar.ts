@@ -1236,19 +1236,19 @@ export class MenuHangar {
 
     // 1. Vitesse d'attaque (VA)
     const fr = lvl.upgradeTracks?.fireRate || { tier: 1, step: 0 };
-    if (this.elTrackFireRateTierBadge) this.elTrackFireRateTierBadge.textContent = `P${fr.tier}`;
+    if (this.elTrackFireRateTierBadge) this.elTrackFireRateTierBadge.textContent = `Palier ${fr.tier}`;
     if (this.elTrackFireRateStepLabel) this.elTrackFireRateStepLabel.textContent = `${fr.step}/5`;
     renderPips(this.elTrackFireRatePips, fr.step);
 
     // 2. Puissance d'attaque (PA)
     const dmg = lvl.upgradeTracks?.damage || { tier: 1, step: 0 };
-    if (this.elTrackDamageTierBadge) this.elTrackDamageTierBadge.textContent = `P${dmg.tier}`;
+    if (this.elTrackDamageTierBadge) this.elTrackDamageTierBadge.textContent = `Palier ${dmg.tier}`;
     if (this.elTrackDamageStepLabel) this.elTrackDamageStepLabel.textContent = `${dmg.step}/5`;
     renderPips(this.elTrackDamagePips, dmg.step);
 
     // 3. Boost Diamants (BD)
     const dia = lvl.upgradeTracks?.diamondBoost || { tier: 1, step: 0 };
-    if (this.elTrackDiamondTierBadge) this.elTrackDiamondTierBadge.textContent = `P${dia.tier}`;
+    if (this.elTrackDiamondTierBadge) this.elTrackDiamondTierBadge.textContent = `Palier ${dia.tier}`;
     if (this.elTrackDiamondStepLabel) this.elTrackDiamondStepLabel.textContent = `${dia.step}/5`;
     renderPips(this.elTrackDiamondPips, dia.step);
 
