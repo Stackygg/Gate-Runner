@@ -166,7 +166,8 @@ export class CollisionSystem {
                 const remainingGenerators = enemy.targetBoss.connectedGenerators.filter(g => !g.isDead && g !== enemy);
                 if (remainingGenerators.length === 0) {
                   enemy.targetBoss.isInvulnerable = false;
-                  particles.spawnFloatingText(enemy.targetBoss.x, enemy.targetBoss.y - 60, '💥 BOUCLIER BRISÉ ! LE BOSS EST VULNÉRABLE !', '#00F0FF', 26);
+                  enemy.targetBoss.generatorRespawnTimer = 15.0;
+                  particles.spawnFloatingText(enemy.targetBoss.x, enemy.targetBoss.y - 60, '💥 BOUCLIER BRISÉ ! 15s DE VULNÉRABILITÉ !', '#00F0FF', 26);
                   particles.spawnExplosion(enemy.targetBoss.x, enemy.targetBoss.y, '#00F0FF', 60);
                   results.screenShake = 25;
                   sound.playExplosion(true);

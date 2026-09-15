@@ -73,9 +73,11 @@ export class HUD {
       isChallenge?: boolean;
       customLabel?: string;
       escortPct?: number;
+      isBossDuel?: boolean;
     }
   ) {
     const isChallenge = !!options?.isChallenge;
+    const isBossDuel = !!options?.isBossDuel;
 
     if (this.lastIsChallenge !== isChallenge) {
       this.lastIsChallenge = isChallenge;
@@ -88,7 +90,7 @@ export class HUD {
         if (this.elTopLeftIcon) this.elTopLeftIcon.textContent = '💎';
         if (this.elSubFleetWrap) this.elSubFleetWrap.style.display = 'flex';
         if (this.elSubFleetSep) this.elSubFleetSep.style.display = 'inline';
-        if (this.elBossMarker) this.elBossMarker.style.display = 'block';
+        if (this.elBossMarker) this.elBossMarker.style.display = isBossDuel ? 'none' : 'block';
       }
     }
 
@@ -116,7 +118,11 @@ export class HUD {
         if (this.elSubFleet) this.elSubFleet.textContent = `${fleetCount}`;
       }
 
-      if (this.lastLevel !== levelNum || this.lastPhase !== currentPhase) {
+      if (options?.customLabel) {
+        if (this.elLevelLabel && this.elLevelLabel.textContent !== options.customLabel) {
+          this.elLevelLabel.textContent = options.customLabel;
+        }
+      } else if (this.lastLevel !== levelNum || this.lastPhase !== currentPhase) {
         this.lastLevel = levelNum;
         this.lastPhase = currentPhase;
         if (this.elLevelLabel) {
@@ -135,12 +141,25 @@ export class HUD {
       if (this.elSubFireRate) this.elSubFireRate.textContent = `${fireRatePct}%`;
     }
 
-    // Mise à jour de la barre de distance par échelons de 0.2%
-    const progressPct = Math.round(Math.max(0, Math.min(1, progressRatio)) * 500) / 5;
-    if (this.lastProgressRounded !== progressPct) {
-      this.lastProgressRounded = progressPct;
-      if (this.elDistanceFill) this.elDistanceFill.style.width = `${progressPct}%`;
-      if (this.elShipMarker) this.elShipMarker.style.left = `${progressPct}%`;
+    // Mise à jour de la barre de distance
+    if (isBossDuel) {
+      // En duel de boss de fin de secteur : on enlève l'avancée et le marqueur
+      if (this.elDistanceFill) this.elDistanceFill.style.width = '0%';
+      if (this.elShipMarker) this.elShipMarker.style.display = 'none';
+      if (this.elBossMarker) this.elBossMarker.style.display = 'none';
+    } else {
+      if (this.elShipMarker && this.elShipMarker.style.display === 'none') {
+        this.elShipMarker.style.display = 'block';
+      }
+      if (this.elBossMarker && this.elBossMarker.style.display === 'none' && !isChallenge) {
+        this.elBossMarker.style.display = 'block';
+      }
+      const progressPct = Math.round(Math.max(0, Math.min(1, progressRatio)) * 500) / 5;
+      if (this.lastProgressRounded !== progressPct) {
+        this.lastProgressRounded = progressPct;
+        if (this.elDistanceFill) this.elDistanceFill.style.width = `${progressPct}%`;
+        if (this.elShipMarker) this.elShipMarker.style.left = `${progressPct}%`;
+      }
     }
   }
 

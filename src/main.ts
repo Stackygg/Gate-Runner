@@ -575,7 +575,18 @@ export class GameApp {
     const fireRatePct = Math.round((effectiveFireRate / GAME_CONFIG.BASE_FIRE_RATE) * 100);
 
     const challengeLvl = this.currentLevelData.challengeLevel || 1;
-    const customLabel = isArena ? `CONVOI D'IRIDIUM • NIVEAU ${challengeLvl}` : undefined;
+    const sectorNum = SectorSystem.getSectorForMission(this.currentLevelData.levelNumber);
+    const sectorName = SectorSystem.getSectorName(sectorNum);
+    const isBossDuel = !!this.currentLevelData.isSectorBossDuel;
+
+    let customLabel: string | undefined = undefined;
+    if (isArena) {
+      customLabel = `CONVOI D'IRIDIUM • NIVEAU ${challengeLvl}`;
+    } else if (isBossDuel) {
+      customLabel = `Boss Final Secteur ${sectorName}`;
+    } else {
+      customLabel = `Mission ${this.currentLevelData.levelNumber} Secteur ${sectorName}`;
+    }
 
     this.hud.updateStats(
       this.fleet.shipCount,
@@ -588,6 +599,7 @@ export class GameApp {
       {
         isChallenge,
         customLabel,
+        isBossDuel,
         escortPct: Math.round(progress * 100)
       }
     );
@@ -1068,9 +1080,9 @@ export class GameApp {
       let targetCombatY = 220;
       if (enemy.isBossType()) {
         if (this.currentLevelData?.isSectorBossDuel) {
-          // Les boss de duel de secteur restent ancrés tout en haut du niveau (Y = 85)
-          // pour laisser plus de 500px d'espace de combat afin d'abattre les générateurs et les minions
-          targetCombatY = 85;
+          // Les boss de duel de secteur restent ancrés tout en haut du niveau (Y = 75)
+          // pour laisser plus de 550px d'espace de combat afin d'abattre les générateurs et les minions
+          targetCombatY = 75;
         } else {
           const slotIdx = activeBosses.indexOf(enemy);
           if (slotIdx >= 0 && slotIdx < bossSlotY.length) {
@@ -1304,10 +1316,37 @@ export class GameApp {
         const remainingGenerators = activeBoss.connectedGenerators.filter(g => !g.isDead);
         if (remainingGenerators.length === 0) {
           activeBoss.isInvulnerable = false;
+          activeBoss.generatorRespawnTimer = 15.0;
           this.sound.playExplosion(true);
           this.renderer.addScreenShake(25);
-          this.particles.spawnFloatingText(activeBoss.x, activeBoss.y - 60, '💥 BOUCLIER DÉSACTIVÉ ! LE BOSS EST VULNÉRABLE !', '#00F0FF', 26);
+          this.particles.spawnFloatingText(activeBoss.x, activeBoss.y - 60, '💥 BOUCLIER BRISÉ ! 15s DE VULNÉRABILITÉ !', '#00F0FF', 26);
           this.particles.spawnExplosion(activeBoss.x, activeBoss.y, '#00F0FF', 60);
+        }
+      }
+
+      // Mécanique unique de Betapulsar : Réapparition des générateurs toutes les 15 secondes après leur mort
+      if (activeBoss.type === 'boss_betapulsar' && !activeBoss.isInvulnerable && !activeBoss.isDead) {
+        activeBoss.generatorRespawnTimer -= dt;
+        if (activeBoss.generatorRespawnTimer <= 0) {
+          activeBoss.generatorRespawnTimer = 15.0;
+          activeBoss.isInvulnerable = true;
+
+          const genLeft = new Enemy(activeBoss.x - 175, activeBoss.y + 85, 80, 80, 'shield_generator', 10, 'GÉNÉRATEUR ALPHA');
+          genLeft.generatorSide = 'left';
+          genLeft.targetBoss = activeBoss;
+
+          const genRight = new Enemy(activeBoss.x + 175, activeBoss.y + 85, 80, 80, 'shield_generator', 10, 'GÉNÉRATEUR BETA');
+          genRight.generatorSide = 'right';
+          genRight.targetBoss = activeBoss;
+
+          activeBoss.connectedGenerators = [genLeft, genRight];
+          this.enemies.push(genLeft, genRight);
+
+          this.sound.playWarp();
+          this.renderer.addScreenShake(16);
+          this.particles.spawnFloatingText(activeBoss.x, activeBoss.y - 60, '⚡ RÉGÉNÉRATION DU BOUCLIER MAGNÉTIQUE !', '#00F0FF', 26);
+          this.particles.spawnExplosion(genLeft.x, genLeft.y, '#00F0FF', 35);
+          this.particles.spawnExplosion(genRight.x, genRight.y, '#00F0FF', 35);
         }
       }
     } else {

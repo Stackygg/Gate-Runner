@@ -27,6 +27,7 @@ export class Enemy {
   public shieldAlpha: number = 1.0;
   public minionSpawnTimer: number = 0;
   public minionWaveIndex: number = 0; // Index de vague pour augmenter les PV 5 par 5
+  public generatorRespawnTimer: number = 15.0; // Compte à rebours de réapparition des générateurs (15s)
   public diamondReward: number = 0;
   public generatorSide?: 'left' | 'center' | 'right';
   public targetBoss?: Enemy;
@@ -161,13 +162,17 @@ export class Enemy {
         );
       }
     } else if (this.isBossType()) {
+      const isSectorBoss = (this.type === 'boss_alpharion' || this.type === 'boss_betapulsar' || this.type === 'boss_gammargantua');
+
       // Défilement du boss :
       // 1. Au loin (hors écran, y < -1200) : l'apparition du boss accélère avec le défilement général.
       // 2. Dès qu'il apparaît à l'horizon / entre sur l'écran (y >= -1200) et descend vers son ancrage targetCombatY :
-      //    sa vitesse de descente est STRICTEMENT plafonnée à BASE_SCROLL_SPEED (135 px/s).
-      //    LE BOSS N'ACCÉLÈRE JAMAIS VERS LE JOUEUR NI EN COMBAT !
       if (this.y < targetCombatY) {
-        const bossSpeed = (this.y < -1200) ? scrollSpeed : Math.min(GAME_CONFIG.BASE_SCROLL_SPEED, scrollSpeed);
+        let bossSpeed = (this.y < -1200) ? scrollSpeed : Math.min(GAME_CONFIG.BASE_SCROLL_SPEED, scrollSpeed);
+        if (isSectorBoss) {
+          // Approche cinématographique rapide depuis le fond de l'espace (-1200) vers targetCombatY
+          bossSpeed = Math.max(380, scrollSpeed * 2.5);
+        }
         this.y += bossSpeed * dt;
         this.x = 330;
       } else {
@@ -199,9 +204,9 @@ export class Enemy {
       this.hitBlinkTimer -= dt;
     }
 
-    // Tirs de Boss : Salves rythmées (pour les Boss de Secteur, engage le combat dès Y >= 45px à longue portée)
+    // Tirs de Boss : Salves rythmées (pour les Boss de Secteur, engage le combat dès Y >= -180px, soit à 80% du chemin depuis -1200)
     const isSectorBoss = (this.type === 'boss_alpharion' || this.type === 'boss_betapulsar' || this.type === 'boss_gammargantua');
-    const minShootY = isSectorBoss ? 45 : (targetCombatY - 5);
+    const minShootY = isSectorBoss ? -180 : (targetCombatY - 5);
 
     if (this.isBossType() && this.y >= minShootY && this.y < 680) {
       this.combatTimer += dt;
@@ -1584,6 +1589,15 @@ export class Enemy {
       ctx.strokeText(`${Math.ceil(this.hp)} / ${this.maxHp} HP`, pt.x, barY + barH / 2);
       ctx.fillStyle = '#FFFFFF';
       ctx.fillText(`${Math.ceil(this.hp)} / ${this.maxHp} HP`, pt.x, barY + barH / 2);
+
+      // Compte à rebours de vulnérabilité pour Betapulsar (15s avant réapparition des générateurs)
+      if (this.type === 'boss_betapulsar' && !this.isInvulnerable && !this.isDead) {
+        ctx.font = `900 ${Math.max(7, Math.floor(9.5 * s))}px 'Orbitron', sans-serif`;
+        ctx.fillStyle = '#00F0FF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`⚡ BOUCLIER DÉSACTIVÉ : ${Math.max(0, Math.ceil(this.generatorRespawnTimer))}s`, pt.x, barY + barH + 4 * s);
+      }
 
       ctx.restore();
       ctx.restore();
