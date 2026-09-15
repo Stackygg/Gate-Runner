@@ -1130,19 +1130,15 @@ export class UpgradeStore {
     const item = this.data.inventory?.find(i => i.id === itemId);
     if (!item) return { success: false, cost: 0, error: 'Équipement introuvable' };
 
-    if (item.level >= EquipmentSystem.MAX_ITEM_LEVEL) {
-      return { success: false, cost: 0, error: `Niveau maximum (${EquipmentSystem.MAX_ITEM_LEVEL}) déjà atteint` };
-    }
-
-    const maxUnlocked = Math.max(1, this.data.maxUnlockedMission || 1);
-    if (item.level >= maxUnlocked) {
-      return { success: false, cost: 0, error: `Amélioration bloquée : débloquez d'abord la Mission ${item.level + 1} !` };
+    const currentRank = item.rank || 1;
+    if (currentRank >= EquipmentSystem.MAX_ITEM_RANK) {
+      return { success: false, cost: 0, error: `Rang maximum (${EquipmentSystem.MAX_ITEM_RANK}) déjà atteint` };
     }
 
     const { dustCost, iridiumBarsCost } = EquipmentSystem.getUpgradeCost(item);
 
     if (iridiumBarsCost > 0 && (this.data.iridiumBars || 0) < iridiumBarsCost) {
-      return { success: false, cost: dustCost, error: `Barres d'iridium insuffisantes (${this.data.iridiumBars || 0}/${iridiumBarsCost} 🟦 requis pour le Niv. 20)` };
+      return { success: false, cost: dustCost, error: `Barres d'iridium insuffisantes (${this.data.iridiumBars || 0}/${iridiumBarsCost} 🟦 requises pour le Rang 20)` };
     }
 
     if ((this.data.diamondDust || 0) < dustCost) {

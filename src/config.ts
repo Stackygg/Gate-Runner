@@ -183,7 +183,7 @@ export const UPGRADE_TRACKS_CONFIG = {
     getStatMultiplier: (tier: number, step: number) => 1.0 + (tier - 1) * 0.50 + step * 0.10
   },
   diamondBoost: {
-    title: 'Gain Diamants',
+    title: 'Bonus Diamants',
     icon: '💎',
     baseStepCost: 8,
     costPerStep: 4,

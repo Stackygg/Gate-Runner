@@ -1,6 +1,7 @@
 // Système d'Équipement & Générateur de Loot Procédural avec Raretés, Niveaux et Effets Spéciaux
 
-export const MAX_ITEM_LEVEL = 20;
+export const MAX_ITEM_RANK = 20;
+export const MAX_ITEM_LEVEL = MAX_ITEM_RANK; // Alias pour rétro-compatibilité
 
 export type EquipmentSlotType = 'WEAPON' | 'SHIELD' | 'ENGINE' | 'CORE' | 'CHEST';
 
@@ -42,7 +43,8 @@ export interface EquipmentItem {
   slotType: EquipmentSlotType;
   rarity: EquipmentRarity;
   icon: string;
-  level: number;
+  level: number; // NIVEAU D'OBJET : Fixé à l'obtention (selon la mission), définit la puissance de base
+  rank: number;  // RANG D'OBJET : Démarre au rang 1, s'améliore avec la poussière de diamant jusqu'au rang 20
   specialEffect: ItemSpecialEffect;
   stats: EquipmentStat[];
   createdAt: number;
@@ -139,6 +141,7 @@ const ITEM_NAMES: Record<EquipmentSlotType, { prefixes: string[]; bases: string[
 };
 
 export class EquipmentSystem {
+  public static readonly MAX_ITEM_RANK = MAX_ITEM_RANK;
   public static readonly MAX_ITEM_LEVEL = MAX_ITEM_LEVEL;
 
   /**
@@ -147,30 +150,31 @@ export class EquipmentSystem {
    * - Épique : 1 jusqu'au niveau 19, 2 au niveau 20
    * - Légendaire : 1 (niv 1-14), 2 (niv 15-19), 3 (niv 20) (ou 999 Perforation Totale pour PIERCING_SHOTS au niv 20)
    * - Mythique : 1 (niv 1-9), 2 (niv 10-14), 3 (niv 15-19), 4 (niv 20) (ou 999 Perforation Totale pour PIERCING_SHOTS au niv 20)
+   * Calcule la valeur numérique officielle de l'effet spécial selon le type, la rareté et le RANG d'amélioration (1 à 20).
    */
   public static getSpecialEffectValue(
     type: SpecialEffectType,
     rarity: EquipmentRarity,
-    level: number
+    rank: number
   ): number {
-    const clampedLevel = Math.max(1, Math.min(MAX_ITEM_LEVEL, level));
+    const clampedRank = Math.max(1, Math.min(MAX_ITEM_RANK, rank));
 
     if (type === 'LEADER_EXTRA_SHOTS' || type === 'ENERGY_SHIELD' || type === 'BONUS_STARTING_SHIPS') {
       if (rarity === 'COMMON' || rarity === 'RARE') {
         return 1;
       }
       if (rarity === 'EPIC') {
-        return clampedLevel >= 20 ? 2 : 1;
+        return clampedRank >= 20 ? 2 : 1;
       }
       if (rarity === 'LEGENDARY') {
-        if (clampedLevel >= 20) return 3;
-        if (clampedLevel >= 15) return 2;
+        if (clampedRank >= 20) return 3;
+        if (clampedRank >= 15) return 2;
         return 1;
       }
       if (rarity === 'MYTHIC') {
-        if (clampedLevel >= 20) return 4;
-        if (clampedLevel >= 15) return 3;
-        if (clampedLevel >= 10) return 2;
+        if (clampedRank >= 20) return 4;
+        if (clampedRank >= 15) return 3;
+        if (clampedRank >= 10) return 2;
         return 1;
       }
       return 1;
@@ -181,17 +185,17 @@ export class EquipmentSystem {
         return 1;
       }
       if (rarity === 'EPIC') {
-        return clampedLevel >= 20 ? 2 : 1;
+        return clampedRank >= 20 ? 2 : 1;
       }
       if (rarity === 'LEGENDARY') {
-        if (clampedLevel >= 20) return 999; // Perforation totale
-        if (clampedLevel >= 15) return 2;
+        if (clampedRank >= 20) return 999; // Perforation totale
+        if (clampedRank >= 15) return 2;
         return 1;
       }
       if (rarity === 'MYTHIC') {
-        if (clampedLevel >= 20) return 999; // Perforation totale
-        if (clampedLevel >= 15) return 3;
-        if (clampedLevel >= 10) return 2;
+        if (clampedRank >= 20) return 999; // Perforation totale
+        if (clampedRank >= 15) return 3;
+        if (clampedRank >= 10) return 2;
         return 1;
       }
       return 1;
@@ -205,85 +209,85 @@ export class EquipmentSystem {
         LEGENDARY: 75,
         MYTHIC: 100
       }[rarity] || 25;
-      const bonusPerLevel = {
+      const bonusPerRank = {
         COMMON: 0.5,
         RARE: 0.8,
         EPIC: 1.0,
         LEGENDARY: 1.2,
         MYTHIC: 1.5
       }[rarity] || 1.0;
-      return Math.round(base + (clampedLevel - 1) * bonusPerLevel);
+      return Math.round(base + (clampedRank - 1) * bonusPerRank);
     }
 
     if (type === 'EXPLOSIVE_MISSILE') {
-      return clampedLevel >= 20 ? 3.0 : 2.0;
+      return clampedRank >= 20 ? 3.0 : 2.0;
     }
 
     return 1;
   }
 
   /**
-   * Retourne l'information textuelle sur le prochain palier d'effet spécial à débloquer.
+   * Retourne l'information textuelle sur le prochain palier d'effet spécial à débloquer selon le Rang.
    */
   public static getNextUnlockInfo(
     type: SpecialEffectType,
     rarity: EquipmentRarity,
-    level: number
+    rank: number
   ): string | null {
-    if (level >= MAX_ITEM_LEVEL) return 'Niveau max atteint';
+    if (rank >= MAX_ITEM_RANK) return 'Rang maximal atteint (20)';
 
     if (type === 'LEADER_EXTRA_SHOTS' || type === 'ENERGY_SHIELD' || type === 'BONUS_STARTING_SHIPS') {
       if (rarity === 'COMMON' || rarity === 'RARE') {
-        return 'Palier max d\'effet spécial atteint (1)';
+        return 'Rang max d\'effet spécial atteint (1)';
       }
       if (rarity === 'EPIC') {
-        return level < 20 ? 'Palier 2 débloqué au Niveau 20 (Coûte 10 Barres d\'Iridium)' : null;
+        return rank < 20 ? 'Rang 2 débloqué au Rang 20 (Coûte 10 Barres d\'Iridium)' : null;
       }
       if (rarity === 'LEGENDARY') {
-        if (level < 15) return 'Palier 2 débloqué au Niveau 15';
-        if (level < 20) return 'Palier 3 débloqué au Niveau 20 (Coûte 10 Barres d\'Iridium)';
+        if (rank < 15) return 'Rang 2 débloqué au Rang 15';
+        if (rank < 20) return 'Rang 3 débloqué au Rang 20 (Coûte 10 Barres d\'Iridium)';
         return null;
       }
       if (rarity === 'MYTHIC') {
-        if (level < 10) return 'Palier 2 débloqué au Niveau 10';
-        if (level < 15) return 'Palier 3 débloqué au Niveau 15';
-        if (level < 20) return 'Palier 4 débloqué au Niveau 20 (Coûte 10 Barres d\'Iridium)';
+        if (rank < 10) return 'Rang 2 débloqué au Rang 10';
+        if (rank < 15) return 'Rang 3 débloqué au Rang 15';
+        if (rank < 20) return 'Rang 4 débloqué au Rang 20 (Coûte 10 Barres d\'Iridium)';
         return null;
       }
     }
 
     if (type === 'PIERCING_SHOTS') {
-      if (rarity === 'COMMON' || rarity === 'RARE') return 'Palier max d\'effet spécial (+1 cible)';
-      if (rarity === 'EPIC') return level < 20 ? '+2 cibles débloqué au Niveau 20 (Coûte 10 Barres d\'Iridium)' : null;
+      if (rarity === 'COMMON' || rarity === 'RARE') return 'Rang max d\'effet spécial (+1 cible)';
+      if (rarity === 'EPIC') return rank < 20 ? '+2 cibles débloqué au Rang 20 (Coûte 10 Barres d\'Iridium)' : null;
       if (rarity === 'LEGENDARY') {
-        if (level < 15) return '+2 cibles débloqué au Niveau 15';
-        if (level < 20) return 'Perforation Totale débloquée au Niveau 20 (Coûte 10 Barres d\'Iridium) !';
+        if (rank < 15) return '+2 cibles débloqué au Rang 15';
+        if (rank < 20) return 'Perforation Totale débloquée au Rang 20 (Coûte 10 Barres d\'Iridium) !';
         return null;
       }
       if (rarity === 'MYTHIC') {
-        if (level < 10) return '+2 cibles débloqué au Niveau 10';
-        if (level < 15) return '+3 cibles débloqué au Niveau 15';
-        if (level < 20) return 'Perforation Totale débloquée au Niveau 20 (Coûte 10 Barres d\'Iridium) !';
+        if (rank < 10) return '+2 cibles débloqué au Rang 10';
+        if (rank < 15) return '+3 cibles débloqué au Rang 15';
+        if (rank < 20) return 'Perforation Totale débloquée au Rang 20 (Coûte 10 Barres d\'Iridium) !';
         return null;
       }
     }
 
     if (type === 'EXPLOSIVE_MISSILE') {
-      if (level < 20) return 'Dégâts x3 débloqués au Niveau 20 (Coûte 10 Barres d\'Iridium)';
+      if (rank < 20) return 'Dégâts x3 débloqués au Rang 20 (Coûte 10 Barres d\'Iridium)';
     }
 
     return null;
   }
 
   /**
-   * Formate l'effet spécial avec son libellé et sa description calibrés.
+   * Formate l'effet spécial avec son libellé et sa description calibrés selon son Rang.
    */
   public static formatSpecialEffect(
     type: SpecialEffectType,
     rarity: EquipmentRarity,
-    level: number
+    rank: number = 1
   ): ItemSpecialEffect {
-    const val = this.getSpecialEffectValue(type, rarity, level);
+    const val = this.getSpecialEffectValue(type, rarity, rank);
 
     switch (type) {
       case 'LEADER_EXTRA_SHOTS':
@@ -383,18 +387,23 @@ export class EquipmentSystem {
 
   /**
    * Génère un équipement aléatoire basé sur le numéro de la mission complétée.
-   * Règle des objets normaux (Communs) :
-   * - 25% de chance d'avoir l'effet spécial
-   * - 75% de chance d'avoir une statistique augmentée (vitesse d'attaque ou dégâts pour les tourelles)
+   * - Niveau d'objet : Déterminé par la mission (ou fixedLevel) et définit les stats etc.
+   * - Rang d'objet : Commence toujours au Rang 1 et s'améliore à la poussière.
    */
-  public static generateLoot(missionNum: number, forceHighRarity: boolean = false, forceSpecialEffect: boolean = false): EquipmentItem {
+  public static generateLoot(
+    missionNum: number,
+    forceHighRarity: boolean = false,
+    forceSpecialEffect: boolean = false,
+    fixedLevel?: number
+  ): EquipmentItem {
     const slotTypes: EquipmentSlotType[] = ['WEAPON', 'SHIELD', 'ENGINE', 'CORE'];
     const slotType = slotTypes[Math.floor(Math.random() * slotTypes.length)];
 
     const rarity = this.rollRarity(missionNum, forceHighRarity);
     const rarityConfig = RARITY_CONFIGS[rarity];
 
-    const itemLevel = Math.max(1, Math.min(MAX_ITEM_LEVEL, Math.floor(missionNum * 1.2 + Math.random() * 2)));
+    // NIVEAU D'OBJET : Fixé selon la mission d'obtention ou fixedLevel
+    const itemLevel = fixedLevel !== undefined ? fixedLevel : Math.max(1, missionNum);
 
     const nameData = ITEM_NAMES[slotType];
     const prefix = nameData.prefixes[Math.floor(Math.random() * nameData.prefixes.length)];
@@ -407,7 +416,7 @@ export class EquipmentSystem {
     let stats: EquipmentStat[];
 
     if (rarity === 'COMMON') {
-      const hasSpecial = forceSpecialEffect || (Math.random() < 0.25); // Effet spécial garanti pour les coffres
+      const hasSpecial = forceSpecialEffect || (Math.random() < 0.25);
       if (hasSpecial) {
         specialEffect = this.rollSpecialEffect(slotType, rarity);
         stats = [];
@@ -419,7 +428,6 @@ export class EquipmentSystem {
           description: 'Cet équipement commun bénéficie d\'une statistique principale considérablement augmentée (+25% à +40%).',
           icon: '💠'
         };
-        // Statistique augmentée (dégâts ou cadence pour les tourelles)
         stats = this.generateStats(slotType, 1, itemLevel, rarity, true);
       }
     } else {
@@ -434,7 +442,8 @@ export class EquipmentSystem {
       slotType,
       rarity,
       icon,
-      level: itemLevel,
+      level: itemLevel, // NIVEAU D'OBJET : immuable (même en relançant avec la pub)
+      rank: 1,          // RANG D'OBJET : commence au rang 1
       specialEffect,
       stats,
       createdAt: Date.now()
@@ -445,6 +454,17 @@ export class EquipmentSystem {
    * Assure qu'un objet possède un effet spécial valide (avec migration rétroactive).
    */
   public static ensureItemSpecialEffect(item: EquipmentItem): ItemSpecialEffect {
+    // Initialisation rétroactive du Rang
+    if (item.rank === undefined || item.rank === null) {
+      item.rank = 1;
+    }
+    if (!item.level) {
+      item.level = 1;
+    }
+    if (item.rank > MAX_ITEM_RANK) {
+      item.rank = MAX_ITEM_RANK;
+    }
+
     if (!item.specialEffect) {
       item.specialEffect = this.rollSpecialEffect(item.slotType, item.rarity);
     } else {
@@ -459,14 +479,9 @@ export class EquipmentSystem {
         item.specialEffect.type = 'FLEET_RAPID_FIRE';
       }
 
-      // Plafonnement rétroactif à 20
-      if (item.level > MAX_ITEM_LEVEL) {
-        item.level = MAX_ITEM_LEVEL;
-      }
-
-      // Recalibrer la valeur selon le tableau officiel
+      // Recalibrer la valeur selon le rang officiel
       if (item.specialEffect.type !== 'NONE') {
-        const formatted = this.formatSpecialEffect(item.specialEffect.type, item.rarity, item.level);
+        const formatted = this.formatSpecialEffect(item.specialEffect.type, item.rarity, item.rank || 1);
         item.specialEffect = formatted;
       }
     }
@@ -619,6 +634,7 @@ export class EquipmentSystem {
         rarity: 'COMMON',
         icon: '🔫',
         level: 1,
+        rank: 1,
         specialEffect: {
           type: 'LEADER_EXTRA_SHOTS',
           value: 1,
@@ -636,6 +652,7 @@ export class EquipmentSystem {
         rarity: 'COMMON',
         icon: '⚡',
         level: 1,
+        rank: 1,
         specialEffect: {
           type: 'FLEET_RAPID_FIRE',
           value: 25,
@@ -653,6 +670,7 @@ export class EquipmentSystem {
         rarity: 'RARE',
         icon: '🛡️',
         level: 1,
+        rank: 1,
         specialEffect: {
           type: 'ENERGY_SHIELD',
           value: 1,
@@ -669,12 +687,10 @@ export class EquipmentSystem {
   }
 
   /**
-   * Calcule le coût en Poudre de Diamant et en Barres d'Iridium (10 barres pour le passage au niveau 20).
-   * La progression en Poudre de Diamant est exponentielle selon le niveau et la rareté de l'objet.
+   * Calcule le coût en Poudre de Diamant et en Barres d'Iridium (10 barres pour le passage au Rang 20).
+   * La progression en Poudre de Diamant est exponentielle selon le RANG et la rareté de l'objet.
    */
   public static getUpgradeCost(item: EquipmentItem): ItemUpgradeCost {
-    // Bases calibrées pour un coût cumulé total de :
-    // Commun: ~20 000 | Rare: ~50 000 | Épique: ~100 000 | Légendaire: ~200 000 | Mythique: ~500 000
     const baseCostByRarity: Record<EquipmentRarity, number> = {
       COMMON: 76,
       RARE: 191,
@@ -686,37 +702,39 @@ export class EquipmentSystem {
     const base = baseCostByRarity[item.rarity] || 76;
     const EXPONENTIAL_GROWTH_RATE = 1.25;
 
-    // Règle spécifique : les niveaux 19 et 20 ont exactement la même quantité de poudre,
-    // le niveau 20 requérant 10 barres d'iridium en plus.
-    const effectiveLevel = Math.min(18, Math.max(1, item.level));
-    const dustCost = Math.round(base * Math.pow(EXPONENTIAL_GROWTH_RATE, effectiveLevel - 1));
+    const currentRank = item.rank || 1;
+    // Règle spécifique : les rangs 19 et 20 ont exactement la même quantité de poudre,
+    // le rang 20 requérant 10 barres d'iridium en plus.
+    const effectiveRank = Math.min(18, Math.max(1, currentRank));
+    const dustCost = Math.round(base * Math.pow(EXPONENTIAL_GROWTH_RATE, effectiveRank - 1));
 
-    // Le dernier niveau (20) coûte obligatoirement 10 barres d'iridium en plus
-    const iridiumBarsCost = (item.level === 19) ? 10 : 0;
+    // Le dernier rang (20) coûte obligatoirement 10 barres d'iridium en plus
+    const iridiumBarsCost = (currentRank === 19) ? 10 : 0;
 
     return { dustCost, iridiumBarsCost };
   }
 
   /**
-   * Améliore le niveau d'un équipement (plafonné à MAX_ITEM_LEVEL = 20)
+   * Améliore le RANG d'un équipement (plafonné à MAX_ITEM_RANK = 20)
    * et renforce son effet spécial selon le palier officiel.
    */
   public static upgradeItem(item: EquipmentItem): boolean {
-    if (item.level >= MAX_ITEM_LEVEL) return false;
-    item.level += 1;
+    const currentRank = item.rank || 1;
+    if (currentRank >= MAX_ITEM_RANK) return false;
+    item.rank = currentRank + 1;
 
-    // Amélioration de 12% sur les statistiques passives
+    // Amélioration de 12% sur les statistiques passives par rang
     for (const st of item.stats) {
       st.value = Math.max(1, Math.round(st.value * 1.12));
-      if (st.type === 'damage') st.label = `+${st.value}% Dégâts Laser`;
-      else if (st.type === 'fireRate') st.label = `+${st.value}% Vitesse de Tir`;
+      if (st.type === 'damage') st.label = `+${st.value}% Puissance d'Attaque`;
+      else if (st.type === 'fireRate') st.label = `+${st.value}% Vitesse d'Attaque`;
       else if (st.type === 'speed') st.label = `+${st.value}% Vitesse de Vol`;
-      else if (st.type === 'diamond') st.label = `+${st.value}% Gain Diamants`;
+      else if (st.type === 'diamond') st.label = `+${st.value}% Bonus Diamants`;
     }
 
-    // Mise à jour de l'Effet Spécial selon le niveau et la rareté
+    // Mise à jour de l'Effet Spécial selon le nouveau RANG et la rareté
     if (item.specialEffect && item.specialEffect.type !== 'NONE') {
-      const updatedFx = this.formatSpecialEffect(item.specialEffect.type, item.rarity, item.level);
+      const updatedFx = this.formatSpecialEffect(item.specialEffect.type, item.rarity, item.rank);
       item.specialEffect = updatedFx;
     }
 
@@ -738,7 +756,8 @@ export class EquipmentSystem {
       slotType: 'CHEST',
       rarity,
       icon: '📦',
-      level: Math.max(1, missionNum),
+      level: Math.max(1, missionNum), // Niveau d'objet scellé
+      rank: 1,
       specialEffect: {
         type: 'NONE',
         value: 0,
@@ -755,17 +774,20 @@ export class EquipmentSystem {
 
   /**
    * Ouvre un coffre et génère un véritable équipement avec Effet Spécial garanti.
+   * L'équipement hérite rigoureusement du Niveau d'objet du coffre.
    */
   public static openChest(chest: EquipmentItem): EquipmentItem {
-    const mission = chest.sourceMission || chest.level || 1;
-    return this.generateLoot(mission, false, true);
+    const itemLevel = chest.level || chest.sourceMission || 1;
+    return this.generateLoot(itemLevel, false, true, itemLevel);
   }
 
   /**
    * Relance le tirage du butin d'un coffre (avec bonus de chance de haute rareté et Effet Spécial garanti).
+   * L'équipement conserve STRICTEMENT le même Niveau d'objet d'origine !
    */
-  public static rerollChestLoot(missionNum: number): EquipmentItem {
+  public static rerollChestLoot(missionNum: number, fixedLevel?: number): EquipmentItem {
     const luckyBoost = Math.random() < 0.45;
-    return this.generateLoot(missionNum, luckyBoost, true);
+    const itemLevel = fixedLevel !== undefined ? fixedLevel : missionNum;
+    return this.generateLoot(missionNum, luckyBoost, true, itemLevel);
   }
 }

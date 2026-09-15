@@ -5623,11 +5623,32 @@ html, body {
   text-transform: uppercase;
 }
 
+.inv-card-meta-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .inv-card-lvl {
   font-family: var(--font-mono);
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 700;
-  color: var(--text-dim);
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.inv-card-rank {
+  font-family: var(--font-cyber);
+  font-size: 0.56rem;
+  font-weight: 800;
+  color: var(--neon-yellow);
+  background: rgba(255, 230, 0, 0.12);
+  border: 1px solid rgba(255, 230, 0, 0.25);
+  padding: 1px 4px;
+  border-radius: 3px;
 }
 
 .inv-card-title {
@@ -5784,7 +5805,22 @@ html, body {
   font-family: var(--font-mono);
   font-size: 0.62rem;
   font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.item-badge-rank {
+  font-family: var(--font-cyber);
+  font-size: 0.62rem;
+  font-weight: 800;
   color: var(--neon-yellow);
+  background: rgba(255, 230, 0, 0.12);
+  border: 1px solid rgba(255, 230, 0, 0.35);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 .item-modal-desc {
@@ -6154,7 +6190,22 @@ html, body {
   font-family: var(--font-mono);
   font-size: 0.58rem;
   font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.loot-badge-rank {
+  font-family: var(--font-cyber);
+  font-size: 0.58rem;
+  font-weight: 800;
   color: var(--neon-yellow);
+  background: rgba(255, 230, 0, 0.12);
+  border: 1px solid rgba(255, 230, 0, 0.25);
+  padding: 1px 5px;
+  border-radius: 4px;
 }
 
 .loot-affixes-box {

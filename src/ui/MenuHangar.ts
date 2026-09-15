@@ -194,6 +194,7 @@ export class MenuHangar {
   private elItemModalRarity = document.getElementById('item-modal-rarity');
   private elItemModalSlotType = document.getElementById('item-modal-slot-type');
   private elItemModalLevel = document.getElementById('item-modal-level');
+  private elItemModalRank = document.getElementById('item-modal-rank');
   private elItemModalDesc = document.getElementById('item-modal-desc');
   private elItemModalAffixesList = document.getElementById('item-modal-affixes-list');
   private elItemModalRecycleVal = document.getElementById('item-modal-recycle-val');
@@ -1621,7 +1622,7 @@ export class MenuHangar {
             <div class="inv-card-top">
               <span class="inv-card-slot-icon chest-bounce">📦</span>
               <span class="inv-card-rarity-tag" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; border: 1px solid #F59E0B;">SCELLÉ</span>
-              <span class="inv-card-lvl">MISSION ${item.sourceMission || item.level}</span>
+              <span class="inv-card-lvl">NIV. ${item.level || item.sourceMission || 1}</span>
             </div>
             <div class="inv-card-title" style="color: #FCD34D;">${item.name}</div>
             <div class="inv-card-chest-hint">Trésor spatial scellé à ouvrir</div>
@@ -1666,7 +1667,10 @@ export class MenuHangar {
           <div class="inv-card-top">
             <span class="inv-card-slot-icon">${slotInfo.icon}</span>
             <span class="inv-card-rarity-tag" style="background: ${rarityCfg.color}22; color: ${rarityCfg.color}; border: 1px solid ${rarityCfg.color};">${rarityCfg.name}</span>
-            <span class="inv-card-lvl">NIV. ${item.level}</span>
+            <div class="inv-card-meta-badges" style="display: flex; gap: 4px; align-items: center;">
+              <span class="inv-card-lvl" title="Niveau d'obtention de l'objet">NIV. ${item.level || 1}</span>
+              <span class="inv-card-rank" style="font-size: 0.65rem; padding: 1px 5px; border-radius: 4px; background: rgba(253, 224, 71, 0.15); color: #FDE047; font-weight: 800; border: 1px solid rgba(253, 224, 71, 0.4);" title="Rang d'amélioration de l'objet">RANG ${item.rank || 1}</span>
+            </div>
           </div>
 
           <div class="inv-card-title" style="color: ${rarityCfg.color};">${item.name}</div>
@@ -1719,7 +1723,8 @@ export class MenuHangar {
     }
 
     if (this.elItemModalSlotType) this.elItemModalSlotType.textContent = slotInfo.label.toUpperCase();
-    if (this.elItemModalLevel) this.elItemModalLevel.textContent = `NIV. ${item.level}`;
+    if (this.elItemModalLevel) this.elItemModalLevel.textContent = `NIV. ${item.level || 1}`;
+    if (this.elItemModalRank) this.elItemModalRank.textContent = `RANG ${item.rank || 1}`;
     if (this.elItemModalDesc) this.elItemModalDesc.textContent = slotInfo.desc;
 
     // Rendu de l'Effet Spécial Unique
@@ -1740,7 +1745,7 @@ export class MenuHangar {
           elFxLabel.style.color = rarityCfg.color;
         }
         if (elFxDesc) {
-          const nextUnlock = EquipmentSystem.getNextUnlockInfo(fx.type, item.rarity, item.level);
+          const nextUnlock = EquipmentSystem.getNextUnlockInfo(fx.type, item.rarity, item.rank || 1);
           elFxDesc.innerHTML = `${fx.description}${nextUnlock ? `<div class="special-effect-next-unlock" style="margin-top: 6px; font-size: 0.72rem; color: #38bdf8; font-style: italic;">✦ ${nextUnlock}</div>` : ''}`;
         }
       } else {
@@ -1785,7 +1790,6 @@ export class MenuHangar {
     const { dustCost, iridiumBarsCost } = EquipmentSystem.getUpgradeCost(item);
     const playerDust = this.store.data.diamondDust || 0;
     const playerBars = this.store.data.iridiumBars || 0;
-    const maxUnlocked = Math.max(1, this.store.data.maxUnlockedMission || 1);
 
     if (this.elItemUpgradeCostVal) {
       this.elItemUpgradeCostVal.textContent = dustCost.toString();
@@ -1802,36 +1806,30 @@ export class MenuHangar {
     }
 
     const elUpgradeDesc = document.getElementById('item-modal-upgrade-desc');
-    const isMaxLevel = item.level >= EquipmentSystem.MAX_ITEM_LEVEL;
-    const isLockedByMission = item.level >= maxUnlocked;
+    const currentRank = item.rank || 1;
+    const isMaxRank = currentRank >= EquipmentSystem.MAX_ITEM_RANK;
     const hasEnoughDust = playerDust >= dustCost;
     const hasEnoughBars = playerBars >= iridiumBarsCost;
 
     if (this.elItemNextLevelVal) {
-      this.elItemNextLevelVal.textContent = isMaxLevel ? 'MAX' : (item.level + 1).toString();
+      this.elItemNextLevelVal.textContent = isMaxRank ? 'MAX' : (currentRank + 1).toString();
     }
 
     if (elUpgradeDesc) {
-      if (isMaxLevel) {
-        elUpgradeDesc.textContent = `🏆 Cet équipement a atteint son potentiel maximal absolu (Niveau ${EquipmentSystem.MAX_ITEM_LEVEL}).`;
-      } else if (isLockedByMission) {
-        elUpgradeDesc.textContent = `🔒 Niveau bloqué : Terminez la Mission ${item.level} pour débloquer la Mission ${item.level + 1} et pouvoir l'améliorer.`;
-      } else if (item.level === 19) {
+      if (isMaxRank) {
+        elUpgradeDesc.textContent = `🏆 Cet équipement a atteint son potentiel maximal absolu (Rang ${EquipmentSystem.MAX_ITEM_RANK}).`;
+      } else if (currentRank === 19) {
         elUpgradeDesc.textContent = `⭐ AMÉLIORATION ULTIME : Débloque le palier final de l'effet spécial (Coûte 10 Barres d'Iridium et de la Poudre) !`;
       } else {
-        elUpgradeDesc.textContent = `Améliore le niveau de cet équipement (+12% aux statistiques passives et progression de l'effet spécial).`;
+        elUpgradeDesc.textContent = `Améliore le rang de cet équipement (+12% aux statistiques passives et renforce son effet spécial).`;
       }
     }
 
     if (this.elBtnModalUpgradeItem) {
-      if (isMaxLevel) {
+      if (isMaxRank) {
         this.elBtnModalUpgradeItem.setAttribute('disabled', 'true');
         this.elBtnModalUpgradeItem.className = 'btn-modal-upgrade maxed';
-        this.elBtnModalUpgradeItem.innerHTML = `<span>🏆 NIVEAU MAXIMUM (20)</span>`;
-      } else if (isLockedByMission) {
-        this.elBtnModalUpgradeItem.setAttribute('disabled', 'true');
-        this.elBtnModalUpgradeItem.className = 'btn-modal-upgrade locked';
-        this.elBtnModalUpgradeItem.innerHTML = `<span>🔒 REQUIS : MISSION ${item.level + 1} DÉBLOQUÉE</span>`;
+        this.elBtnModalUpgradeItem.innerHTML = `<span>🏆 RANG MAXIMUM (20)</span>`;
       } else if (!hasEnoughBars) {
         this.elBtnModalUpgradeItem.setAttribute('disabled', 'true');
         this.elBtnModalUpgradeItem.className = 'btn-modal-upgrade disabled';
@@ -1840,14 +1838,14 @@ export class MenuHangar {
         this.elBtnModalUpgradeItem.setAttribute('disabled', 'true');
         this.elBtnModalUpgradeItem.className = 'btn-modal-upgrade disabled';
         this.elBtnModalUpgradeItem.innerHTML = `<span>⚠️ POUDRE INSUFFISANTE (${playerDust.toLocaleString()}/${dustCost.toLocaleString()} <span class="icon-diamond-dust"></span>)</span>`;
-      } else if (item.level === 19) {
+      } else if (currentRank === 19) {
         this.elBtnModalUpgradeItem.removeAttribute('disabled');
         this.elBtnModalUpgradeItem.className = 'btn-modal-upgrade ultimate';
-        this.elBtnModalUpgradeItem.innerHTML = `<span>⭐ AMÉLIORER AU NIVEAU ULTIME 20 (10 <span class="icon-iridium-bar"></span> + ${dustCost.toLocaleString()} <span class="icon-diamond-dust"></span>)</span>`;
+        this.elBtnModalUpgradeItem.innerHTML = `<span>⭐ AMÉLIORER AU RANG ULTIME 20 (10 <span class="icon-iridium-bar"></span> + ${dustCost.toLocaleString()} <span class="icon-diamond-dust"></span>)</span>`;
       } else {
         this.elBtnModalUpgradeItem.removeAttribute('disabled');
         this.elBtnModalUpgradeItem.className = 'btn-modal-upgrade';
-        this.elBtnModalUpgradeItem.innerHTML = `<span>⚡ AMÉLIORER AU NIVEAU ${item.level + 1} (${dustCost.toLocaleString()} <span class="icon-diamond-dust"></span>)</span>`;
+        this.elBtnModalUpgradeItem.innerHTML = `<span>⚡ AMÉLIORER AU RANG ${currentRank + 1} (${dustCost.toLocaleString()} <span class="icon-diamond-dust"></span>)</span>`;
       }
     }
 
@@ -2817,7 +2815,8 @@ export class MenuHangar {
           <div class="loot-sub-tags" style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
             <span class="loot-badge-rarity" style="font-size: 0.65rem; font-weight: 900; padding: 2px 8px; border-radius: 4px; background: ${rarityCfg.color}22; color: ${rarityCfg.color}; border: 1px solid ${rarityCfg.color};">${rarityCfg.name}</span>
             <span class="loot-badge-slot" style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">${slotInfo.label.toUpperCase()}</span>
-            <span class="loot-badge-lvl" style="font-size: 0.65rem; color: #38bdf8; font-weight: 700;">NIV. ${item.level}</span>
+            <span class="loot-badge-lvl" style="font-size: 0.65rem; color: #38bdf8; font-weight: 700;" title="Niveau d'obtention de l'objet">NIV. ${item.level}</span>
+            <span class="loot-badge-rank" style="font-size: 0.65rem; color: #FDE047; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: rgba(253, 224, 71, 0.15); border: 1px solid rgba(253, 224, 71, 0.4);" title="Rang d'amélioration de l'objet">RANG ${item.rank || 1}</span>
           </div>
         </div>
       </div>
@@ -2833,7 +2832,8 @@ export class MenuHangar {
     AdService.showRewardedAd('RELANCER LE BUTIN DU COFFRE', () => {
       if (!this.currentChestItem) return;
       this.sound.playChestOpen();
-      this.currentRevealedItem = EquipmentSystem.rerollChestLoot(this.currentChestItem.sourceMission || this.currentChestItem.level || 1);
+      const fixedLvl = this.currentChestItem.level || this.currentChestItem.sourceMission || 1;
+      this.currentRevealedItem = EquipmentSystem.rerollChestLoot(fixedLvl, fixedLvl);
       this.renderChestReward();
       this.showHudToast('🎲 NOUVEAU TIRAGE GÉNÉRÉ AVEC SUCCÈS !', false);
     });
