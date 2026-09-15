@@ -128,18 +128,27 @@ html, body {
   border-color: rgba(0, 240, 255, 0.5);
   background: rgba(0, 240, 255, 0.12);
   color: var(--neon-cyan);
-  padding: 5px 12px;
+  padding: 4px 10px;
+  min-width: 80px;
+  box-sizing: border-box;
+  justify-content: center;
 }
 
 .diamonds-pill .pill-icon {
-  font-size: 1.15rem;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .diamonds-pill .pill-value {
-  font-size: 1.15rem;
-  font-weight: 900;
+  font-size: 0.92rem;
+  font-weight: 800;
   color: #fff;
-  text-shadow: 0 0 10px var(--neon-cyan);
+  text-shadow: 0 0 8px var(--neon-cyan);
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+  min-width: 44px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 /* Second Line: Sub-Stat Bar (Flotte, Dégâts %, Vitesse %) */

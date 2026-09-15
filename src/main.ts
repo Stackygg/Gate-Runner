@@ -581,17 +581,18 @@ export class GameApp {
     const fireRatePct = Math.round((effectiveFireRate / GAME_CONFIG.BASE_FIRE_RATE) * 100);
 
     const challengeLvl = this.currentLevelData.challengeLevel || 1;
-    const sectorNum = SectorSystem.getSectorForMission(this.currentLevelData.levelNumber);
-    const sectorName = SectorSystem.getSectorName(sectorNum);
+    const sectorInfo = SectorSystem.getSectorInfo(this.currentLevelData.levelNumber);
+    const sectorName = sectorInfo.sectorName;
     const isBossDuel = !!this.currentLevelData.isSectorBossDuel;
 
     let customLabel: string | undefined = undefined;
     if (isArena) {
       customLabel = `CONVOI D'IRIDIUM • NIVEAU ${challengeLvl}`;
     } else if (isBossDuel) {
-      customLabel = `Boss Final Secteur ${sectorName}`;
+      customLabel = `Secteur ${sectorName} : Boss`;
     } else {
-      customLabel = `Mission ${this.currentLevelData.levelNumber} Secteur ${sectorName}`;
+      const lvlStr = sectorInfo.levelInSector < 10 ? `0${sectorInfo.levelInSector}` : `${sectorInfo.levelInSector}`;
+      customLabel = `Secteur ${sectorName} : ${lvlStr}`;
     }
 
     this.hud.updateStats(

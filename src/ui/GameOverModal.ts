@@ -309,19 +309,19 @@ export class GameOverModal {
           this.elBadge.textContent = '🌌 SECTEUR CONQUIS !';
         }
         if (this.elTitle) this.elTitle.textContent = `BOSS DÉFAIT : ${stats.sectorBossName?.toUpperCase() || 'BOSS'}`;
-        const nextSecName = stats.nextSectorName ? stats.nextSectorName.toUpperCase() : 'SUIVANT';
-        const nextGreek = stats.nextSectorGreek ? `[${stats.nextSectorGreek}] ` : '';
-        if (this.elBtnNext) this.elBtnNext.textContent = `FRANCHIR LA PORTE ➔ SECTEUR ${nextSecName} ${nextGreek}▶`;
       } else {
         if (this.elBadge) {
           this.elBadge.className = 'modal-badge victory';
           this.elBadge.textContent = 'VICTOIRE ÉCLATANTE !';
         }
         if (this.elTitle) this.elTitle.textContent = 'MISSION ACCOMPLIE';
-        const nextSecInfo = SectorSystem.getSectorInfo(stats.nextLevelNum);
-        const nextSecGreek = SectorSystem.getSectorName(nextSecInfo.sector).toUpperCase();
-        if (this.elBtnNext) this.elBtnNext.textContent = `CONTINUER (SECTEUR ${nextSecGreek} • NIVEAU ${nextSecInfo.levelInSector}) ▶`;
       }
+
+      // Bouton épuré et compact : "Secteur Alpha : 02" ou "Secteur Alpha : Boss"
+      const nextSecInfo = SectorSystem.getSectorInfo(stats.nextLevelNum);
+      const isNextBoss = SectorSystem.isSectorBossMission(stats.nextLevelNum);
+      const nextLvlStr = isNextBoss ? 'Boss' : (nextSecInfo.levelInSector < 10 ? `0${nextSecInfo.levelInSector}` : `${nextSecInfo.levelInSector}`);
+      if (this.elBtnNext) this.elBtnNext.textContent = `Secteur ${nextSecInfo.sectorName} : ${nextLvlStr} ▶`;
 
       // Explosion de confettis cyberpunk
       try {

@@ -1,4 +1,5 @@
 // Contrôleur de l'affichage HUD en temps réel avec double monnaie, bannières de phases & timer multiplicateur de boss
+import { SectorSystem } from '../systems/SectorSystem';
 
 export class HUD {
   private elSessionDiamonds = document.getElementById('hud-session-diamonds');
@@ -33,7 +34,7 @@ export class HUD {
   private bannerTimer: number | null = null;
 
   // Cache pour dirty-checking (zéro thrashing DOM à 60 FPS)
-  private lastDiamonds: number = -1;
+  private lastDiamondsText: string = '';
   private lastFleet: number = -1;
   private lastDamage: number = -1;
   private lastFireRate: number = -1;
@@ -45,7 +46,7 @@ export class HUD {
   public show() {
     this.elTopHud?.classList.remove('hidden');
     // Réinitialiser le cache pour forcer un affichage frais
-    this.lastDiamonds = -1;
+    this.lastDiamondsText = '';
     this.lastFleet = -1;
     this.lastDamage = -1;
     this.lastFireRate = -1;
@@ -97,9 +98,10 @@ export class HUD {
     if (isChallenge) {
       // Mode Défi : remplacement du nombre de diamants par le % actuel d'escorte / progression
       const pctVal = options?.escortPct !== undefined ? options.escortPct : Math.round(progressRatio * 100);
-      if (this.lastDiamonds !== pctVal) {
-        this.lastDiamonds = pctVal;
-        if (this.elSessionDiamonds) this.elSessionDiamonds.textContent = `${pctVal}%`;
+      const strVal = `${pctVal}%`;
+      if (this.lastDiamondsText !== strVal) {
+        this.lastDiamondsText = strVal;
+        if (this.elSessionDiamonds) this.elSessionDiamonds.textContent = strVal;
       }
       if (options?.customLabel && this.elLevelLabel) {
         if (this.elLevelLabel.textContent !== options.customLabel) {
@@ -107,10 +109,18 @@ export class HUD {
         }
       }
     } else {
+      // Formatage des diamants : Si > 9999, afficher "10K", "11K", etc.
       const dFloor = Math.floor(sessionDiamonds);
-      if (this.lastDiamonds !== dFloor) {
-        this.lastDiamonds = dFloor;
-        if (this.elSessionDiamonds) this.elSessionDiamonds.textContent = `${dFloor}`;
+      let diamondText = '';
+      if (dFloor > 9999) {
+        diamondText = `${Math.floor(dFloor / 1000)}K`;
+      } else {
+        diamondText = `${dFloor}`;
+      }
+
+      if (this.lastDiamondsText !== diamondText) {
+        this.lastDiamondsText = diamondText;
+        if (this.elSessionDiamonds) this.elSessionDiamonds.textContent = diamondText;
       }
 
       if (this.lastFleet !== fleetCount) {
@@ -122,11 +132,13 @@ export class HUD {
         if (this.elLevelLabel && this.elLevelLabel.textContent !== options.customLabel) {
           this.elLevelLabel.textContent = options.customLabel;
         }
-      } else if (this.lastLevel !== levelNum || this.lastPhase !== currentPhase) {
+      } else if (this.lastLevel !== levelNum) {
         this.lastLevel = levelNum;
-        this.lastPhase = currentPhase;
         if (this.elLevelLabel) {
-          this.elLevelLabel.textContent = `M${levelNum < 10 ? '0' + levelNum : levelNum} • VAGUE ${currentPhase}/4`;
+          const secInfo = SectorSystem.getSectorInfo(levelNum);
+          const isBoss = SectorSystem.isSectorBossMission(levelNum);
+          const lvlStr = isBoss ? 'Boss' : (secInfo.levelInSector < 10 ? `0${secInfo.levelInSector}` : `${secInfo.levelInSector}`);
+          this.elLevelLabel.textContent = `Secteur ${secInfo.sectorName} : ${lvlStr}`;
         }
       }
     }
