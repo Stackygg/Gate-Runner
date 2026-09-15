@@ -45,7 +45,7 @@ export class Enemy {
   public vy: number = 0;
   public recoilTimer: number = 0;
   public recoilShakeAmount: number = 0;
-  private targetCombatX: number = 330;
+  private targetCombatX: number = 270;
 
   constructor(
     x: number,
@@ -151,9 +151,21 @@ export class Enemy {
           new Projectile(this.x, this.y + 24, targetVx, 330, 1, 'enemy_bullet', '#00F0FF')
         );
       }
+    } else if (this.type === 'gauntlet_wall') {
+      this.y += scrollSpeed * dt;
+    } else if (this.type === 'corner_turret') {
+      this.rotAngle += dt * 1.5;
+      this.shootTimer += dt;
+      if (this.shootTimer >= 1.8) {
+        this.shootTimer = 0;
+        const targetVx = (this.generatorSide === 'left') ? 140 : -140;
+        spawnedProjectiles.push(
+          new Projectile(this.x, this.y + 24, targetVx, 330, 1, 'enemy_bullet', '#00F0FF')
+        );
+      }
     } else if (this.type === 'boss_minion') {
       // Les minions d'Alpharion foncent plus vite que le boss pour fondre sur le joueur
-      this.y += (scrollSpeed + 160) * dt;
+      this.y += Math.max(320, scrollSpeed + 160) * dt;
       this.x += Math.sin(this.phase * 2.5) * 120 * dt;
       this.shootTimer += dt;
       if (this.shootTimer >= 2.2 && this.y >= 50 && this.y < 620) {
@@ -166,11 +178,11 @@ export class Enemy {
       const isSectorBoss = (this.type === 'boss_alpharion' || this.type === 'boss_betapulsar' || this.type === 'boss_gammargantua');
 
       // Défilement du boss :
-      // Le boss arrive lentement et majestueusement, exactement comme les autres boss
+      // Le boss arrive rapidement depuis le fond de l'espace comme les boss normaux puis s'arrête à sa limite
       if (this.y < targetCombatY) {
-        const bossSpeed = (this.y < -1200) ? scrollSpeed : Math.min(GAME_CONFIG.BASE_SCROLL_SPEED, scrollSpeed);
+        const bossSpeed = isSectorBoss ? Math.max(300, scrollSpeed) : ((this.y < -1200) ? scrollSpeed : Math.min(GAME_CONFIG.BASE_SCROLL_SPEED, scrollSpeed));
         this.y += bossSpeed * dt;
-        this.x = 330;
+        this.x = 270;
       } else {
         // En position de combat à targetCombatY : vitesse et strafe strictement nominaux (AUCUNE accélération)
         if (this.recoilTimer > 0) {
@@ -185,7 +197,7 @@ export class Enemy {
           else if (this.type === 'boss_betapulsar') strafeAmplitude = 95;
           else if (this.type === 'boss_alpharion') strafeAmplitude = 75;
 
-          this.targetCombatX = 330 + Math.sin(this.phase * 0.6) * strafeAmplitude;
+          this.targetCombatX = 270 + Math.sin(this.phase * 0.6) * strafeAmplitude;
           this.x += (this.targetCombatX - this.x) * 2.2 * dt;
           // Flottement et maintien doux à targetCombatY (ancrage stable sans dérive)
           this.y += (targetCombatY - this.y) * 3.0 * dt;
