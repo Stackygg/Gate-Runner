@@ -52,7 +52,12 @@ export function getGreekSectorName(sector: number): string {
   return `Secteur ${sector}`;
 }
 
-// Configuration extensible des Secteurs (progression escaladante : Alpha 4 missions, Beta 5, Gamma 6, Delta 7...)
+export interface UnlockedFeatureItem {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
 export interface SectorBossInfo {
   sector: number;
   bossName: string;
@@ -60,7 +65,7 @@ export interface SectorBossInfo {
   enemyType: 'boss_alpharion' | 'boss_betapulsar' | 'boss_gammargantua';
   nextSectorGreek: string;
   nextSectorName: string;
-  unlockedFeatures: string[];
+  unlockedFeatures: UnlockedFeatureItem[];
 }
 
 export const SECTOR_BOSSES: Record<number, SectorBossInfo> = {
@@ -71,7 +76,11 @@ export const SECTOR_BOSSES: Record<number, SectorBossInfo> = {
     enemyType: 'boss_alpharion',
     nextSectorGreek: 'Β',
     nextSectorName: 'Beta',
-    unlockedFeatures: ['Hangar de Gestion de Flotte', 'Défis Galactiques Quotidiens (Niveau 1)', 'Accès au Secteur Beta']
+    unlockedFeatures: [
+      { icon: '🛸', title: 'Hangar de Flotte', desc: 'Gestion des prototypes de vaisseaux, modules et équipements.' },
+      { icon: '⚔️', title: 'Défis Galactiques', desc: 'Missions spéciales d\'escorte de convois et raids à haut rendement.' },
+      { icon: '🌌', title: 'Secteur Beta', desc: 'Nouvelle région spatiale : 5 missions dont les interceptions de convois.' }
+    ]
   },
   2: {
     sector: 2,
@@ -80,7 +89,11 @@ export const SECTOR_BOSSES: Record<number, SectorBossInfo> = {
     enemyType: 'boss_betapulsar',
     nextSectorGreek: 'Γ',
     nextSectorName: 'Gamma',
-    unlockedFeatures: ['Prototypes Rares Tier II', 'Missions de Convois & Éruptions', 'Accès au Secteur Gamma']
+    unlockedFeatures: [
+      { icon: '⚡', title: 'Prototypes Tier II', desc: 'Vaisseaux prototypes de rang supérieur avec blindage renforcé.' },
+      { icon: '☀️', title: 'Missions Éruptions Solaires', desc: 'Nouvelles missions de combat stellaire et de traversée de flares.' },
+      { icon: '🌌', title: 'Secteur Gamma', desc: 'Frontière de la nébuleuse sombre : 6 missions et forteresses spatiales.' }
+    ]
   },
   3: {
     sector: 3,
@@ -89,7 +102,11 @@ export const SECTOR_BOSSES: Record<number, SectorBossInfo> = {
     enemyType: 'boss_gammargantua',
     nextSectorGreek: 'Δ',
     nextSectorName: 'Delta',
-    unlockedFeatures: ['Raffinerie de Matière Noire', 'Défis Galactiques Difficiles (Niveau 2)', 'Accès au Secteur Delta']
+    unlockedFeatures: [
+      { icon: '🏭', title: 'Raffinerie de Matière Noire', desc: 'Conversion d\'énergie pure et fabrication de composants quantiques.' },
+      { icon: '🏆', title: 'Défis Rang II', desc: 'Défis d\'arène de niveau 2 avec récompenses d\'iridium accrues.' },
+      { icon: '🌌', title: 'Secteur Delta', desc: 'Entrée dans le quadrant impérial et confrontation avec l\'armada lourde.' }
+    ]
   }
 };
 
@@ -375,7 +392,7 @@ export class SectorSystem {
   /**
    * Retourne les fonctionnalités nouvellement débloquées lorsqu'une mission est accomplie
    */
-  public static getNewlyUnlockedFeaturesForMission(mission: number): string[] {
+  public static getNewlyUnlockedFeaturesForMission(mission: number): UnlockedFeatureItem[] {
     const boss = this.getSectorBossForMission(mission);
     if (boss) {
       return [...boss.unlockedFeatures];

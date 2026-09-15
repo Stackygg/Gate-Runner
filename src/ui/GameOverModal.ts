@@ -1,9 +1,7 @@
-// Modal de Fin de Partie (Victoire & Défaite avec calcul des diamants, cristaux et doublement publicitaire)
-
 import confetti from 'canvas-confetti';
 import { AdService } from '../services/AdService';
 import { MissionQuest } from '../systems/UpgradeStore';
-import { SectorSystem } from '../systems/SectorSystem';
+import { SectorSystem, UnlockedFeatureItem } from '../systems/SectorSystem';
 import { EquipmentItem, EquipmentSystem, RARITY_CONFIGS, SLOT_INFO } from '../systems/EquipmentSystem';
 
 export interface GameOverStats {
@@ -25,7 +23,7 @@ export interface GameOverStats {
   sectorBossName?: string;
   nextSectorName?: string;
   nextSectorGreek?: string;
-  newlyUnlockedFeatures?: string[];
+  newlyUnlockedFeatures?: (string | UnlockedFeatureItem)[];
 }
 
 export class GameOverModal {
@@ -48,6 +46,12 @@ export class GameOverModal {
   private elBtnLootToHangar = document.getElementById('btn-gameover-to-hangar');
   private elUnlockedBox = document.getElementById('gameover-unlocked-box');
   private elUnlockedList = document.getElementById('gameover-unlocked-list');
+
+  // Pop-up dédiée "Contenu débloqué :"
+  private elUnlockedModal = document.getElementById('modal-unlocked-features');
+  private elUnlockedSubtitle = document.getElementById('unlocked-sector-subtitle');
+  private elUnlockedGrid = document.getElementById('unlocked-features-grid');
+  private elBtnUnlockedContinue = document.getElementById('btn-unlocked-continue');
 
   private onNextCallback: () => void;
   private onHangarCallback: () => void;
@@ -175,6 +179,20 @@ export class GameOverModal {
 
         this.onDoubleDiamondsCallback?.(bonusDiamonds);
       });
+    });
+
+    // Bouton de la pop-up dédiée "Contenu débloqué :" -> Affiche le menu de résultat
+    this.elBtnUnlockedContinue?.addEventListener('click', () => {
+      this.elUnlockedModal?.classList.add('hidden');
+      this.elModal?.classList.remove('hidden');
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#00F0FF', '#FF007A', '#FFE600', '#7928CA']
+        });
+      } catch {}
     });
   }
 
@@ -529,25 +547,53 @@ export class GameOverModal {
       }
     }
 
-    // Rendu des Fonctionnalités Nouvellement Débloquées (Porte Stellaire / Boss de Secteur)
+    // Rendu des Fonctionnalités Nouvellement Débloquées :
+    // Si la mission débloque du contenu (Porte Stellaire / Boss de Secteur) :
+    // On affiche D'ABORD la pop-up dédiée "Contenu débloqué :", et le menu de résultat apparaîtra au clic !
     if (stats.isVictory && stats.newlyUnlockedFeatures && stats.newlyUnlockedFeatures.length > 0) {
-      if (this.elUnlockedBox) this.elUnlockedBox.classList.remove('hidden');
-      if (this.elUnlockedList) {
-        this.elUnlockedList.innerHTML = stats.newlyUnlockedFeatures.map(f => `
-          <div class="unlocked-feature-card">
-            <span class="unlocked-icon">✨</span>
-            <span class="unlocked-text">${f}</span>
-          </div>
-        `).join('');
+      if (this.elUnlockedModal && this.elUnlockedGrid) {
+        if (this.elUnlockedSubtitle) {
+          const nextSecName = stats.nextSectorName ? stats.nextSectorName.toUpperCase() : 'SUIVANT';
+          const nextGreek = stats.nextSectorGreek ? `[${stats.nextSectorGreek}] ` : '';
+          this.elUnlockedSubtitle.textContent = `ACCÈS AU SECTEUR ${nextSecName} ${nextGreek}DÉVERROUILLÉ !`;
+        }
+
+        this.elUnlockedGrid.innerHTML = stats.newlyUnlockedFeatures.map(item => {
+          const icon = typeof item === 'object' ? item.icon : '✨';
+          const title = typeof item === 'object' ? item.title : item;
+          const desc = typeof item === 'object' ? item.desc : 'Nouvelle fonctionnalité disponible dans le secteur.';
+          return `
+            <div class="unlocked-feature-slot">
+              <div class="unlocked-feature-icon-wrap">${icon}</div>
+              <div class="unlocked-feature-content">
+                <div class="unlocked-feature-title">${title}</div>
+                <div class="unlocked-feature-desc">${desc}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        this.elModal.classList.add('hidden');
+        this.elUnlockedModal.classList.remove('hidden');
+
+        try {
+          confetti({
+            particleCount: 110,
+            spread: 85,
+            origin: { y: 0.5 },
+            colors: ['#00F0FF', '#FFE600', '#FF007A', '#00FF66']
+          });
+        } catch {}
+        return;
       }
-    } else {
-      if (this.elUnlockedBox) this.elUnlockedBox.classList.add('hidden');
     }
 
+    this.elUnlockedModal?.classList.add('hidden');
     this.elModal.classList.remove('hidden');
   }
 
   public hide() {
+    this.elUnlockedModal?.classList.add('hidden');
     this.elModal?.classList.add('hidden');
   }
 }

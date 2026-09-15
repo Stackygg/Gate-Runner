@@ -55,6 +55,7 @@ export class GameApp {
   private enemies: Enemy[] = [];
   private stargate: Stargate | null = null;
   private stargateWarpTimer: number = 0;
+  private stargateFleetSpeed: number = 0;
   private currentLevelData!: LevelData;
   private traveledDistance: number = 0;
   private sessionDiamonds: number = 0;
@@ -819,7 +820,7 @@ export class GameApp {
   }
 
   private updateGame(dt: number) {
-    const targetX = this.input.update(dt);
+    const targetX = this.stargate ? this.stargate.x : this.input.update(dt);
 
     // 1. Déplacement de la Flotte & Tir automatique
     const newBullets = this.fleet.update(dt, targetX);
@@ -1080,9 +1081,8 @@ export class GameApp {
       let targetCombatY = 220;
       if (enemy.isBossType()) {
         if (this.currentLevelData?.isSectorBossDuel) {
-          // Les boss de duel de secteur restent ancrés tout en haut du niveau (Y = 75)
-          // pour laisser plus de 550px d'espace de combat afin d'abattre les générateurs et les minions
-          targetCombatY = 75;
+          // Les boss de duel de secteur ne font que 20% du chemin (Y = 120) avant de s'arrêter pour commencer le combat
+          targetCombatY = 120;
         } else {
           const slotIdx = activeBosses.indexOf(enemy);
           if (slotIdx >= 0 && slotIdx < bossSlotY.length) {
@@ -1371,12 +1371,14 @@ export class GameApp {
           if (!this.stargate) {
             const nextGreek = this.currentLevelData.nextSectorGreek || 'Β';
             const nextSecName = this.currentLevelData.nextSectorName || 'Beta';
-            const gateY = Math.min(this.fleet.centerY - 320, 220);
+            // Le portail est aussi à la distance du boss (Y = 120, à 20% du parcours)
+            const gateY = 120;
             this.stargate = new Stargate(330, gateY, nextGreek, nextSecName);
-            this.stargateWarpTimer = 3.2;
+            this.stargateWarpTimer = 2.5; // Le vaisseau du joueur attend 2 à 3 secondes
+            this.stargateFleetSpeed = 0;
             this.sound.playWarp();
-            this.renderer.addScreenShake(15);
-            this.particles.spawnFloatingText(330, this.fleet.centerY - 160, `🌀 PORTE INTERSTELLAIRE VERS LE SECTEUR ${nextSecName.toUpperCase()} OUVERTE !`, '#00F0FF', 24);
+            this.renderer.addScreenShake(20);
+            this.particles.spawnFloatingText(330, 240, `🌀 PORTE INTERSTELLAIRE VERS LE SECTEUR ${nextSecName.toUpperCase()} OUVERTE !`, '#00F0FF', 24);
           }
 
           this.stargate.update(dt);
@@ -1385,19 +1387,30 @@ export class GameApp {
             this.stargate.startEngulfing();
           }
 
-          if (this.stargate.isEngulfing) {
-            // Accélération de la flotte vers le cœur de la Stargate
-            this.fleet.centerX += (this.stargate.x - this.fleet.centerX) * 3.5 * dt;
-            this.fleet.centerY -= 180 * dt;
+          if (this.stargateWarpTimer > 0) {
+            // Le vaisseau du joueur attend 2 secondes ou 3
+            this.stargateWarpTimer -= dt;
+            // Rapprochement doux vers l'axe central X de la Stargate sans avancer en Y
+            this.fleet.centerX += (this.stargate.x - this.fleet.centerX) * 3.0 * dt;
+          } else {
+            // Puis accélère progressivement jusqu'au portail où il le traverse
+            this.stargateFleetSpeed = Math.min(680, this.stargateFleetSpeed + 260 * dt);
+            this.fleet.centerX += (this.stargate.x - this.fleet.centerX) * 6.0 * dt;
+            this.fleet.centerY -= this.stargateFleetSpeed * dt;
+
             this.particles.spawnGems(this.fleet.centerX, this.fleet.centerY + 25, 2);
             this.particles.spawnExplosion(this.fleet.centerX, this.fleet.centerY, '#00F0FF', 1);
-          }
 
-          this.stargateWarpTimer -= dt;
-          if (this.stargateWarpTimer <= 0) {
-            this.maxMultiplierAchieved = this.finalBossMultiplier;
-            this.triggerGameOver(true);
-            return;
+            // Le niveau se termine lorsqu'on est au centre de la stargate
+            const dist = Math.hypot(this.stargate.x - this.fleet.centerX, this.stargate.y - this.fleet.centerY);
+            if (dist < 32 || this.fleet.centerY <= this.stargate.y + 12) {
+              this.sound.playWarp();
+              this.renderer.addScreenShake(30);
+              this.particles.spawnExplosion(this.stargate.x, this.stargate.y, '#00F0FF', 90);
+              this.maxMultiplierAchieved = this.finalBossMultiplier;
+              this.triggerGameOver(true);
+              return;
+            }
           }
           return;
         } else {

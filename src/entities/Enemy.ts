@@ -152,7 +152,8 @@ export class Enemy {
         );
       }
     } else if (this.type === 'boss_minion') {
-      this.y += (scrollSpeed + 90) * dt;
+      // Les minions d'Alpharion foncent plus vite que le boss pour fondre sur le joueur
+      this.y += (scrollSpeed + 160) * dt;
       this.x += Math.sin(this.phase * 2.5) * 120 * dt;
       this.shootTimer += dt;
       if (this.shootTimer >= 2.2 && this.y >= 50 && this.y < 620) {
@@ -165,14 +166,9 @@ export class Enemy {
       const isSectorBoss = (this.type === 'boss_alpharion' || this.type === 'boss_betapulsar' || this.type === 'boss_gammargantua');
 
       // Défilement du boss :
-      // 1. Au loin (hors écran, y < -1200) : l'apparition du boss accélère avec le défilement général.
-      // 2. Dès qu'il apparaît à l'horizon / entre sur l'écran (y >= -1200) et descend vers son ancrage targetCombatY :
+      // Le boss arrive lentement et majestueusement, exactement comme les autres boss
       if (this.y < targetCombatY) {
-        let bossSpeed = (this.y < -1200) ? scrollSpeed : Math.min(GAME_CONFIG.BASE_SCROLL_SPEED, scrollSpeed);
-        if (isSectorBoss) {
-          // Approche cinématographique rapide depuis le fond de l'espace (-1200) vers targetCombatY
-          bossSpeed = Math.max(380, scrollSpeed * 2.5);
-        }
+        const bossSpeed = (this.y < -1200) ? scrollSpeed : Math.min(GAME_CONFIG.BASE_SCROLL_SPEED, scrollSpeed);
         this.y += bossSpeed * dt;
         this.x = 330;
       } else {
@@ -204,9 +200,9 @@ export class Enemy {
       this.hitBlinkTimer -= dt;
     }
 
-    // Tirs de Boss : Salves rythmées (pour les Boss de Secteur, engage le combat dès Y >= -180px, soit à 80% du chemin depuis -1200)
+    // Tirs de Boss : Salves rythmées (engage dès l'approche en position de combat)
     const isSectorBoss = (this.type === 'boss_alpharion' || this.type === 'boss_betapulsar' || this.type === 'boss_gammargantua');
-    const minShootY = isSectorBoss ? -180 : (targetCombatY - 5);
+    const minShootY = isSectorBoss ? 10 : (targetCombatY - 5);
 
     if (this.isBossType() && this.y >= minShootY && this.y < 680) {
       this.combatTimer += dt;
