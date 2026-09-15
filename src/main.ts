@@ -56,7 +56,8 @@ export class GameApp {
   private stargate: Stargate | null = null;
   private stargateWarpTimer: number = 0;
   private stargateFleetSpeed: number = 0;
-  private stargatePhaseTimer: number = 0;
+  private isVictoryOutro: boolean = false;
+  private victoryOutroTimer: number = 0;
   private currentLevelData!: LevelData;
   private traveledDistance: number = 0;
   private sessionDiamonds: number = 0;
@@ -447,7 +448,8 @@ export class GameApp {
     this.stargate = null;
     this.stargateWarpTimer = 0;
     this.stargateFleetSpeed = 0;
-    this.stargatePhaseTimer = 0;
+    this.isVictoryOutro = false;
+    this.victoryOutroTimer = 0;
     this.victoryDelayTimer = undefined;
     this.forceFieldTimer = this.currentLevelData.isFunLevel ? 10.0 : 0;
     this.currentRaidRightTier = 1;
@@ -822,20 +824,56 @@ export class GameApp {
     this.particles.update(dt);
   }
 
+  // Explosion stellaire SuperNova qui détruit tout sauf la flotte alliée
+  private triggerNovaBlast(x: number, y: number) {
+    this.renderer.triggerNovaFlash();
+    this.particles.spawnSuperNova(x, y);
+    this.sound.playExplosion(true);
+    this.sound.playWarp();
+    this.renderer.addScreenShake(35);
+
+    // Destruction totale de tous les projectiles ennemis
+    this.enemyProjectiles = [];
+
+    // Vaporisation instantanée de tous les ennemis et obstacles restants à l'écran
+    for (const enemy of this.enemies) {
+      if (!enemy.isDead) {
+        enemy.isDead = true;
+        this.particles.spawnExplosion(enemy.x, enemy.y, '#00F0FF', 16);
+        this.particles.spawnGems(enemy.x, enemy.y, 4);
+      }
+    }
+  }
+
   private updateGame(dt: number) {
-    let targetX = this.fleet.centerX;
-    const isSectorBossDead = !!(this.currentLevelData?.isSectorBossDuel && this.currentLevelData.bossEnemy?.isDead);
+    // Détection universelle de victoire : Boss vaincu OU distance cible franchie
+    const isBossDead = !!(this.currentLevelData?.bossEnemy && this.currentLevelData.bossEnemy.isDead);
+    const isDistanceReached = (this.traveledDistance >= this.currentLevelData.totalDistance);
 
-    if (isSectorBossDead) {
-      // Ils doivent arrêter de tirer à ce moment là
+    if (!this.isVictoryOutro && (isBossDead || isDistanceReached)) {
+      this.isVictoryOutro = true;
+      this.victoryOutroTimer = 0;
+      this.stargateFleetSpeed = 0;
       this.fleet.canShoot = false;
-      this.stargatePhaseTimer += dt;
 
-      if (this.stargatePhaseTimer < 1.0) {
-        // Laisser le joueur bouger les vaisseaux encore pendant 1 seconde
+      // Déclenchement de la Supernova claire à l'emplacement du boss ou à l'horizon
+      const novaX = this.currentLevelData.bossEnemy ? this.currentLevelData.bossEnemy.x : 270;
+      const novaY = this.currentLevelData.bossEnemy ? this.currentLevelData.bossEnemy.y : 200;
+      this.triggerNovaBlast(novaX, novaY);
+    }
+
+    let targetX = this.fleet.centerX;
+
+    if (this.isVictoryOutro) {
+      // Les tirs s'arrêtent dès le déclenchement de la victoire
+      this.fleet.canShoot = false;
+      this.victoryOutroTimer += dt;
+
+      if (this.victoryOutroTimer < 1.2) {
+        // Phase 1 (0s à 1.2s) : Le joueur peut encore manœuvrer librement
         targetX = this.input.update(dt);
       } else {
-        // Après 1 seconde : les vaisseaux se mettent au milieu (X = 270)
+        // Phase 2 (1.2s à 2.2s) : Les vaisseaux se centrent automatiquement au milieu (X = 270)
         this.fleet.centerX += (270 - this.fleet.centerX) * 4.5 * dt;
         targetX = this.fleet.centerX;
       }
@@ -1384,71 +1422,72 @@ export class GameApp {
       return;
     }
 
-    // Victoire : Uniquement si le boss final est anéanti (ou si mission sans boss et distance atteinte)
-    if (this.currentLevelData.bossEnemy) {
-      if (this.currentLevelData.bossEnemy.isDead) {
-        if (this.currentLevelData.isSectorBossDuel) {
-          // --- SÉQUENCE STARGATE DE TRANSIT INTERSTELLAIRE ---
-          if (!this.stargate) {
-            const nextGreek = this.currentLevelData.nextSectorGreek || 'Β';
-            const nextSecName = this.currentLevelData.nextSectorName || 'Beta';
-            // Le portail apparaît au milieu (X = 270), là où le boss a sa limite (Y = -500)
-            const gateY = -500;
-            this.stargate = new Stargate(270, gateY, nextGreek, nextSecName);
-            this.stargateFleetSpeed = 0;
+    // 7. Séquence de Victoire & Ruée vers l'Horizon / Stargate (Toutes les missions)
+    if (this.isVictoryOutro) {
+      if (this.currentLevelData.isSectorBossDuel) {
+        // --- SÉQUENCE STARGATE DE TRANSIT INTERSTELLAIRE (BOSS DUELS) ---
+        if (!this.stargate) {
+          const nextGreek = this.currentLevelData.nextSectorGreek || 'Β';
+          const nextSecName = this.currentLevelData.nextSectorName || 'Beta';
+          const gateY = -500;
+          this.stargate = new Stargate(270, gateY, nextGreek, nextSecName);
+          this.stargateFleetSpeed = 0;
+          this.sound.playWarp();
+          this.renderer.addScreenShake(20);
+          this.particles.spawnFloatingText(270, 240, `🌀 PORTE VERS LE SECTEUR ${nextSecName.toUpperCase()} OUVERTE !`, '#00F0FF', 24);
+        }
+
+        this.stargate.update(dt);
+
+        if (this.stargate.isFullyOpen && !this.stargate.isEngulfing) {
+          this.stargate.startEngulfing();
+        }
+
+        if (this.victoryOutroTimer >= 2.2) {
+          this.stargateFleetSpeed = Math.min(1250, this.stargateFleetSpeed + 550 * dt);
+          this.fleet.centerY -= this.stargateFleetSpeed * dt;
+          this.fleet.centerX += (this.stargate.x - this.fleet.centerX) * 5.0 * dt;
+
+          this.particles.spawnGems(this.fleet.centerX, this.fleet.centerY + 25, 2);
+          this.particles.spawnExplosion(this.fleet.centerX, this.fleet.centerY, '#00F0FF', 1);
+
+          const dist = Math.hypot(this.stargate.x - this.fleet.centerX, this.stargate.y - this.fleet.centerY);
+          if (dist < 45 || this.fleet.centerY <= this.stargate.y + 20) {
             this.sound.playWarp();
-            this.renderer.addScreenShake(20);
-            this.particles.spawnFloatingText(270, 240, `🌀 PORTE INTERSTELLAIRE VERS LE SECTEUR ${nextSecName.toUpperCase()} OUVERTE !`, '#00F0FF', 24);
-          }
-
-          this.stargate.update(dt);
-
-          if (this.stargate.isFullyOpen && !this.stargate.isEngulfing) {
-            this.stargate.startEngulfing();
-          }
-
-          // Chronologie du transit :
-          // 0s à 1.0s : Joueur contrôle ses vaisseaux librement, tirs coupés.
-          // 1.0s à 2.2s : Vaisseaux se placent au milieu (X = 270) et ralentissent.
-          // 2.2s+ : Les vaisseaux foncent vers le portail en suivant la perspective 3D et rapetissent.
-          if (this.stargatePhaseTimer >= 2.2) {
-            this.stargateFleetSpeed = Math.min(1050, this.stargateFleetSpeed + 450 * dt);
-            this.fleet.centerY -= this.stargateFleetSpeed * dt;
-            this.fleet.centerX += (this.stargate.x - this.fleet.centerX) * 5.0 * dt;
-
-            this.particles.spawnGems(this.fleet.centerX, this.fleet.centerY + 25, 2);
-            this.particles.spawnExplosion(this.fleet.centerX, this.fleet.centerY, '#00F0FF', 1);
-
-            // Le niveau se termine dès que la flotte atteint le centre du vortex
-            const dist = Math.hypot(this.stargate.x - this.fleet.centerX, this.stargate.y - this.fleet.centerY);
-            if (dist < 45 || this.fleet.centerY <= this.stargate.y + 20) {
-              this.sound.playWarp();
-              this.renderer.addScreenShake(30);
-              this.particles.spawnExplosion(this.stargate.x, this.stargate.y, '#00F0FF', 100);
-              this.maxMultiplierAchieved = this.finalBossMultiplier;
-              this.triggerGameOver(true);
-              return;
-            }
-          } else if (this.stargatePhaseTimer >= 1.0) {
-            this.scrollSpeed = Math.max(0, this.scrollSpeed - 120 * dt);
-          }
-          return;
-        } else {
-          if (this.victoryDelayTimer === undefined) {
-            this.victoryDelayTimer = 1.8;
-            this.sound.playWarp();
-          }
-          this.victoryDelayTimer -= dt;
-          if (this.victoryDelayTimer <= 0) {
+            this.renderer.addScreenShake(30);
+            this.particles.spawnExplosion(this.stargate.x, this.stargate.y, '#00F0FF', 100);
             this.maxMultiplierAchieved = this.finalBossMultiplier;
             this.triggerGameOver(true);
             return;
           }
+        } else if (this.victoryOutroTimer >= 1.2) {
+          this.scrollSpeed = Math.max(0, this.scrollSpeed - 120 * dt);
         }
+        return;
+      } else {
+        // --- SÉQUENCE UNIVERSELLE VERS L'HORIZON (TOUTES LES AUTRES MISSIONS) ---
+        if (this.victoryOutroTimer >= 2.2) {
+          this.stargateFleetSpeed = Math.min(1250, this.stargateFleetSpeed + 550 * dt);
+          this.fleet.centerY -= this.stargateFleetSpeed * dt;
+          this.fleet.centerX += (270 - this.fleet.centerX) * 5.0 * dt;
+
+          this.particles.spawnGems(this.fleet.centerX, this.fleet.centerY + 25, 2);
+          this.particles.spawnExplosion(this.fleet.centerX, this.fleet.centerY, '#00F0FF', 1);
+
+          // Passage du point de fuite vers l'horizon lointain (Y <= -850)
+          if (this.fleet.centerY <= -850 || this.victoryOutroTimer >= 3.8) {
+            this.sound.playWarp();
+            this.renderer.addScreenShake(25);
+            this.particles.spawnExplosion(270, 140, '#00F0FF', 80);
+            this.maxMultiplierAchieved = this.finalBossMultiplier || 1.0;
+            this.triggerGameOver(true);
+            return;
+          }
+        } else if (this.victoryOutroTimer >= 1.2) {
+          this.scrollSpeed = Math.max(0, this.scrollSpeed - 120 * dt);
+        }
+        return;
       }
-    } else if (this.traveledDistance >= this.currentLevelData.totalDistance) {
-      this.triggerGameOver(true);
-      return;
     }
 
     // 7. Mise à jour de l'interface HUD
@@ -1486,13 +1525,15 @@ export class GameApp {
 
     // 4. Victoire : le compte à rebours de survie est écoulé
     if (this.survivalTimer <= 0) {
-      if (this.victoryDelayTimer === undefined) {
-        this.victoryDelayTimer = 1.2;
-        this.sound.playWarp();
+      if (!this.isVictoryOutro) {
+        this.isVictoryOutro = true;
+        this.victoryOutroTimer = 0;
+        this.fleet.canShoot = false;
+        this.triggerNovaBlast(GAME_CONFIG.CARGO_CENTER_X, GAME_CONFIG.CARGO_CENTER_Y);
         this.particles.spawnFloatingText(GAME_CONFIG.CARGO_CENTER_X, GAME_CONFIG.CARGO_CENTER_Y - 50, 'CONVOI DÉFENDU AVEC SUCCÈS !', '#00F0FF', 24);
       }
-      this.victoryDelayTimer -= dt;
-      if (this.victoryDelayTimer <= 0) {
+      this.victoryOutroTimer += dt;
+      if (this.victoryOutroTimer >= 2.0) {
         this.triggerGameOver(true);
         return;
       }

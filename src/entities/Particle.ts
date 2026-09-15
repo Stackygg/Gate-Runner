@@ -160,6 +160,48 @@ export class ParticleSystem {
     }
   }
 
+  // Événement d'explosion stellaire : Nova claire qui illumine le cosmos
+  public spawnSuperNova(x: number, y: number) {
+    // 1. Onde de choc - 4 anneaux de plasma géants en expansion
+    for (let r = 0; r < 4; r++) {
+      this.particles.push({
+        x,
+        y,
+        vx: 0,
+        vy: 0,
+        size: 40 + r * 35,
+        color: r % 2 === 0 ? '#FFFFFF' : '#00F0FF',
+        alpha: 1,
+        life: 0.8 + r * 0.2,
+        maxLife: 0.8 + r * 0.2,
+        type: 'ring'
+      });
+    }
+
+    // 2. Éjection de 90 étincelles cosmiques à haute vélocité (blanc pur, cyan et or)
+    for (let i = 0; i < 90; i++) {
+      const angle = (i * Math.PI * 2) / 90 + (Math.random() - 0.5) * 0.2;
+      const speed = 160 + Math.random() * 620;
+      const life = 0.6 + Math.random() * 0.6;
+      const color = (i % 3 === 0) ? '#FFFFFF' : ((i % 3 === 1) ? '#00F0FF' : '#FFE600');
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3.5 + Math.random() * 5.0,
+        color,
+        alpha: 1,
+        life,
+        maxLife: life,
+        type: 'spark'
+      });
+    }
+
+    // 3. Texte flottant de destruction cosmique
+    this.spawnFloatingText(x, y - 50, '💥 SUPERNOVA CLAIRE !', '#FFFFFF', 30);
+  }
+
   public spawnGateHitSpark(x: number, y: number, color: string) {
     for (let i = 0; i < 4; i++) {
       const angle = (Math.random() - 0.5) * Math.PI;

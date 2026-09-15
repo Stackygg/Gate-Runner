@@ -109,20 +109,28 @@ $$\text{Dégâts} = \text{BASE\_BULLET\_DAMAGE} \times \text{Multiplicateur Amé
 
 ---
 
-## 7. 🌌 Séquence Stargate de Fin de Secteur (`src/main.ts`)
+## 7. 🌌 Supernova Claire & Séquence Universelle de Victoire (`src/main.ts`)
 
-Chronologie millimétrée après la destruction du boss final :
-1. **$0.0\text{s} \to 1.0\text{s}$ (Phase de contrôle libre)** :
+À la fin de **chaque mission** (destruction du boss ou distance atteinte) :
+
+### A. La Supernova Claire (Événement Cosmique)
+1. **Lueur radiale plein écran** : `Renderer.triggerNovaFlash()` génère un flash d'énergie blanche/cyan aveuglante qui s'estompe en douceur.
+2. **Onde de choc & Étincelles** : `ParticleSystem.spawnSuperNova(x, y)` projette 4 anneaux de plasma en expansion et 90 étincelles stellaires à haute vitesse.
+3. **Nettoyage absolu (« Détruit tout sauf les vaisseaux »)** :
+   - Tous les projectiles et lasers ennemis sont immédiatement dissous (`enemyProjectiles = []`).
+   - Tous les astéroïdes et ennemis restants sur le champ sont vaporisés en étincelles cyan et gemmes récoltables.
+
+### B. Chronologie du Transit Vers l'Horizon (Toutes les Missions)
+1. **$0.0\text{s} \to 1.2\text{s}$ (Phase de manœuvre libre)** :
    - Les tirs de la flotte sont **immédiatement coupés** (`fleet.canShoot = false`).
-   - Le joueur a le contrôle 100% libre de sa flotte pour célébrer et manœuvrer.
-   - La Stargate apparaît au centre (`X = 270, Y = -500`) et commence son déploiement énergétique.
-2. **$1.0\text{s} \to 2.2\text{s}$ (Phase d'alignement)** :
-   - Les vaisseaux ralentissent leur défilement (`scrollSpeed` réduit).
-   - La flotte est guidée en douceur vers l'axe central (`X = 270`).
-3. **$2.2\text{s}+$ (Ruée hyper-espace 3D)** :
-   - Accélération progressive en profondeur (`stargateFleetSpeed` grimpe jusqu'à 1050 px/s).
-   - Les vaisseaux diminuent d'échelle (`scale` de 1.0 à 0.36) en suivant le cône de perspective 3D.
-   - Pénétration dans le vortex ➔ Onde de choc, flash warp ➔ Affichage de la pop-up « Contenu débloqué : ».
+   - Le joueur conserve le contrôle total pour esquiver ou célébrer avec ses vaisseaux.
+2. **$1.2\text{s} \to 2.2\text{s}$ (Recentrage automatique)** :
+   - Les vaisseaux décélèrent et s'alignent automatiquement sur l'axe central (`X = 270`).
+3. **$2.2\text{s}+$ (Ruée vers l'horizon en perspective 3D)** :
+   - Les propulseurs s'emballent (`stargateFleetSpeed` accélère jusqu'à 1250 px/s).
+   - Les vaisseaux foncent vers le fond de l'espace et rapetissent le long de la perspective 3D.
+   - **Missions normales** : Traversée du point de fuite lointain ($Y \le -850$) ➔ Flash warp ➔ Affichage du récapitulatif.
+   - **Missions Boss de Secteur** : Traversée de la Stargate à $Y = -500$ ➔ Flash de transit ➔ Affichage des déblocages.
 
 ---
 

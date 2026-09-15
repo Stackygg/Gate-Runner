@@ -169,6 +169,11 @@ export class Renderer {
   private cachedNebulaRight: CanvasGradient | null = null;
   private cachedViewTop: number = 0;
   private cachedViewBottom: number = 0;
+  public novaFlashAlpha: number = 0;
+
+  public triggerNovaFlash(): void {
+    this.novaFlashAlpha = 1.0;
+  }
 
   public clear(dt: number, scrollSpeed: number) {
     const ctx = this.ctx;
@@ -323,6 +328,25 @@ export class Renderer {
     }
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
+
+    // 4. Lueur et onde d'expansion de Nova Claire
+    if (this.novaFlashAlpha > 0) {
+      this.novaFlashAlpha = Math.max(0, this.novaFlashAlpha - dt * 1.5);
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, this.novaFlashAlpha);
+      const grad = ctx.createRadialGradient(
+        this.VANISHING_X, this.HORIZON_Y + 120, 20,
+        this.VANISHING_X, this.HORIZON_Y + 120, GAME_CONFIG.WORLD_HEIGHT * 0.9
+      );
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      grad.addColorStop(0.25, 'rgba(210, 245, 255, 0.85)');
+      grad.addColorStop(0.55, 'rgba(0, 240, 255, 0.45)');
+      grad.addColorStop(0.85, 'rgba(121, 40, 202, 0.20)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(-200, -100, GAME_CONFIG.WORLD_WIDTH + 400, GAME_CONFIG.WORLD_HEIGHT + 200);
+      ctx.restore();
+    }
   }
 
   // Champ de Force Quantique - 1. Grille d'énergie électrostatique au sol (Arrière-plan sous les astéroïdes)
