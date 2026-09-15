@@ -263,12 +263,16 @@ export class Stargate {
       ctx.restore();
     }
 
-    // 7. Bannière holographique au-dessus de la Stargate
-    const bannerW = Math.max(180, 260 * s);
-    const bannerH = Math.max(26, 36 * s);
+    // 7. Bannière holographique épurée au-dessus de la Stargate : Nom du secteur
+    const sectorTitle = `Secteur ${this.destinationSectorName.charAt(0).toUpperCase() + this.destinationSectorName.slice(1)}`;
+    const fontSize = Math.max(11, Math.floor(14 * s));
+    ctx.font = `800 ${fontSize}px 'Orbitron', sans-serif`;
+    const textWidth = ctx.measureText(sectorTitle).width;
+    const bannerW = Math.max(120, textWidth + 36 * s);
+    const bannerH = Math.max(22, 28 * s);
     const bannerY = -r - bannerH - 12 * s;
 
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.9)';
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
     ctx.strokeStyle = '#00F0FF';
     ctx.lineWidth = Math.max(1.5, 2 * s);
     ctx.beginPath();
@@ -276,15 +280,15 @@ export class Stargate {
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = `900 ${Math.max(9, Math.floor(11 * s))}px 'Orbitron', sans-serif`;
-    ctx.fillStyle = '#00F0FF';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`🌀 PORTE SPATIO-TEMPORELLE`, 0, bannerY + bannerH * 0.32);
-
-    ctx.font = `800 ${Math.max(10, Math.floor(13 * s))}px 'Orbitron', sans-serif`;
-    ctx.fillStyle = '#FFE600';
-    ctx.fillText(`DESTINATION : SECTEUR ${this.destinationSectorName.toUpperCase()} [${this.destinationGreek}]`, 0, bannerY + bannerH * 0.72);
+    ctx.fillStyle = '#00F0FF';
+    if (Renderer.enableGlow) {
+      ctx.shadowColor = '#00F0FF';
+      ctx.shadowBlur = 8 * s;
+    }
+    ctx.fillText(sectorTitle, 0, bannerY + bannerH / 2);
+    ctx.shadowBlur = 0;
 
     ctx.restore();
   }
