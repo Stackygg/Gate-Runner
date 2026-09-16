@@ -224,7 +224,8 @@ export class CollisionSystem {
             }
 
             // Largage de butin par les Boss : +1 à 5 vaisseaux, +10 à 50% cadence, +10 à 50% dégâts
-            if (enemy.isBossType()) {
+            // Ne pas larguer pour les boss de fin de niveau car leur mort déclenche la Supernova et la fin de mission
+            if (enemy.isBossType() && !enemy.isLevelBoss) {
               CollisionSystem.spawnBossRewardGates(enemy, gates, particles);
             }
 

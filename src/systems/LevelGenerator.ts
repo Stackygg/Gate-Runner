@@ -201,6 +201,7 @@ export class LevelGenerator {
     // Boss 4 : Titan Overlord (Y = -12500)
     const finalBossHp = 100000 + (tierMultiplier - 1) * 50000;
     const finalBoss = new Enemy(270, -12500, 230, 130, 'boss_final', finalBossHp, 'TITAN OVERLORD');
+    finalBoss.isLevelBoss = true;
     enemies.push(finalBoss);
 
     return {
@@ -310,6 +311,7 @@ export class LevelGenerator {
     spawnDenseAsteroids(-14550, -16900, [10, 18]);
     const finalBossHp = 120000 + effectiveTier * 60000;
     const finalBoss = new Enemy(330, -17800, 230, 130, 'boss_final', finalBossHp, 'TITAN OVERLORD');
+    finalBoss.isLevelBoss = true;
     enemies.push(finalBoss);
 
     return {
@@ -392,6 +394,7 @@ export class LevelGenerator {
     // Boss 3 Final : Titan Annihilateur
     const finalBossHp = 80000 + (tierMultiplier - 1) * 40000;
     const finalBoss = new Enemy(270, -11400, 230, 130, 'boss_final', finalBossHp, 'TITAN ANNIHILATEUR');
+    finalBoss.isLevelBoss = true;
     enemies.push(finalBoss);
 
     return {
@@ -477,6 +480,7 @@ export class LevelGenerator {
 
     // 2. Apparition du Boss au fond de l'espace (débarque depuis l'horizon à Y = -1350 comme les boss normaux, s'arrête rapidement à sa limite Y = -500)
     const bossEnemy = new Enemy(270, -1350, bossWidth, bossHeight, bossType, bossHp, bossName);
+    bossEnemy.isLevelBoss = true;
     enemies.push(bossEnemy);
 
     // 3. Mécaniques Uniques Spécifiques par Boss
@@ -566,6 +570,7 @@ export class LevelGenerator {
     enemies.push(new Enemy(270, -6200, 185, 105, 'boss_v3', 32000, 'CUIRASSÉ PIRATE #3'));
 
     const flagship = new Enemy(270, -9600, 210, 120, 'boss_v3', 68000, 'FLAGSHIP CORSAIRE DREAD');
+    flagship.isLevelBoss = true;
     enemies.push(flagship);
 
     // Escorte d'astéroïdes et mines pirates
@@ -636,6 +641,7 @@ export class LevelGenerator {
 
     // Miniboss au cœur de la tempête : Destroyer Solaire Nova
     const flareBoss = new Enemy(270, -9000, 185, 110, 'boss_v2', 54000, 'DESTROYER SOLAIRE NOVA');
+    flareBoss.isLevelBoss = true;
     enemies.push(flareBoss);
 
     return {
@@ -691,6 +697,7 @@ export class LevelGenerator {
 
     // Bastion Central de la Station Fortifiée
     const fortressCore = new Enemy(270, -9800, 220, 125, 'boss_v3', 78000, 'CUIRASSÉ BASTION STATION');
+    fortressCore.isLevelBoss = true;
     enemies.push(fortressCore);
 
     return {

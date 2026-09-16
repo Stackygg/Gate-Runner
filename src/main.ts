@@ -445,6 +445,9 @@ export class GameApp {
 
     this.gates = this.currentLevelData.gates;
     this.enemies = [...this.currentLevelData.enemies];
+    if (this.currentLevelData.bossEnemy) {
+      this.currentLevelData.bossEnemy.isLevelBoss = true;
+    }
     this.stargate = null;
     this.stargateWarpTimer = 0;
     this.stargateFleetSpeed = 0;
@@ -844,6 +847,15 @@ export class GameApp {
         this.particles.spawnGems(enemy.x, enemy.y, 4);
       }
     }
+
+    // Disparition instantanée et totale de tous les portails restants lors de la Supernova
+    for (const gate of this.gates) {
+      if (!gate.isPassed) {
+        gate.isPassed = true;
+        this.particles.spawnExplosion(gate.x, gate.y, gate.isSpecial ? '#00F0FF' : '#FFE600', 14);
+      }
+    }
+    this.gates = [];
   }
 
   private updateGame(dt: number) {
@@ -960,7 +972,7 @@ export class GameApp {
     }
 
     // Progression et Spawn Séquentiel des Trous Noirs Droits en Mode Raid
-    if (this.currentLevelData?.isFunLevel) {
+    if (this.currentLevelData?.isFunLevel && !this.isVictoryOutro) {
       const rightLaneX = 455;
       const gateWidth = 95;
       const rightBH = aliveBlackHoles.find(bh => Math.abs(bh.x - rightLaneX) < 50);
@@ -1019,7 +1031,7 @@ export class GameApp {
     }
 
     // Ravitaillement continu et équilibré de portails sur la voie de gauche en Mode Raid
-    if (this.currentLevelData?.isFunLevel) {
+    if (this.currentLevelData?.isFunLevel && !this.isVictoryOutro) {
       const leftLaneX = 85;
       const gateWidth = 95;
       const leftGates = this.gates.filter(g => !g.isPassed && Math.abs(g.x - leftLaneX) < 50);

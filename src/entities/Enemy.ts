@@ -23,6 +23,7 @@ export class Enemy {
   public cornerIndex?: number;   // Index de coin (0: HG, 1: HD, 2: BG, 3: BD)
   public isRapidSpecial: boolean = false; // Tourelle spéciale rapide (toutes les 3 tourelles, 2 PV et tir ultra rapide)
   public isInvulnerable: boolean = false; // Bouclier protecteur rendant le boss insensible aux tirs directs
+  public isLevelBoss: boolean = false; // Vrai s'il s'agit du boss final clôturant la mission (déclenche la Supernova)
   public connectedGenerators: Enemy[] = []; // Générateurs magnétiques alimentant le bouclier
   public shieldAlpha: number = 1.0;
   public minionSpawnTimer: number = 0;
