@@ -113,52 +113,52 @@ export const SECTOR_BOSSES: Record<number, SectorBossInfo> = {
 export const SECTORS_CONFIG: SectorConfig[] = [
   {
     sector: 1,
-    name: 'Secteur Alpha',
+    name: 'Alpha',
     missions: [1, 2, 3, 4] // Mission 4 = Boss Duel Alpharion
   },
   {
     sector: 2,
-    name: 'Secteur Beta',
+    name: 'Beta',
     missions: [5, 6, 7, 8, 9] // Mission 9 = Boss Duel Betapulsar
   },
   {
     sector: 3,
-    name: 'Secteur Gamma',
+    name: 'Gamma',
     missions: [10, 11, 12, 13, 14, 15] // Mission 15 = Boss Duel Gammargantua
   },
   {
     sector: 4,
-    name: 'Secteur Delta',
+    name: 'Delta',
     missions: [16, 17, 18, 19, 20, 21, 22] // 7 missions
   },
   {
     sector: 5,
-    name: 'Secteur Epsilon',
+    name: 'Epsilon',
     missions: [23, 24, 25, 26, 27, 28, 29, 30] // 8 missions
   },
   {
     sector: 6,
-    name: 'Secteur Zeta',
+    name: 'Zeta',
     missions: [31, 32, 33, 34, 35, 36, 37, 38, 39]
   },
   {
     sector: 7,
-    name: 'Secteur Eta',
+    name: 'Eta',
     missions: [40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
   },
   {
     sector: 8,
-    name: 'Secteur Theta',
+    name: 'Theta',
     missions: [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]
   },
   {
     sector: 9,
-    name: 'Secteur Iota',
+    name: 'Iota',
     missions: [61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72]
   },
   {
     sector: 10,
-    name: 'Secteur Kappa',
+    name: 'Kappa',
     missions: [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85]
   }
 ];
@@ -323,7 +323,7 @@ export class SectorSystem {
     const config = SECTORS_CONFIG.find(s => s.sector === sectorNum);
     const totalLevels = config ? config.missions.length : 3;
     const greekName = getGreekSectorName(sectorNum);
-    const name = config ? config.name : `Secteur ${greekName}`;
+    const name = config ? config.name : greekName;
 
     return {
       sector: sectorNum,

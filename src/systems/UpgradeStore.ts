@@ -62,6 +62,7 @@ export interface PlayerSaveData {
   selectedMission: number;    // Mission active choisie (1, 2, 3...)
   maxUnlockedMission: number; // Niveau le plus élevé débloqué
   completedMissions: number[];// Missions réussies au moins 1 fois
+  claimedChestMissions?: number[]; // Missions dont le coffre de 1er franchissement a été récupéré
   completedQuests: {
     [missionNum: number]: string[]; // IDs des quêtes/hauts-faits validés par niveau
   };
@@ -364,6 +365,7 @@ export class UpgradeStore {
       selectedMission: 1,
       maxUnlockedMission: 1,
       completedMissions: [],
+      claimedChestMissions: [],
       completedQuests: {},
       selectedSkinId: 'stacky_interceptor',
       unlockedSkinIds: ['stacky_interceptor'],
@@ -439,6 +441,11 @@ export class UpgradeStore {
         if (parsed.selectedMission !== undefined) defaultData.selectedMission = parsed.selectedMission;
         if (parsed.maxUnlockedMission !== undefined) defaultData.maxUnlockedMission = parsed.maxUnlockedMission;
         if (parsed.completedMissions !== undefined) defaultData.completedMissions = parsed.completedMissions;
+        if (parsed.claimedChestMissions !== undefined) {
+          defaultData.claimedChestMissions = parsed.claimedChestMissions;
+        } else if (parsed.completedMissions !== undefined) {
+          defaultData.claimedChestMissions = [...parsed.completedMissions];
+        }
         if (parsed.completedQuests !== undefined) defaultData.completedQuests = parsed.completedQuests;
         if (parsed.selectedSkinId !== undefined) defaultData.selectedSkinId = parsed.selectedSkinId;
         if (parsed.unlockedSkinIds !== undefined) defaultData.unlockedSkinIds = parsed.unlockedSkinIds;
@@ -527,6 +534,7 @@ export class UpgradeStore {
         selectedMission: this.data.selectedMission,
         maxUnlockedMission: this.data.maxUnlockedMission,
         completedMissions: this.data.completedMissions,
+        claimedChestMissions: this.data.claimedChestMissions,
         completedQuests: this.data.completedQuests,
         selectedSkinId: this.data.selectedSkinId,
         unlockedSkinIds: this.data.unlockedSkinIds,
