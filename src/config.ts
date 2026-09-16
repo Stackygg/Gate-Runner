@@ -1,9 +1,12 @@
 import { EquipmentSlotType } from './systems/EquipmentSystem';
 
+export type ShipClass = 'Éclaireur' | 'Chasseur' | 'Intercepteur';
+
 export interface ShipSkin {
   id: string;
   name: string;
-  archetype: string;
+  shipClass: ShipClass;
+  archetype: string; // Alias de compatibilité
   perkText: string;
   primaryColor: string;
   secondaryColor: string;
@@ -76,12 +79,16 @@ export const GAME_CONFIG = {
   ARENA_CORNER_BARRIER_RADIUS: 95 // Rayon infranchissable autour des tourelles de coin
 };
 
-// Vaisseaux déblocables dans le Hangar avec leurs Slots d'Équipement
+// Vaisseaux déblocables dans le Hangar avec leurs Classes et leurs Slots d'Équipement
 export const SKINS_CONFIG: ShipSkin[] = [
+  // =========================================================================
+  // CLASSE ÉCLAIREUR (Profil agile, reconnaissance & vitesse)
+  // =========================================================================
   {
     id: 'stacky_interceptor',
-    name: 'STACKY INTERCEPTOR',
-    archetype: 'Chasseur Éclaireur',
+    name: 'STACKY SCOUT',
+    shipClass: 'Éclaireur',
+    archetype: 'Éclaireur',
     perkText: '⚡ Vitesse d\'attaque +10%',
     primaryColor: '#00F0FF',
     secondaryColor: '#7928CA',
@@ -95,7 +102,8 @@ export const SKINS_CONFIG: ShipSkin[] = [
   {
     id: 'cyber_viper',
     name: 'CYBER VIPER',
-    archetype: 'Intercepteur Furtif',
+    shipClass: 'Éclaireur',
+    archetype: 'Éclaireur',
     perkText: '🚀 Vitesse & Vitesse d\'attaque +15%',
     primaryColor: '#00FF88',
     secondaryColor: '#0088FF',
@@ -109,7 +117,8 @@ export const SKINS_CONFIG: ShipSkin[] = [
   {
     id: 'void_dreadnought',
     name: 'VOID PHANTOM',
-    archetype: 'Bombardier Plasma',
+    shipClass: 'Éclaireur',
+    archetype: 'Éclaireur',
     perkText: '💥 Puissance d\'attaque +25%',
     primaryColor: '#FF007A',
     secondaryColor: '#7928CA',
@@ -123,7 +132,8 @@ export const SKINS_CONFIG: ShipSkin[] = [
   {
     id: 'titan_aegis',
     name: 'TITAN AEGIS',
-    archetype: 'Cuirassé Défensif',
+    shipClass: 'Éclaireur',
+    archetype: 'Éclaireur',
     perkText: '🛡️ Blindage : +2 Vaisseaux de départ',
     primaryColor: '#38BDF8',
     secondaryColor: '#0284C7',
@@ -137,7 +147,8 @@ export const SKINS_CONFIG: ShipSkin[] = [
   {
     id: 'solar_phoenix',
     name: 'SOLAR PHOENIX',
-    archetype: 'Vaisseau de Commandement',
+    shipClass: 'Éclaireur',
+    archetype: 'Éclaireur',
     perkText: '👑 Roi Stellaire : Tous bonus +15%',
     primaryColor: '#FFE600',
     secondaryColor: '#FF3300',
@@ -151,7 +162,8 @@ export const SKINS_CONFIG: ShipSkin[] = [
   {
     id: 'hyperion_quantum',
     name: 'HYPERION QUANTUM',
-    archetype: 'Destroyer Suprême',
+    shipClass: 'Éclaireur',
+    archetype: 'Éclaireur',
     perkText: '⚡ Survoltage : +30% Dégâts & +25% 💎',
     primaryColor: '#A855F7',
     secondaryColor: '#EC4899',
@@ -161,6 +173,74 @@ export const SKINS_CONFIG: ShipSkin[] = [
     costInCrystals: 20,
     slots: ['WEAPON', 'WEAPON', 'SHIELD', 'ENGINE', 'CORE'],
     statBonus: { fireRateMultiplier: 1.20, damageMultiplier: 1.30, speedMultiplier: 1.10 }
+  },
+
+  // =========================================================================
+  // CLASSE CHASSEUR (Assaut lourd, blindage renforcé, canons d'ailes)
+  // =========================================================================
+  {
+    id: 'chasseur_vanguard',
+    name: 'VANGUARD ASSAULT',
+    shipClass: 'Chasseur',
+    archetype: 'Chasseur',
+    perkText: '⚔️ Canons Lourds : Dégâts +25% & Cadence +15%',
+    primaryColor: '#FF3344',
+    secondaryColor: '#FF8800',
+    glowColor: '#FF3344',
+    unlockedByDefault: false,
+    costInBars: 15,
+    costInCrystals: 15,
+    slots: ['WEAPON', 'WEAPON', 'ENGINE', 'SHIELD'],
+    statBonus: { fireRateMultiplier: 1.15, damageMultiplier: 1.25, speedMultiplier: 1.05 }
+  },
+  {
+    id: 'chasseur_valkyrie',
+    name: 'VALKYRIE STRIKER',
+    shipClass: 'Chasseur',
+    archetype: 'Chasseur',
+    perkText: '⚡ Rafale Frontale : Dégâts +35% & Vitesse +15%',
+    primaryColor: '#FF9900',
+    secondaryColor: '#CC0022',
+    glowColor: '#FF9900',
+    unlockedByDefault: false,
+    costInBars: 22,
+    costInCrystals: 22,
+    slots: ['WEAPON', 'WEAPON', 'SHIELD', 'CORE'],
+    statBonus: { fireRateMultiplier: 1.20, damageMultiplier: 1.35, speedMultiplier: 1.15 }
+  },
+
+  // =========================================================================
+  // CLASSE INTERCEPTEUR (Apex de combat, ailes forward-swept, plasma quantique)
+  // =========================================================================
+  {
+    id: 'intercepteur_phantom',
+    name: 'PHANTOM ECLIPSE',
+    shipClass: 'Intercepteur',
+    archetype: 'Intercepteur',
+    perkText: '🚀 Surtension Véloce : Cadence +35% & Vitesse +30%',
+    primaryColor: '#B026FF',
+    secondaryColor: '#00F0FF',
+    glowColor: '#B026FF',
+    unlockedByDefault: false,
+    costInBars: 32,
+    costInCrystals: 32,
+    slots: ['WEAPON', 'WEAPON', 'ENGINE', 'ENGINE', 'CORE'],
+    statBonus: { fireRateMultiplier: 1.35, damageMultiplier: 1.30, speedMultiplier: 1.30 }
+  },
+  {
+    id: 'intercepteur_apex',
+    name: 'APEX OMEGA',
+    shipClass: 'Intercepteur',
+    archetype: 'Intercepteur',
+    perkText: '👑 Suprématie Quantique : Tous bonus +45% & Faisceau Pulsé',
+    primaryColor: '#00FFFF',
+    secondaryColor: '#FFE600',
+    glowColor: '#00FFFF',
+    unlockedByDefault: false,
+    costInBars: 45,
+    costInCrystals: 45,
+    slots: ['WEAPON', 'WEAPON', 'SHIELD', 'ENGINE', 'CORE'],
+    statBonus: { fireRateMultiplier: 1.45, damageMultiplier: 1.45, speedMultiplier: 1.35 }
   }
 ];
 

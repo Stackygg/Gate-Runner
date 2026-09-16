@@ -1029,9 +1029,14 @@ export class UpgradeStore {
   // --- ÉQUIPEMENTS & BUTIN QUANTIQUE (SYSTÈME DE COFFRES) ---
   public generateMissionLoot(missionNum: number, isVictory: boolean = true): EquipmentItem | null {
     if (!isVictory) return null;
-    // Règle du Trésor : chaque mission victorieuse octroie un Coffre scellé
-    // - Avant le Niveau 5 : "Coffre Non Identifié" pour préserver la surprise du Hangar
-    // - Après le Niveau 5 : "Coffre Stellaire" avec tirage et relance publicitaire dans le Hangar
+    
+    // Règle du coffre unique : accordé uniquement lors de la 1ère réalisation du niveau
+    if (!this.data.claimedChestMissions) this.data.claimedChestMissions = [];
+    if (this.data.claimedChestMissions.includes(missionNum)) {
+      return null;
+    }
+    this.data.claimedChestMissions.push(missionNum);
+
     const chest = EquipmentSystem.generateChest(missionNum);
     if (!this.data.inventory) this.data.inventory = [];
     this.data.inventory.unshift(chest);

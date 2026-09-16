@@ -9,6 +9,7 @@ import { SectorSystem } from '../systems/SectorSystem';
 import { EquipmentItem, EquipmentSlotType, EquipmentSystem, RARITY_CONFIGS, SLOT_INFO } from '../systems/EquipmentSystem';
 import { AdService } from '../services/AdService';
 import { SoundSynth } from '../engine/SoundSynth';
+import { ShipRenderer } from '../engine/ShipRenderer';
 
 export class MenuHangar {
   private store: UpgradeStore;
@@ -254,6 +255,7 @@ export class MenuHangar {
   private currentChestItem: EquipmentItem | null = null;
   private currentRevealedItem: EquipmentItem | null = null;
   private isChestOpening: boolean = false;
+  private hasRerolledCurrentChest: boolean = false;
   private sound: SoundSynth = new SoundSynth();
 
   constructor(store: UpgradeStore, onStart: () => void, onOpenShop?: () => void) {
@@ -1334,7 +1336,12 @@ export class MenuHangar {
     if (!skin) return;
 
     if (this.elHangarShipName) this.elHangarShipName.textContent = skin.name;
-    if (this.elHangarShipArchetype) this.elHangarShipArchetype.textContent = skin.archetype.toUpperCase();
+    if (this.elHangarShipArchetype) {
+      const shipClass = skin.shipClass || 'Éclaireur';
+      this.elHangarShipArchetype.textContent = `CLASSE ${shipClass.toUpperCase()}`;
+      const classSlug = shipClass.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      this.elHangarShipArchetype.className = `ship-archetype-badge class-${classSlug}`;
+    }
     if (this.elHangarShipSlotsCount) {
       this.elHangarShipSlotsCount.textContent = `${skin.slots.length} SLOTS D'ÉQUIPEMENT`;
     }
@@ -1934,81 +1941,7 @@ export class MenuHangar {
   }
 
   private drawSingleShip(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, skin: ShipSkin, scaleFactor: number) {
-    const w = canvas.width;
-    const h = canvas.height;
-
-    ctx.clearRect(0, 0, w, h);
-
-    ctx.save();
-    ctx.translate(w / 2, h / 2 + 2);
-    ctx.scale(scaleFactor, scaleFactor);
-
-    // Oscillation et inclinaison dynamique
-    const hoverY = Math.sin(this.previewAngle * 1.5) * 4;
-    ctx.translate(0, hoverY);
-    ctx.rotate(Math.sin(this.previewAngle) * 0.12);
-
-    // Ombre / Aura lumineuse (valeur légère pour préserver 60 FPS)
-    if (Renderer.enableGlow) {
-      ctx.shadowColor = skin.glowColor;
-      ctx.shadowBlur = 10;
-    }
-
-    // Coque du vaisseau
-    ctx.fillStyle = '#070b1e';
-    ctx.strokeStyle = skin.primaryColor;
-    ctx.lineWidth = 3;
-
-    ctx.beginPath();
-    ctx.moveTo(0, -50);
-    ctx.lineTo(40, 30);
-    ctx.lineTo(20, 20);
-    ctx.lineTo(0, 35);
-    ctx.lineTo(-20, 20);
-    ctx.lineTo(-40, 30);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Ailes intérieures
-    ctx.fillStyle = skin.secondaryColor;
-    ctx.beginPath();
-    ctx.moveTo(0, -20);
-    ctx.lineTo(25, 20);
-    ctx.lineTo(0, 10);
-    ctx.lineTo(-25, 20);
-    ctx.closePath();
-    ctx.fill();
-
-    // Verrière cockpit
-    ctx.fillStyle = '#FFFFFF';
-    if (Renderer.enableGlow) {
-      ctx.shadowColor = '#FFFFFF';
-      ctx.shadowBlur = 8;
-    }
-    ctx.beginPath();
-    ctx.moveTo(0, -32);
-    ctx.lineTo(8, -10);
-    ctx.lineTo(0, -5);
-    ctx.lineTo(-8, -10);
-    ctx.closePath();
-    ctx.fill();
-
-    // Réacteur plasma
-    if (Renderer.enableGlow) {
-      ctx.shadowColor = skin.primaryColor;
-      ctx.shadowBlur = 16;
-    }
-    ctx.fillStyle = skin.primaryColor;
-    ctx.beginPath();
-    ctx.arc(0, 28, 6 + Math.sin(this.previewAngle * 8) * 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (Renderer.enableGlow) {
-      ctx.shadowBlur = 0;
-    }
-
-    ctx.restore();
+    ShipRenderer.drawPreview(ctx, canvas, skin, scaleFactor, this.previewAngle);
   }
 
   // --- GESTION DE LA RAFFINERIE LUNAIRE & FONDERIE D'IRIDIUM ---
@@ -2731,6 +2664,7 @@ export class MenuHangar {
     this.currentChestItem = chest;
     this.currentRevealedItem = null;
     this.isChestOpening = false;
+    this.hasRerolledCurrentChest = !!chest.hasRerolled;
 
     if (this.elChestModalTitle) {
       this.elChestModalTitle.textContent = chest.name.toUpperCase();
@@ -2754,6 +2688,7 @@ export class MenuHangar {
     this.currentChestItem = null;
     this.currentRevealedItem = null;
     this.isChestOpening = false;
+    this.hasRerolledCurrentChest = false;
   }
 
   private triggerChestOpening() {
@@ -2825,17 +2760,32 @@ export class MenuHangar {
         ${statsHtml ? `<div style="margin-top: 8px;">${statsHtml}</div>` : ''}
       </div>
     `;
+
+    // Gestion du bouton de relance publicitaire (une seule relance par coffre autorisée)
+    if (this.elBtnChestRerollAd) {
+      if (this.hasRerolledCurrentChest || this.currentChestItem?.hasRerolled) {
+        this.elBtnChestRerollAd.style.display = 'none';
+      } else {
+        this.elBtnChestRerollAd.style.display = 'flex';
+        this.elBtnChestRerollAd.removeAttribute('disabled');
+        this.elBtnChestRerollAd.classList.remove('disabled');
+      }
+    }
   }
 
   private rerollChestReward() {
-    if (!this.currentChestItem) return;
+    if (!this.currentChestItem || this.hasRerolledCurrentChest || this.currentChestItem.hasRerolled) return;
     AdService.showRewardedAd('RELANCER LE BUTIN DU COFFRE', () => {
       if (!this.currentChestItem) return;
+      this.hasRerolledCurrentChest = true;
+      this.currentChestItem.hasRerolled = true;
+      this.store.save();
+
       this.sound.playChestOpen();
       const fixedLvl = this.currentChestItem.level || this.currentChestItem.sourceMission || 1;
-      this.currentRevealedItem = EquipmentSystem.rerollChestLoot(fixedLvl, fixedLvl);
+      this.currentRevealedItem = EquipmentSystem.rerollChestLoot(fixedLvl);
       this.renderChestReward();
-      this.showHudToast('🎲 NOUVEAU TIRAGE GÉNÉRÉ AVEC SUCCÈS !', false);
+      this.showHudToast('🎲 NOUVEAU TIRAGE GÉNÉRÉ ! (RELANCE UNIQUE UTILISÉE)', false);
     });
   }
 

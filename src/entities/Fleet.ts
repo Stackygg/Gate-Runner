@@ -3,6 +3,7 @@
 import { GAME_CONFIG, ShipSkin } from '../config';
 import { Renderer } from '../engine/Renderer';
 import { Projectile } from './Projectile';
+import { ShipRenderer } from '../engine/ShipRenderer';
 
 export interface ShipUnit {
   id: number;
@@ -835,266 +836,17 @@ export class Fleet {
     const traitsCount = Math.min(8, 3 + t);
 
     // -------------------------------------------------------------
-    // 1. PROPULSION & FLAMMES SELON LE RANG D'ÉVOLUTION
+    // DESSIN DU VAISSEAU SELON SA CLASSE OFFICIELLE (Éclaireur, Chasseur, Intercepteur)
     // -------------------------------------------------------------
-    ctx.fillStyle = (rank === 4) ? '#B026FF' : ((rank === 3) ? '#FF8800' : theme.flame);
     if (Renderer.enableGlow && isLeader) {
-      ctx.shadowColor = (rank === 4) ? '#FF00DD' : ((rank === 3) ? '#FF8800' : theme.glow);
+      ctx.shadowColor = theme.glow;
       ctx.shadowBlur = 10;
     }
 
-    const flameH = 9 + Math.random() * (7 + t * 0.8 + rank * 1.5);
+    ShipRenderer.drawInFlight(ctx, this.activeSkin, isLeader, this.animationPhase, theme);
 
-    if (rank === 1) {
-      // Rang 1 (Scythe) : 1 tuyère centrale
-      ctx.beginPath();
-      ctx.moveTo(-4, 13);
-      ctx.lineTo(0, 13 + flameH);
-      ctx.lineTo(4, 13);
-      ctx.closePath();
-      ctx.fill();
-    } else if (rank === 2) {
-      // Rang 2 (Falcon) : Double réacteurs jumeaux
-      ctx.beginPath();
-      ctx.moveTo(-8, 14);
-      ctx.lineTo(-5.5, 14 + flameH * 0.9);
-      ctx.lineTo(-3, 14);
-      ctx.moveTo(3, 14);
-      ctx.lineTo(5.5, 14 + flameH * 0.9);
-      ctx.lineTo(8, 14);
-      ctx.closePath();
-      ctx.fill();
-    } else if (rank === 3) {
-      // Rang 3 (Valkyrie) : Triple réacteurs en éventail
-      ctx.beginPath();
-      ctx.moveTo(-11, 13);
-      ctx.lineTo(-9, 13 + flameH * 0.75);
-      ctx.lineTo(-7, 13);
-      ctx.moveTo(-3, 14);
-      ctx.lineTo(0, 14 + flameH * 1.1);
-      ctx.lineTo(3, 14);
-      ctx.moveTo(7, 13);
-      ctx.lineTo(9, 13 + flameH * 0.75);
-      ctx.lineTo(11, 13);
-      ctx.closePath();
-      ctx.fill();
-    } else if (rank === 4) {
-      // Rang 4 (Phantom) : Quadruple tuyères ioniques haute poussée
-      const qFlame = flameH * 0.85;
-      for (const rx of [-13, -5, 5, 13]) {
-        ctx.beginPath();
-        ctx.moveTo(rx - 2, 13);
-        ctx.lineTo(rx, 13 + qFlame);
-        ctx.lineTo(rx + 2, 13);
-        ctx.closePath();
-        ctx.fill();
-      }
-    } else {
-      // Rang 5 (Hyperion Titan) : Hyper-réacteur central titan + double tuyères d'ailes
-      ctx.fillStyle = '#00F0FF';
-      ctx.beginPath();
-      ctx.moveTo(-5, 15);
-      ctx.lineTo(0, 15 + flameH * 1.35);
-      ctx.lineTo(5, 15);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = '#FFE600';
-      ctx.beginPath();
-      ctx.moveTo(-12, 14);
-      ctx.lineTo(-10, 14 + flameH * 0.9);
-      ctx.lineTo(-8, 14);
-      ctx.moveTo(8, 14);
-      ctx.lineTo(10, 14 + flameH * 0.9);
-      ctx.lineTo(12, 14);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // -------------------------------------------------------------
-    // 2. DESSIN DE LA CARLINGUE (5 SILHOUETTES GRADUELLES DISTINCTES)
-    // -------------------------------------------------------------
-    const shipGrad = ctx.createLinearGradient(0, -22, 0, 18);
-    if (rank === 1) {
-      shipGrad.addColorStop(0, '#FFFFFF');
-      shipGrad.addColorStop(0.3, this.activeSkin.primaryColor);
-      shipGrad.addColorStop(0.8, this.activeSkin.secondaryColor);
-      shipGrad.addColorStop(1, '#050a18');
-    } else if (rank === 2) {
-      // Falcon : Teinte Émeraude / Cyan vif
-      shipGrad.addColorStop(0, '#FFFFFF');
-      shipGrad.addColorStop(0.25, '#00FF88');
-      shipGrad.addColorStop(0.7, '#008855');
-      shipGrad.addColorStop(1, '#021a0d');
-    } else if (rank === 3) {
-      // Valkyrie : Teinte Ambre / Or / Crimson électrique
-      shipGrad.addColorStop(0, '#FFFFFF');
-      shipGrad.addColorStop(0.25, '#FFE600');
-      shipGrad.addColorStop(0.65, '#FF3300');
-      shipGrad.addColorStop(1, '#200500');
-    } else if (rank === 4) {
-      // Phantom : Teinte Violet Sombre / Magenta Furtif
-      shipGrad.addColorStop(0, '#FFFFFF');
-      shipGrad.addColorStop(0.25, '#B026FF');
-      shipGrad.addColorStop(0.7, '#4B0082');
-      shipGrad.addColorStop(1, '#110022');
-    } else {
-      // Hyperion Titan : Blanc Divin / Cyan Néon / Accents Or
-      shipGrad.addColorStop(0, '#FFFFFF');
-      shipGrad.addColorStop(0.3, '#E0F7FF');
-      shipGrad.addColorStop(0.7, '#00D4FF');
-      shipGrad.addColorStop(1, '#001A33');
-    }
-
-    ctx.fillStyle = shipGrad;
-    if (Renderer.enableGlow && isLeader) {
-      ctx.shadowColor = (rank === 5) ? '#00F0FF' : ((rank === 4) ? '#B026FF' : ((rank === 3) ? '#FFE600' : ((rank === 2) ? '#00FF88' : theme.glow)));
-      ctx.shadowBlur = 14;
-    }
-
-    ctx.beginPath();
-
-    if (rank === 1) {
-      // 🚀 RANG 1 : SCYTHE INTERCEPTOR (Chasseur fin en flèche)
-      ctx.moveTo(0, -18);
-      ctx.lineTo(16, 12);
-      ctx.lineTo(8, 15);
-      ctx.lineTo(0, 10);
-      ctx.lineTo(-8, 15);
-      ctx.lineTo(-16, 12);
-    } else if (rank === 2) {
-      // 🦅 RANG 2 : FALCON FIGHTER (Ailes delta + Canards avant doubles + Ailerons)
-      ctx.moveTo(0, -21); // Museau effilé
-      ctx.lineTo(4, -13);
-      ctx.lineTo(11, -9); // Canard avant droit
-      ctx.lineTo(5, -4);
-      ctx.lineTo(19, 10); // Aile principale
-      ctx.lineTo(19, 15); // Aileron vertical stabilisateur
-      ctx.lineTo(12, 14);
-      ctx.lineTo(6, 16);
-      ctx.lineTo(0, 11);
-      ctx.lineTo(-6, 16);
-      ctx.lineTo(-12, 14);
-      ctx.lineTo(-19, 15);
-      ctx.lineTo(-19, 10);
-      ctx.lineTo(-5, -4);
-      ctx.lineTo(-11, -9); // Canard avant gauche
-      ctx.lineTo(-4, -13);
-    } else if (rank === 3) {
-      // ⚡ RANG 3 : VALKYRIE CRUSADER (Ailes avant W-Shape + Railgun frontal double pointe)
-      ctx.moveTo(0, -13);
-      ctx.lineTo(3.5, -23); // Pointe Railgun droite
-      ctx.lineTo(6, -12);
-      ctx.lineTo(13, -7);
-      ctx.lineTo(22, 4);   // Aile avant inversée agressive
-      ctx.lineTo(17, 14);
-      ctx.lineTo(7, 12);
-      ctx.lineTo(0, 15);
-      ctx.lineTo(-7, 12);
-      ctx.lineTo(-17, 14);
-      ctx.lineTo(-22, 4);  // Aile avant inversée gauche
-      ctx.lineTo(-13, -7);
-      ctx.lineTo(-6, -12);
-      ctx.lineTo(-3.5, -23); // Pointe Railgun gauche
-    } else if (rank === 4) {
-      // 🔮 RANG 4 : PHANTOM BOMBER (Furtif angulaire facetté + Pods d'artillerie lourde d'ailes)
-      ctx.moveTo(0, -20);
-      ctx.lineTo(7, -10);
-      ctx.lineTo(14, -10); // Pod avant droit
-      ctx.lineTo(16, -2);
-      ctx.lineTo(24, 8);   // Envergure furtive
-      ctx.lineTo(17, 16);
-      ctx.lineTo(11, 13);
-      ctx.lineTo(0, 11);
-      ctx.lineTo(-11, 13);
-      ctx.lineTo(-17, 16);
-      ctx.lineTo(-24, 8);
-      ctx.lineTo(-16, -2);
-      ctx.lineTo(-14, -10); // Pod avant gauche
-      ctx.lineTo(-7, -10);
-    } else {
-      // 👑 RANG 5 : HYPERION TITAN (Cuirassé imposant + Double balanciers d'énergie + Lames quantiques)
-      ctx.moveTo(0, -25);
-      ctx.lineTo(6, -17);
-      ctx.lineTo(10, -8);
-      ctx.lineTo(18, 0);
-      ctx.lineTo(27, 11);  // Grande envergure titan
-      ctx.lineTo(21, 17);
-      ctx.lineTo(14, 13);
-      ctx.lineTo(9, 19);
-      ctx.lineTo(0, 14);
-      ctx.lineTo(-9, 19);
-      ctx.lineTo(-14, 13);
-      ctx.lineTo(-21, 17);
-      ctx.lineTo(-27, 11);
-      ctx.lineTo(-18, 0);
-      ctx.lineTo(-10, -8);
-      ctx.lineTo(-6, -17);
-    }
-
-    ctx.closePath();
-    ctx.fill();
-
-    // Bordure lumineuse du fuselage
-    ctx.strokeStyle = (rank >= 4) ? '#FFFFFF' : ((rank >= 2) ? '#A0FFA0' : '#FFFFFF');
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-
-    // -------------------------------------------------------------
-    // 3. DÉTAILS STRUCTURAUX SPÉCIFIQUES À CHAQUE RANG
-    // -------------------------------------------------------------
-    if (rank === 2) {
-      // Canards avant : traits d'énergie émeraude
-      ctx.strokeStyle = '#00FF88';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(4, -13);
-      ctx.lineTo(10, -9);
-      ctx.moveTo(-4, -13);
-      ctx.lineTo(-10, -9);
-      ctx.stroke();
-    } else if (rank === 3) {
-      // Railgun canon double : lignes électriques dorées lumineuses
-      ctx.strokeStyle = '#FFE600';
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.moveTo(3.5, -23);
-      ctx.lineTo(3.5, -7);
-      ctx.moveTo(-3.5, -23);
-      ctx.lineTo(-3.5, -7);
-      ctx.stroke();
-    } else if (rank === 4) {
-      // Pods de lance-plasma latéraux : voyants d'armement magenta
-      ctx.fillStyle = '#FF00DD';
-      ctx.fillRect(11, -8, 3, 5);
-      ctx.fillRect(-14, -8, 3, 5);
-    } else if (rank === 5) {
-      // 🌟 RANG 5 : ANNEAU QUANTIQUE ORBITAL ROTATIF (AUTOUR DE LA POUPE)
-      ctx.save();
-      ctx.translate(0, 5);
-      const ringAngle = this.animationPhase * 1.5;
-      ctx.rotate(ringAngle);
-      ctx.strokeStyle = '#00F0FF';
-      ctx.lineWidth = 1.8;
-      if (Renderer.enableGlow && isLeader) {
-        ctx.shadowColor = '#00F0FF';
-        ctx.shadowBlur = 10;
-      }
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 24, 11, 0, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Sphères quantiques orbitales aux pôles de l'anneau
-      ctx.fillStyle = '#FFE600';
-      ctx.beginPath();
-      ctx.arc(24, 0, 2.8, 0, Math.PI * 2);
-      ctx.arc(-24, 0, 2.8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // Traits de structure / nervures d'ailes selon le tier
-    ctx.strokeStyle = '#FFFFFF';
+    // Traits d'ailes et de structure selon le tier
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.lineWidth = 1.0;
     if (Renderer.enableGlow) {
       ctx.shadowBlur = 0;
@@ -1110,32 +862,6 @@ export class Fleet {
       ctx.lineTo(-(offsetX + 1.8), offsetY + 3.2);
       ctx.stroke();
     }
-
-    // -------------------------------------------------------------
-    // 4. COCKPIT LUMINEUX & RÉACTEUR CENTRAL
-    // -------------------------------------------------------------
-    ctx.fillStyle = '#FFFFFF';
-    if (Renderer.enableGlow && isLeader) {
-      ctx.shadowColor = '#FFFFFF';
-      ctx.shadowBlur = 6;
-    }
-    ctx.beginPath();
-    if (rank === 3) {
-      // Valkyrie : Coeur cristal ambre au centre
-      ctx.fillStyle = '#FFE600';
-      ctx.arc(0, -3, 3.2, 0, Math.PI * 2);
-    } else if (rank === 4) {
-      // Phantom : Cockpit losange furtif
-      ctx.fillStyle = '#E0B0FF';
-      ctx.ellipse(0, -5, 2.2, 6.0, 0, 0, Math.PI * 2);
-    } else if (rank === 5) {
-      // Hyperion : Verrière diamant blanc éclatant
-      ctx.fillStyle = '#FFFFFF';
-      ctx.ellipse(0, -7, 3.2, 7.5, 0, 0, Math.PI * 2);
-    } else {
-      ctx.ellipse(0, -5, 2.5, 5.5, 0, 0, Math.PI * 2);
-    }
-    ctx.fill();
 
     // -------------------------------------------------------------
     // 5. AURA / INSIGNE DE TIER V5+

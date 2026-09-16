@@ -321,7 +321,7 @@ export class GameOverModal {
       const nextSecInfo = SectorSystem.getSectorInfo(stats.nextLevelNum);
       const isNextBoss = SectorSystem.isSectorBossMission(stats.nextLevelNum);
       const nextLvlStr = isNextBoss ? 'Boss' : (nextSecInfo.levelInSector < 10 ? `0${nextSecInfo.levelInSector}` : `${nextSecInfo.levelInSector}`);
-      if (this.elBtnNext) this.elBtnNext.textContent = `Secteur ${nextSecInfo.sectorName} : ${nextLvlStr} ▶`;
+      if (this.elBtnNext) this.elBtnNext.textContent = `Secteur ${nextSecInfo.sectorName} : ${nextLvlStr}`;
 
       // Explosion de confettis cyberpunk
       try {
@@ -438,7 +438,7 @@ export class GameOverModal {
         const headerTitle = this.elLootBox.querySelector('.loot-header-title');
         if (headerTitle) headerTitle.textContent = 'BUTIN DE LA MISSION';
         const headerIcon = this.elLootBox.querySelector('.loot-header-icon') as HTMLElement;
-        if (headerIcon) headerIcon.style.display = '';
+        if (headerIcon) headerIcon.style.display = 'none';
 
         const rawLoot: EquipmentItem[] = stats.rewardLoot
           ? (Array.isArray(stats.rewardLoot) ? stats.rewardLoot : [stats.rewardLoot])
@@ -498,7 +498,7 @@ export class GameOverModal {
           </svg>
         `;
 
-        const chestCellHtml = `
+        const chestCellHtml = chestItem ? `
           <div class="loot-slot-cell cell-chest" title="${chestName}">
             <div class="loot-cell-icon-wrap">
               <span class="loot-cell-icon">${chestSvgIcon}</span>
@@ -506,7 +506,7 @@ export class GameOverModal {
             <div class="loot-cell-val val-chest">x1</div>
             <div class="loot-cell-title" title="${chestName}">COFFRE QUANTIQUE</div>
           </div>
-        `;
+        ` : '';
 
         // 4. Éventuels loots supplémentaires (Équipements)
         const extraCellsHtml = extraItems.map(item => {

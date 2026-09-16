@@ -5036,6 +5036,28 @@ html, body {
   border-radius: 12px;
   letter-spacing: 0.8px;
   white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.ship-archetype-badge.class-eclaireur {
+  color: #00F0FF;
+  background: rgba(0, 240, 255, 0.15);
+  border-color: rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.ship-archetype-badge.class-chasseur {
+  color: #FF9900;
+  background: rgba(255, 51, 68, 0.18);
+  border-color: #FF3344;
+  box-shadow: 0 0 14px rgba(255, 51, 68, 0.45);
+}
+
+.ship-archetype-badge.class-intercepteur {
+  color: #00FFFF;
+  background: linear-gradient(135deg, rgba(176, 38, 255, 0.25), rgba(0, 240, 255, 0.25));
+  border-color: #00FFFF;
+  box-shadow: 0 0 18px rgba(176, 38, 255, 0.6), inset 0 0 8px rgba(0, 240, 255, 0.2);
 }
 
 .ship-selector-row {
@@ -5913,6 +5935,153 @@ html, body {
 @keyframes pulse-border-loot {
   0% { border-color: rgba(0, 240, 255, 0.5); box-shadow: 0 0 12px rgba(0, 240, 255, 0.2); }
   100% { border-color: #00F0FF; box-shadow: 0 0 24px rgba(0, 240, 255, 0.5); }
+}
+
+/* --- SECTOR BOSS VICTORY & NEW UNLOCKS --- */
+.sector-boss-loot-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(168, 85, 247, 0.25), rgba(0, 240, 255, 0.15));
+  border: 1.5px solid #F59E0B;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.4), inset 0 0 15px rgba(245, 158, 11, 0.1);
+  animation: pulse-border-boss-victory 2.5s infinite alternate;
+}
+
+@keyframes pulse-border-boss-victory {
+  0% { border-color: rgba(245, 158, 11, 0.6); box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+  100% { border-color: #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.65), inset 0 0 20px rgba(245, 158, 11, 0.25); }
+}
+
+.sector-boss-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sector-boss-badge {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #FFD700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.sector-boss-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  letter-spacing: 2px;
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.9);
+}
+
+.sector-dest-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #00F0FF;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.sector-dest-glyph {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.9rem;
+  color: #FFF;
+  background: rgba(0, 240, 255, 0.4);
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.sector-unlocks-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(10, 15, 35, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.sector-unlocks-title {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #A855F7;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sector-unlock-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid #00F0FF;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.unlock-item-icon {
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unlock-item-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-align: left;
+}
+
+.unlock-item-label {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.unlock-item-desc {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.unlock-badge-new {
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #FF0055, #FF5500);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(255, 0, 85, 0.5);
+  animation: pulse-scale 1.5s infinite;
+}
+
+@keyframes pulse-scale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
 }
 
 .gameover-loot-header {

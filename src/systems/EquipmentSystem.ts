@@ -50,6 +50,7 @@ export interface EquipmentItem {
   createdAt: number;
   isChest?: boolean;
   sourceMission?: number;
+  hasRerolled?: boolean;
 }
 
 export interface RarityConfig {
@@ -399,11 +400,10 @@ export class EquipmentSystem {
     const slotTypes: EquipmentSlotType[] = ['WEAPON', 'SHIELD', 'ENGINE', 'CORE'];
     const slotType = slotTypes[Math.floor(Math.random() * slotTypes.length)];
 
-    const rarity = this.rollRarity(missionNum, forceHighRarity);
-    const rarityConfig = RARITY_CONFIGS[rarity];
-
     // NIVEAU D'OBJET : Fixé selon la mission d'obtention ou fixedLevel
     const itemLevel = fixedLevel !== undefined ? fixedLevel : Math.max(1, missionNum);
+    const rarity = this.rollRarity(itemLevel, forceHighRarity);
+    const rarityConfig = RARITY_CONFIGS[rarity];
 
     const nameData = ITEM_NAMES[slotType];
     const prefix = nameData.prefixes[Math.floor(Math.random() * nameData.prefixes.length)];
@@ -782,12 +782,11 @@ export class EquipmentSystem {
   }
 
   /**
-   * Relance le tirage du butin d'un coffre (avec bonus de chance de haute rareté et Effet Spécial garanti).
-   * L'équipement conserve STRICTEMENT le même Niveau d'objet d'origine !
+   * Relance le tirage du butin d'un coffre (avec Effet Spécial garanti).
+   * L'équipement conserve STRICTEMENT le même Niveau d'objet d'origine
+   * et respecte rigoureusement la table de pourcentages de rareté de ce niveau.
    */
-  public static rerollChestLoot(missionNum: number, fixedLevel?: number): EquipmentItem {
-    const luckyBoost = Math.random() < 0.45;
-    const itemLevel = fixedLevel !== undefined ? fixedLevel : missionNum;
-    return this.generateLoot(missionNum, luckyBoost, true, itemLevel);
+  public static rerollChestLoot(itemLevel: number): EquipmentItem {
+    return this.generateLoot(itemLevel, false, true, itemLevel);
   }
 }
