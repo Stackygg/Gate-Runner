@@ -349,9 +349,17 @@ export class GameOverModal {
     if (this.elEarnedDiamonds) {
       this.elEarnedDiamonds.classList.remove('doubled-sparkle');
       this.elEarnedDiamonds.textContent = `+${stats.diamondsEarned.toLocaleString()}`;
+      const diamondBox = this.elEarnedDiamonds.closest('.diamonds-box') as HTMLElement;
+      if (diamondBox) {
+        diamondBox.style.display = (stats.diamondsEarned > 0) ? 'flex' : 'none';
+      }
     }
     if (this.elEarnedCrystals) {
       this.elEarnedCrystals.textContent = `+${stats.crystalsEarned.toLocaleString()}`;
+      const crystalBox = this.elEarnedCrystals.closest('.crystals-box') as HTMLElement;
+      if (crystalBox) {
+        crystalBox.style.display = (stats.crystalsEarned > 0) ? 'flex' : 'none';
+      }
     }
 
     // Réinitialise le bouton de pub (Grand icone 🎬 et x2 💎)
@@ -422,13 +430,14 @@ export class GameOverModal {
       }
     }
 
+    const hasAnyReward = (stats.diamondsEarned > 0 || stats.crystalsEarned > 0);
     const elTopRewards = document.getElementById('gameover-top-rewards');
     const elTopDivider = document.getElementById('gameover-top-divider');
     if (elTopRewards) {
-      elTopRewards.style.display = stats.isVictory ? 'none' : 'flex';
+      elTopRewards.style.display = (!stats.isVictory && hasAnyReward) ? 'flex' : 'none';
     }
     if (elTopDivider) {
-      elTopDivider.style.display = stats.isVictory ? 'none' : 'block';
+      elTopDivider.style.display = (!stats.isVictory && hasAnyReward) ? 'block' : 'none';
     }
 
     // Rendu du Butin de la mission avec cases d'inventaire (Iridium, Diamants, Trésor & Équipements)
@@ -451,8 +460,8 @@ export class GameOverModal {
         const chestName = chestItem ? chestItem.name : `Coffre Stellaire (Mission ${chestMissionLvl})`;
         const isPreHangar = chestMissionLvl < 5;
 
-        // 1. Case Iridium
-        const iridiumCellHtml = `
+        // 1. Case Iridium (affichée UNIQUEMENT si on a gagné de l'iridium)
+        const iridiumCellHtml = (stats.crystalsEarned && stats.crystalsEarned > 0) ? `
           <div class="loot-slot-cell cell-iridium" title="Minerai d'Iridium pur récupéré">
             <div class="loot-cell-icon-wrap">
               <span class="loot-cell-icon"><span class="icon-iridium"></span></span>
@@ -460,10 +469,10 @@ export class GameOverModal {
             <div class="loot-cell-val val-iridium"><span id="stat-loot-iridium">+${stats.crystalsEarned}</span></div>
             <div class="loot-cell-title">IRIDIUM</div>
           </div>
-        `;
+        ` : '';
 
-        // 2. Case Diamants
-        const diamondsCellHtml = `
+        // 2. Case Diamants (affichée UNIQUEMENT si on a récolté des diamants)
+        const diamondsCellHtml = (stats.diamondsEarned && stats.diamondsEarned > 0) ? `
           <div class="loot-slot-cell cell-diamonds" title="Diamants de mission récoltés">
             <div class="loot-cell-icon-wrap">
               <span class="loot-cell-icon">💎</span>
@@ -471,7 +480,7 @@ export class GameOverModal {
             <div class="loot-cell-val val-diamonds"><span id="stat-loot-diamonds" class="diamonds-amount">+${stats.diamondsEarned.toLocaleString()}</span></div>
             <div class="loot-cell-title">DIAMANTS</div>
           </div>
-        `;
+        ` : '';
 
         // 3. Case Coffre Quantique (avec icône vectorielle haute fidélité)
         const chestSvgIcon = `
@@ -523,7 +532,14 @@ export class GameOverModal {
           `;
         }).join('');
 
-        this.elLootGrid.innerHTML = iridiumCellHtml + diamondsCellHtml + chestCellHtml + extraCellsHtml;
+        const allLootCells = [iridiumCellHtml, diamondsCellHtml, chestCellHtml, extraCellsHtml].filter(Boolean).join('');
+        if (allLootCells.length > 0) {
+          this.elLootGrid.innerHTML = allLootCells;
+          this.elLootBox.classList.remove('hidden');
+        } else {
+          this.elLootGrid.innerHTML = '';
+          this.elLootBox.classList.add('hidden');
+        }
 
         // Détails supplémentaires d'effets spéciaux (uniquement si présents)
         if (this.elLootDetails) {

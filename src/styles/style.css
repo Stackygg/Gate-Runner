@@ -6105,15 +6105,21 @@ html, body {
 
 /* --- INVENTAIRE DE BUTIN DE MISSION AVEC CASES --- */
 .gameover-loot-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
   gap: 8px;
   width: 100%;
+  flex-wrap: wrap;
+}
+
+.gameover-loot-grid .loot-slot-cell {
+  flex: 1 1 80px;
+  max-width: 140px;
 }
 
 @media (max-width: 360px) {
   .gameover-loot-grid {
-    grid-template-columns: repeat(3, 1fr);
     gap: 5px;
   }
 }
