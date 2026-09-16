@@ -78,7 +78,7 @@ export class CollisionSystem {
     // Optimisation & Priorité Tactique : Tri du plus proche au plus éloigné (Y décroissant).
     // Les cibles placées DEVANT (générateurs, minions) interceptent ainsi les tirs en premier avant le boss en arrière-plan !
     const activeEnemies = enemies
-      .filter(e => !e.isDead && e.y >= -1200 && e.y <= 850)
+      .filter(e => !e.isDead && !e.isDying && e.y >= -1200 && e.y <= 850)
       .sort((a, b) => b.y - a.y);
 
     for (const proj of projectiles) {
@@ -232,8 +232,14 @@ export class CollisionSystem {
             // Accumulation précise avec virgule flottante pour combler les décimales au fur et à mesure
             results.diamondsEarned += diamondReward * diamondMultiplier;
             const explosionColor = enemy.type === 'black_hole' ? '#A855F7' : (enemy.type === 'prison' ? '#FF007A' : '#00F0FF');
-            particles.spawnExplosion(enemy.x, enemy.y, explosionColor, enemy.isBossType() ? 50 : 20);
-            particles.spawnGems(enemy.x, enemy.y, Math.min(8, Math.ceil(diamondReward / 2)));
+            if (!enemy.isLevelBoss) {
+              particles.spawnExplosion(enemy.x, enemy.y, explosionColor, enemy.isBossType() ? 50 : 20);
+              particles.spawnGems(enemy.x, enemy.y, Math.min(8, Math.ceil(diamondReward / 2)));
+            } else {
+              // Boss de fin de niveau : étincelles de déstabilisation d'implosion, la supernova finale viendra à scale 0
+              particles.spawnExplosion(enemy.x, enemy.y, '#00F0FF', 20);
+              particles.spawnGems(enemy.x, enemy.y, Math.min(8, Math.ceil(diamondReward / 2)));
+            }
           }
 
           if (proj.isDead) {
@@ -314,7 +320,7 @@ export class CollisionSystem {
 
     // 4. Collision des Vaisseaux contre les Ennemis et Astéroïdes (1 dégât par astéroïde)
     for (const enemy of enemies) {
-      if (enemy.isDead) continue;
+      if (enemy.isDead || enemy.isDying) continue;
 
       if (enemy.y >= fleet.centerY - 40 && enemy.y <= fleet.centerY + 40) {
         const left = enemy.x - enemy.width / 2;

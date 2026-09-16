@@ -859,19 +859,44 @@ export class GameApp {
   }
 
   private updateGame(dt: number) {
-    // Détection universelle de victoire : Boss vaincu OU distance cible franchie
-    const isBossDead = !!(this.currentLevelData?.bossEnemy && this.currentLevelData.bossEnemy.isDead);
-    const isDistanceReached = (this.traveledDistance >= this.currentLevelData.totalDistance);
+    const levelBoss = this.currentLevelData?.bossEnemy;
+    const isBossDying = !!(levelBoss && levelBoss.isDying && !levelBoss.isDead);
 
-    if (!this.isVictoryOutro && (isBossDead || isDistanceReached)) {
+    // 1. Phase d'implosion cinématique du Boss de fin : arrêt total des tirs et tremblements cosmiques
+    if (isBossDying) {
+      this.fleet.canShoot = false;
+      this.projectiles = [];
+      this.enemyProjectiles = [];
+      this.scrollSpeed = 0;
+
+      // Micro-tremblements qui s'amplifient jusqu'à scale 0
+      const tremble = Math.min(7, 1.5 + levelBoss.deathTimer * 3.8);
+      this.renderer.addScreenShake(tremble);
+
+      // Gerbes d'étincelles énergétiques convergeant vers le point d'effondrement
+      if (Math.random() < 0.7) {
+        const sc = Math.max(0.1, levelBoss.deathScale);
+        const rx = (Math.random() - 0.5) * levelBoss.width * sc;
+        const ry = (Math.random() - 0.5) * levelBoss.height * sc;
+        this.particles.spawnHitSparks(levelBoss.x + rx, levelBoss.y + ry, '#00F0FF');
+      }
+    }
+
+    // Détection universelle de victoire : Boss vaincu (après effondrement à scale 0) OU distance cible franchie
+    const isBossDead = !!(levelBoss && levelBoss.isDead);
+    const isDistanceReached = (this.traveledDistance >= this.currentLevelData.totalDistance);
+    const isLevelComplete = levelBoss ? isBossDead : isDistanceReached;
+
+    // 2. Déclenchement de la Supernova au moment exact où le boss atteint l'échelle 0
+    if (!this.isVictoryOutro && isLevelComplete) {
       this.isVictoryOutro = true;
       this.victoryOutroTimer = 0;
       this.stargateFleetSpeed = 0;
       this.fleet.canShoot = false;
 
-      // Déclenchement de la Supernova claire à l'emplacement du boss ou à l'horizon
-      const novaX = this.currentLevelData.bossEnemy ? this.currentLevelData.bossEnemy.x : 270;
-      const novaY = this.currentLevelData.bossEnemy ? this.currentLevelData.bossEnemy.y : 200;
+      // Déclenchement de la Supernova éclatante à l'emplacement exact de la singularité
+      const novaX = levelBoss ? levelBoss.x : 270;
+      const novaY = levelBoss ? levelBoss.y : 200;
       this.triggerNovaBlast(novaX, novaY);
     }
 
@@ -894,9 +919,9 @@ export class GameApp {
       targetX = this.input.update(dt);
     }
 
-    // 1. Déplacement de la Flotte & Tir automatique (bloqué si canShoot est faux)
+    // 1. Déplacement de la Flotte & Tir automatique (bloqué si canShoot est faux ou si boss en train d'imploser)
     const newBullets = this.fleet.update(dt, targetX);
-    if (this.fleet.canShoot && newBullets.length > 0) {
+    if (this.fleet.canShoot && !isBossDying && newBullets.length > 0) {
       this.projectiles.push(...newBullets);
       this.sound.playLaser();
     }
@@ -1166,7 +1191,7 @@ export class GameApp {
       }
 
       const enemyBullets = enemy.update(dt, this.scrollSpeed, this.fleet.centerX, targetCombatY, isEscort);
-      if (enemyBullets.length > 0) {
+      if (enemyBullets.length > 0 && !isBossDying && !this.isVictoryOutro) {
         this.enemyProjectiles.push(...enemyBullets);
       }
     }

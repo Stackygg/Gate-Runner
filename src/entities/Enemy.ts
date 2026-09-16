@@ -24,6 +24,10 @@ export class Enemy {
   public isRapidSpecial: boolean = false; // Tourelle spéciale rapide (toutes les 3 tourelles, 2 PV et tir ultra rapide)
   public isInvulnerable: boolean = false; // Bouclier protecteur rendant le boss insensible aux tirs directs
   public isLevelBoss: boolean = false; // Vrai s'il s'agit du boss final clôturant la mission (déclenche la Supernova)
+  public isDying: boolean = false; // Phase d'implosion / scale vers 0 avant la Supernova
+  public deathTimer: number = 0;
+  public deathDuration: number = 1.35; // Durée de l'animation d'implosion avant la Supernova
+  public deathScale: number = 1.0;
   public connectedGenerators: Enemy[] = []; // Générateurs magnétiques alimentant le bouclier
   public shieldAlpha: number = 1.0;
   public minionSpawnTimer: number = 0;
@@ -97,6 +101,20 @@ export class Enemy {
 
   public update(dt: number, scrollSpeed: number, playerX?: number, targetCombatY: number = 310, isEscortMode: boolean = false): Projectile[] {
     const spawnedProjectiles: Projectile[] = [];
+
+    // Phase d'implosion du Boss de fin : immobile et contraction vers l'échelle 0
+    if (this.isDying) {
+      this.deathTimer += dt;
+      const progress = Math.min(1.0, this.deathTimer / this.deathDuration);
+      // Contraction cubique fluide vers 0
+      this.deathScale = Math.max(0, Math.pow(1.0 - progress, 1.5));
+      if (progress >= 1.0) {
+        this.deathScale = 0;
+        this.isDead = true;
+      }
+      return spawnedProjectiles;
+    }
+
     this.phase += dt * 3;
 
     if (this.type === 'black_hole') {
@@ -397,7 +415,7 @@ export class Enemy {
   }
 
   public takeDamage(amount: number): boolean {
-    if (this.isInvulnerable) {
+    if (this.isInvulnerable || this.isDying || this.isDead) {
       this.hitBlinkTimer = 0.08;
       return false;
     }
@@ -405,8 +423,18 @@ export class Enemy {
     this.hitBlinkTimer = 0.08;
     if (this.hp <= 0) {
       this.hp = 0;
-      this.isDead = true;
-      return true;
+      if (this.isLevelBoss) {
+        // Le boss de fin entre en phase d'implosion cinématique vers scale 0
+        this.isDying = true;
+        this.deathTimer = 0;
+        this.deathScale = 1.0;
+        this.vx = 0;
+        this.vy = 0;
+        return true;
+      } else {
+        this.isDead = true;
+        return true;
+      }
     }
     return false;
   }
@@ -1080,6 +1108,23 @@ export class Enemy {
 
       ctx.save();
 
+      // Effet cinématique d'implosion / scale vers 0 avant la déflagration de la Supernova
+      if (this.isDying) {
+        const sc = Math.max(0, this.deathScale);
+        ctx.translate(pt.x, pt.y);
+        ctx.scale(sc, sc);
+        ctx.translate(-pt.x, -pt.y);
+
+        // Secousses d'instabilité quantique qui s'accentuent à mesure que le boss s'effondre
+        const shake = (1.0 - sc) * 7 * s;
+        ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+
+        // Surchauffe lumineuse intense
+        if (Math.random() < (1.0 - sc) * 0.85) {
+          ctx.filter = 'brightness(2.2) contrast(1.4)';
+        }
+      }
+
       // ========================================================
       // A. BOSS FINAL : TITAN OVERLORD (Vaisseau-Mère Suprême Unique)
       // ========================================================
@@ -1453,7 +1498,43 @@ export class Enemy {
         ctx.fill();
       }
 
+        // Halo de singularité et onde d'implosion concentrique vers le centre
+        if (this.isDying) {
+          const sc = Math.max(0, this.deathScale);
+          const collapseR = Math.max(2, (this.width * 0.55) * s * sc);
+
+          // Anneaux d'implosion d'énergie blanc pur et cyan
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = Math.max(1.5, 3 * s);
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, collapseR, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#00F0FF';
+          ctx.lineWidth = Math.max(1, 2 * s);
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, collapseR * 1.3, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Cœur de singularité ultra-dense au centre de l'effondrement
+          const coreR = Math.max(3, (14 + (1.0 - sc) * 26) * s);
+          const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, coreR);
+          grad.addColorStop(0, '#FFFFFF');
+          grad.addColorStop(0.35, '#00F0FF');
+          grad.addColorStop(0.7, '#7C3AED');
+          grad.addColorStop(1, 'rgba(124, 58, 237, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, coreR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
       ctx.restore();
+
+      // En phase d'implosion, ni bouclier ni barre de vie ne sont affichés
+      if (this.isDying) {
+        return;
+      }
 
       // =========================================================================
       // 🛡️ BOUCLIER MAGNÉTIQUE & ARCS ÉLECTRIQUES (Boss Invulnérable)
