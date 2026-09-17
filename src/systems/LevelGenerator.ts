@@ -474,9 +474,12 @@ export class LevelGenerator {
       nextSecName = 'Delta';
     }
 
-    // 1. Portails de Ravitaillement Stratégique Initial (Choix tactique pour équiper la flotte immédiatement)
-    gates.push(new Gate(160, 310, 125, GAME_CONFIG.GATE_HEIGHT, 'ADD_SHIPS', 10, false));
-    gates.push(new Gate(500, 310, 125, GAME_CONFIG.GATE_HEIGHT, 'ADD_DAMAGE', 60, false));
+    // 1. Portails de Ravitaillement Stratégique Initial (Choix tactique parfaitement centré sur mobile/desktop)
+    const gateLeft = new Gate(170, 310, 140, GAME_CONFIG.GATE_HEIGHT, 'ADD_SHIPS', 3, false);
+    const gateRight = new Gate(370, 310, 140, GAME_CONFIG.GATE_HEIGHT, 'ADD_DAMAGE', 50, false);
+    gateLeft.pairGate = gateRight;
+    gateRight.pairGate = gateLeft;
+    gates.push(gateLeft, gateRight);
 
     // 2. Apparition du Boss au fond de l'espace (débarque depuis l'horizon à Y = -1350 comme les boss normaux, s'arrête rapidement à sa limite Y = -500)
     const bossEnemy = new Enemy(270, -1350, bossWidth, bossHeight, bossType, bossHp, bossName);

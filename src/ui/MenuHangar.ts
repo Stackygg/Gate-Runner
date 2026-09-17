@@ -355,11 +355,6 @@ export class MenuHangar {
       window.location.reload();
     });
 
-    // Clic sur le bandeau News
-    document.getElementById('main-news-banner')?.addEventListener('click', () => {
-      this.showHudToast('📢 HOLONET : Les forges d\'Iridium et la Raffinerie sont prêtes ! Terminez des missions pour progresser.', false);
-    });
-
     // Bouton Décoller
     document.getElementById('btn-start-game')?.addEventListener('click', () => {
       this.store.setActiveChallenge(null);
