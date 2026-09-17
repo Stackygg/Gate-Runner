@@ -1824,14 +1824,14 @@ export class GameApp {
         this.projectiles[i].draw3D(this.renderer.ctx, this.renderer);
       }
 
-      // 2.2 Dessin des Projectiles Ennemis (Tourelles)
-      for (let i = 0; i < this.enemyProjectiles.length; i++) {
-        this.enemyProjectiles[i].draw3D(this.renderer.ctx, this.renderer);
-      }
-
       // 3. Dessin des Ennemis et Astéroïdes
       for (let i = 0; i < this.enemies.length; i++) {
         this.enemies[i].draw3D(this.renderer.ctx, this.renderer);
+      }
+
+      // 3.5 Dessin des Projectiles Ennemis (Tourelles au premier plan)
+      for (let i = 0; i < this.enemyProjectiles.length; i++) {
+        this.enemyProjectiles[i].draw3D(this.renderer.ctx, this.renderer);
       }
 
       // 4. Dessin de la Flotte du joueur
@@ -1877,11 +1877,6 @@ export class GameApp {
       this.projectiles[i].draw3D(this.renderer.ctx, this.renderer);
     }
 
-    // 5. Dessin des Projectiles Ennemis (Tirs aliens)
-    for (let i = 0; i < this.enemyProjectiles.length; i++) {
-      this.enemyProjectiles[i].draw3D(this.renderer.ctx, this.renderer);
-    }
-
     // 6. Dessin unifié et hiérarchisé par profondeur (Y) des Portails & Trous Noirs (-1400 à 850)
     // Permet un ordre d'affichage en 3D naturel (les éléments lointains sont dessinés derrière les éléments proches)
     this.visibleTrackElements.length = 0;
@@ -1911,6 +1906,11 @@ export class GameApp {
     // 8.5 Dessin de la Porte Stellaire (Stargate) lors du transit de fin de secteur
     if (this.stargate) {
       this.stargate.draw3D(this.renderer.ctx, this.renderer);
+    }
+
+    // 8.8 Dessin des Projectiles Ennemis (Tirs aliens en premier plan tactique pour une visibilité optimale)
+    for (let i = 0; i < this.enemyProjectiles.length; i++) {
+      this.enemyProjectiles[i].draw3D(this.renderer.ctx, this.renderer);
     }
 
     // 9. Dessin de la Flotte du Joueur (avec perspective 3D)

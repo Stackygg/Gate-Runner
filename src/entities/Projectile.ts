@@ -40,7 +40,7 @@ export class Projectile {
     this.damage = damage;
     this.type = type;
     this.color = color;
-    this.radius = type === 'plasma' ? 4 : (type === 'missile' ? 3.5 : 3);
+    this.radius = type === 'plasma' ? 4 : (type === 'missile' ? 3.5 : (type === 'enemy_bullet' ? 4.5 : 3));
   }
 
   public update(dt: number) {
@@ -155,15 +155,81 @@ export class Projectile {
       ctx.fill();
 
     } else if (this.type === 'enemy_bullet') {
-      // Tir ennemi : orbe rond net et lisible, calibré pour laisser le champ de vision dégagé
-      const r = Math.max(2.2, 3.8 * s);
-      ctx.fillStyle = this.color || '#FF0055';
+      // Tir ennemi : orbe rond ultra-visible avec halo de danger, traînée comète et cœur blanc
+      let hostileColor = this.color || '#FF0055';
+      if (hostileColor === '#00F0FF' || hostileColor === '#38BDF8' || hostileColor === '#FFFFFF') {
+        hostileColor = '#FF0055';
+      }
+
+      // Rayon étalonné pour être immédiatement lisible et esquivable sans écraser l'écran
+      const r = Math.max(3.8, 6.2 * s);
+      const pulse = 1 + 0.12 * Math.sin(Date.now() * 0.012);
+      const haloR = r * 1.85 * pulse;
+
+      // 1. Traînée comète directionnelle indiquant nettement la course du tir
+      const prevPt = renderer.project(this.x - this.vx * 0.035, this.y - this.vy * 0.035);
+      if (prevPt.isVisible) {
+        const tdx = prevPt.x - pt.x;
+        const tdy = prevPt.y - pt.y;
+        const tLen = Math.hypot(tdx, tdy);
+        if (tLen > 0.5) {
+          const tailLen = Math.min(26, Math.max(8, tLen * 1.6)) * s;
+          const tailX = (tdx / tLen) * tailLen;
+          const tailY = (tdy / tLen) * tailLen;
+
+          // Traînée externe diffuse
+          ctx.strokeStyle = hostileColor;
+          ctx.globalAlpha = 0.45;
+          ctx.lineWidth = Math.max(2.4, r * 1.4);
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(tailX, tailY);
+          ctx.stroke();
+
+          // Traînée interne vive
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.globalAlpha = 0.75;
+          ctx.lineWidth = Math.max(1.2, r * 0.6);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(tailX * 0.6, tailY * 0.6);
+          ctx.stroke();
+        }
+      }
+
+      // 2. Halo lumineux diffus (Aura de danger pulsante)
+      ctx.fillStyle = hostileColor;
+      ctx.globalAlpha = 0.38;
+      ctx.beginPath();
+      ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Contour de contraste sombre (détache le tir de tous les fonds clairs / explosions)
+      ctx.strokeStyle = 'rgba(5, 2, 12, 0.85)';
+      ctx.lineWidth = Math.max(1.4, 2.0 * s);
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 0.8 * s, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 4. Orbe principal saturé de couleur hostile
+      ctx.fillStyle = hostileColor;
+      ctx.globalAlpha = 1.0;
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
       ctx.fill();
 
-      // Cœur blanc lumineux pour lisibilité optimale
+      // 5. Anneau d'énergie vive intermédiaire
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.globalAlpha = 0.75;
+      ctx.lineWidth = Math.max(0.8, 1.2 * s);
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 6. Cœur incandescent blanc pur
       ctx.fillStyle = '#FFFFFF';
+      ctx.globalAlpha = 1.0;
       ctx.beginPath();
       ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
       ctx.fill();

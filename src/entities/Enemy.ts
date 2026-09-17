@@ -167,7 +167,7 @@ export class Enemy {
         this.shootTimer = 0;
         const targetVx = (playerX !== undefined ? Math.max(-45, Math.min(45, (playerX - this.x) * 0.15)) : 0);
         spawnedProjectiles.push(
-          new Projectile(this.x, this.y + 24, targetVx, 330, 1, 'enemy_bullet', '#00F0FF')
+          new Projectile(this.x, this.y + 24, targetVx, 330, 1, 'enemy_bullet', '#FF0055')
         );
       }
     } else if (this.type === 'gauntlet_wall') {
@@ -179,7 +179,7 @@ export class Enemy {
         this.shootTimer = 0;
         const targetVx = (this.generatorSide === 'left') ? 140 : -140;
         spawnedProjectiles.push(
-          new Projectile(this.x, this.y + 24, targetVx, 330, 1, 'enemy_bullet', '#00F0FF')
+          new Projectile(this.x, this.y + 24, targetVx, 330, 1, 'enemy_bullet', '#FF0055')
         );
       }
     } else if (this.type === 'boss_minion') {
@@ -271,8 +271,8 @@ export class Enemy {
               new Projectile(this.x - 35, this.y + 45, -20, bulletSpeed * 1.1, 1, 'enemy_bullet', '#FFE600'),
               new Projectile(this.x, this.y + 50, 0, bulletSpeed * 1.15, 1, 'enemy_bullet', '#FFE600'),
               new Projectile(this.x + 35, this.y + 45, 20, bulletSpeed * 1.1, 1, 'enemy_bullet', '#FFE600'),
-              new Projectile(this.x - 120, this.y + 20, -130, bulletSpeed, 1, 'enemy_bullet', '#00F0FF'),
-              new Projectile(this.x + 120, this.y + 20, 130, bulletSpeed, 1, 'enemy_bullet', '#00F0FF')
+              new Projectile(this.x - 120, this.y + 20, -130, bulletSpeed, 1, 'enemy_bullet', '#FF007A'),
+              new Projectile(this.x + 120, this.y + 20, 130, bulletSpeed, 1, 'enemy_bullet', '#FF007A')
             );
           } else {
             const vOffsets = [
@@ -321,14 +321,14 @@ export class Enemy {
           const bulletSpeed = 370;
 
           if (this.salvoPattern === 0) {
-            // Salve A : Vague d'impulsions pulsar cyan à haute vitesse
+            // Salve A : Vague d'impulsions pulsar ultraviolettes à haute vitesse
             const waveOffsets = [
-              { x: -90, vx: -160, c: '#00F0FF' },
-              { x: -50, vx: -80,  c: '#38BDF8' },
-              { x: -18, vx: -20,  c: '#00F0FF' },
-              { x: 18,  vx: 20,   c: '#00F0FF' },
-              { x: 50,  vx: 80,   c: '#38BDF8' },
-              { x: 90,  vx: 160,  c: '#00F0FF' }
+              { x: -90, vx: -160, c: '#D946EF' },
+              { x: -50, vx: -80,  c: '#FF007A' },
+              { x: -18, vx: -20,  c: '#D946EF' },
+              { x: 18,  vx: 20,   c: '#D946EF' },
+              { x: 50,  vx: 80,   c: '#FF007A' },
+              { x: 90,  vx: 160,  c: '#D946EF' }
             ];
             for (const w of waveOffsets) {
               spawnedProjectiles.push(
@@ -339,11 +339,11 @@ export class Enemy {
             // Salve B : Doubles tirs convergents accélérés vers la position du joueur
             const aimVx = playerX !== undefined ? Math.min(80, Math.max(-80, (playerX - this.x) * 0.35)) : 0;
             spawnedProjectiles.push(
-              new Projectile(this.x - 42, this.y + 44, aimVx - 40, bulletSpeed * 1.15, 1, 'enemy_bullet', '#00F0FF'),
-              new Projectile(this.x + 42, this.y + 44, aimVx + 40, bulletSpeed * 1.15, 1, 'enemy_bullet', '#00F0FF'),
-              new Projectile(this.x - 70, this.y + 25, -120, bulletSpeed, 1, 'enemy_bullet', '#38BDF8'),
-              new Projectile(this.x + 70, this.y + 25, 120, bulletSpeed, 1, 'enemy_bullet', '#38BDF8'),
-              new Projectile(this.x, this.y + 50, aimVx, bulletSpeed * 1.2, 1, 'enemy_bullet', '#FFFFFF')
+              new Projectile(this.x - 42, this.y + 44, aimVx - 40, bulletSpeed * 1.15, 1, 'enemy_bullet', '#FF007A'),
+              new Projectile(this.x + 42, this.y + 44, aimVx + 40, bulletSpeed * 1.15, 1, 'enemy_bullet', '#FF007A'),
+              new Projectile(this.x - 70, this.y + 25, -120, bulletSpeed, 1, 'enemy_bullet', '#D946EF'),
+              new Projectile(this.x + 70, this.y + 25, 120, bulletSpeed, 1, 'enemy_bullet', '#D946EF'),
+              new Projectile(this.x, this.y + 50, aimVx, bulletSpeed * 1.2, 1, 'enemy_bullet', '#FF0055')
             );
           }
 
@@ -377,7 +377,7 @@ export class Enemy {
         // 5. PATTERNS STANDARDS V1, V2, V3
         } else {
           this.salvoPattern = (this.salvoPattern + 1) % 2;
-          const bulletColor = (this.type === 'boss_v3') ? '#FF007A' : (this.type === 'boss_v2' ? '#00F0FF' : '#FFAA00');
+          const bulletColor = (this.type === 'boss_v3') ? '#FF007A' : (this.type === 'boss_v2' ? '#FF0055' : '#FFAA00');
           const bulletSpeed = (this.type === 'boss_v3') ? 370 : ((this.type === 'boss_v2') ? 350 : 330);
 
           if (this.salvoPattern === 0) {
