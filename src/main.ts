@@ -353,6 +353,10 @@ export class GameApp {
         this.previousState = this.state;
         this.state = 'PAUSED';
         syncAudioUI();
+        if (btnQuit) {
+          const isHangarUnlocked = SectorSystem.isFeatureUnlocked('hangar', this.store.data.maxUnlockedMission);
+          btnQuit.textContent = isHangarUnlocked ? 'QUITTER VERS LE HANGAR 🛸' : 'QUITTER VERS LE MENU 🛸';
+        }
         modalPause?.classList.remove('hidden');
       } else if (this.state === 'PAUSED') {
         this.state = this.previousState;
@@ -711,7 +715,8 @@ export class GameApp {
         rewardLoot: null,
         isChallenge: true,
         challengeReward,
-        challengeAttemptsLeft: this.store.getChallengeAttemptsLeft(challengeId)
+        challengeAttemptsLeft: this.store.getChallengeAttemptsLeft(challengeId),
+        isHangarUnlocked: SectorSystem.isFeatureUnlocked('hangar', this.store.data.maxUnlockedMission)
       });
       return;
     }
@@ -779,7 +784,8 @@ export class GameApp {
       sectorBossName: bossInfo?.bossName,
       nextSectorName: bossInfo?.nextSectorName,
       nextSectorGreek: bossInfo?.nextSectorGreek,
-      newlyUnlockedFeatures
+      newlyUnlockedFeatures,
+      isHangarUnlocked: SectorSystem.isFeatureUnlocked('hangar', this.store.data.maxUnlockedMission)
     });
   }
 

@@ -24,6 +24,7 @@ export interface GameOverStats {
   nextSectorName?: string;
   nextSectorGreek?: string;
   newlyUnlockedFeatures?: (string | UnlockedFeatureItem)[];
+  isHangarUnlocked?: boolean;
 }
 
 export class GameOverModal {
@@ -203,6 +204,14 @@ export class GameOverModal {
 
     if (this.elBtnHangar) {
       this.elBtnHangar.textContent = 'MENU PRINCIPAL';
+    }
+
+    const isHangarUnlocked = stats.isHangarUnlocked !== undefined
+      ? stats.isHangarUnlocked
+      : SectorSystem.isFeatureUnlocked('hangar', stats.nextLevelNum);
+
+    if (this.elBtnLootToHangar) {
+      this.elBtnLootToHangar.style.display = isHangarUnlocked ? 'flex' : 'none';
     }
 
     if (stats.isChallenge) {
@@ -536,9 +545,15 @@ export class GameOverModal {
         if (allLootCells.length > 0) {
           this.elLootGrid.innerHTML = allLootCells;
           this.elLootBox.classList.remove('hidden');
+          if (this.elBtnLootToHangar) {
+            this.elBtnLootToHangar.style.display = isHangarUnlocked ? 'flex' : 'none';
+          }
         } else {
           this.elLootGrid.innerHTML = '';
           this.elLootBox.classList.add('hidden');
+          if (this.elBtnLootToHangar) {
+            this.elBtnLootToHangar.style.display = 'none';
+          }
         }
 
         // Détails supplémentaires d'effets spéciaux (uniquement si présents)
@@ -558,6 +573,7 @@ export class GameOverModal {
         }
       } else {
         this.elLootBox.classList.add('hidden');
+        if (this.elBtnLootToHangar) this.elBtnLootToHangar.style.display = 'none';
         if (this.elLootGrid) this.elLootGrid.innerHTML = '';
         if (this.elLootDetails) this.elLootDetails.innerHTML = '';
       }
