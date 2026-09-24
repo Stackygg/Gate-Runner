@@ -109,7 +109,7 @@ export const SLOT_INFO: Record<EquipmentSlotType, { label: string; icon: string;
   SHIELD: { label: 'Bouclier', icon: '🛡️', desc: 'Défense spatiale : dôme protecteur absorbant 1 à 4 impacts sans perte' },
   ENGINE: { label: 'Moteur', icon: '⚡', desc: 'Propulsion cinétique : booste la vitesse d\'attaque de toute la flotte (+25% à +100%)' },
   CORE: { label: 'Module', icon: '🔮', desc: 'Matrice de commandement : octroie 1 à 4 vaisseaux de renfort dès le décollage' },
-  CHEST: { label: 'Coffre', icon: '📦', desc: 'Trésor spatial mystérieux scellé à ouvrir dans le Hangar' }
+  CHEST: { label: 'Coffre', icon: '🛸', desc: 'Coffre extra-terrestre contenant des pièces d\'équipement pour vos vaisseaux' }
 };
 
 // Noms thématiques procéduraux par type d'équipement
@@ -748,22 +748,22 @@ export class EquipmentSystem {
    */
   public static generateChest(missionNum: number): EquipmentItem {
     const isPreHangar = missionNum < 5;
-    const name = isPreHangar ? 'Coffre Non Identifié' : `Coffre Stellaire (Mission ${missionNum})`;
+    const name = `Coffre Extra-terrestre (Mission ${missionNum})`;
     const rarity = isPreHangar ? 'RARE' : this.rollRarity(missionNum, false);
     return {
       id: `chest_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       name,
       slotType: 'CHEST',
       rarity,
-      icon: '📦',
+      icon: '🛸',
       level: Math.max(1, missionNum), // Niveau d'objet scellé
       rank: 1,
       specialEffect: {
         type: 'NONE',
         value: 0,
-        label: 'Trésor Stellaire Scellé',
-        description: 'À ouvrir dans le Hangar Spatial pour révéler un équipement aléatoire.',
-        icon: '📦'
+        label: 'Coffre Extra-terrestre',
+        description: 'Coffre contenant des pièces d\'équipement pour vos vaisseaux.',
+        icon: '🛸'
       },
       stats: [],
       isChest: true,

@@ -466,7 +466,7 @@ export class GameOverModal {
         const extraItems = rawLoot.filter(item => item !== chestItem);
 
         const chestMissionLvl = chestItem?.sourceMission || chestItem?.level || Math.max(1, stats.nextLevelNum - 1);
-        const chestName = chestItem ? chestItem.name : `Coffre Stellaire (Mission ${chestMissionLvl})`;
+        const chestName = chestItem ? chestItem.name : `Coffre Extra-terrestre (Mission ${chestMissionLvl})`;
         const isPreHangar = chestMissionLvl < 5;
 
         // 1. Case Iridium (affichée UNIQUEMENT si on a gagné de l'iridium)
@@ -491,7 +491,7 @@ export class GameOverModal {
           </div>
         ` : '';
 
-        // 3. Case Coffre Quantique (avec icône vectorielle haute fidélité)
+        // 3. Case Coffre Extra-terrestre (avec icône vectorielle haute fidélité)
         const chestSvgIcon = `
           <svg class="icon-chest-svg chest-bounce" viewBox="0 0 24 24" width="22" height="22" fill="none">
             <defs>
@@ -522,7 +522,7 @@ export class GameOverModal {
               <span class="loot-cell-icon">${chestSvgIcon}</span>
             </div>
             <div class="loot-cell-val val-chest">x1</div>
-            <div class="loot-cell-title" title="${chestName}">COFFRE QUANTIQUE</div>
+            <div class="loot-cell-title" title="${chestName}">COFFRE EXTRA-TERRESTRE</div>
           </div>
         ` : '';
 

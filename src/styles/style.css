@@ -8366,16 +8366,18 @@ html, body {
 
 /* Modal d'Ouverture de Coffre */
 .chest-modal-card {
+  --chest-glow-color: #94a3b8;
   max-width: 480px;
   width: 92vw;
   background: linear-gradient(165deg, rgba(15, 23, 42, 0.96) 0%, rgba(7, 11, 30, 0.98) 100%);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  box-shadow: 0 0 35px rgba(245, 158, 11, 0.3), 0 20px 50px rgba(0, 0, 0, 0.9);
+  border: 1px solid var(--chest-glow-color);
+  box-shadow: 0 0 35px var(--chest-glow-color), 0 20px 50px rgba(0, 0, 0, 0.9);
   border-radius: 16px;
   padding: 24px;
   text-align: center;
   position: relative;
   overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .chest-modal-card::after {
@@ -8385,7 +8387,8 @@ html, body {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #F59E0B, #00F0FF, transparent);
+  background: linear-gradient(90deg, transparent, var(--chest-glow-color), #00F0FF, transparent);
+  transition: background 0.3s ease;
 }
 
 .chest-stage {
@@ -8430,12 +8433,14 @@ html, body {
 
 .chest-glow-ring {
   position: absolute;
-  width: 140px;
-  height: 140px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
-  border: 1px dashed rgba(245, 158, 11, 0.4);
+  background: radial-gradient(circle, var(--chest-glow-color, rgba(245, 158, 11, 0.25)) 0%, transparent 70%);
+  border: 1px dashed var(--chest-glow-color, rgba(245, 158, 11, 0.4));
+  box-shadow: 0 0 20px var(--chest-glow-color, rgba(245, 158, 11, 0.2));
   animation: chest-ring-spin 12s linear infinite;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 @keyframes chest-ring-spin {
@@ -8452,6 +8457,34 @@ html, body {
 
 .chest-interactive-box:hover {
   transform: scale(1.12);
+}
+
+/* Icone Alien Chest Vectorielle SVG & Animations de Glyphes */
+.chest-alien-svg {
+  filter: drop-shadow(0 0 16px var(--chest-glow-color, #94a3b8));
+  transition: filter 0.3s ease;
+  overflow: visible;
+}
+
+.chest-energy-line {
+  transition: stroke 0.25s ease, filter 0.25s ease;
+  filter: drop-shadow(0 0 4px var(--chest-glow-color, #94a3b8));
+}
+
+.chest-energy-dot {
+  transition: fill 0.25s ease, filter 0.25s ease;
+  filter: drop-shadow(0 0 4px var(--chest-glow-color, #94a3b8));
+}
+
+.chest-core-gem {
+  transition: fill 0.25s ease, filter 0.25s ease;
+  filter: drop-shadow(0 0 8px var(--chest-glow-color, #94a3b8));
+  animation: core-gem-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes core-gem-pulse {
+  0% { transform-origin: 60px 49px; transform: scale(0.92); opacity: 0.85; }
+  100% { transform-origin: 60px 49px; transform: scale(1.08); opacity: 1; }
 }
 
 .chest-big-emoji {
@@ -8510,12 +8543,13 @@ html, body {
 
 .chest-burst-light {
   position: absolute;
-  width: 180px;
-  height: 180px;
+  width: 190px;
+  height: 190px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(245, 158, 11, 0.8) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, var(--chest-glow-color, rgba(245, 158, 11, 0.8)) 45%, transparent 70%);
   animation: burst-glow 0.85s ease-in-out infinite alternate;
   z-index: 1;
+  transition: background 0.3s ease;
 }
 
 @keyframes burst-glow {
@@ -8528,8 +8562,10 @@ html, body {
   font-size: 0.85rem;
   font-weight: 800;
   letter-spacing: 0.1em;
-  color: #FCD34D;
+  color: var(--chest-glow-color, #FCD34D);
+  text-shadow: 0 0 12px var(--chest-glow-color, rgba(245, 158, 11, 0.6));
   animation: pulse-standby 0.8s infinite;
+  transition: color 0.25s ease, text-shadow 0.25s ease;
 }
 
 /* Étape Butin Révélé */

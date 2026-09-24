@@ -6,7 +6,7 @@ import { ModalConfirmCrystal } from './ModalConfirmCrystal';
 import { Renderer } from '../engine/Renderer';
 import { LevelGenerator } from '../systems/LevelGenerator';
 import { SectorSystem } from '../systems/SectorSystem';
-import { EquipmentItem, EquipmentSlotType, EquipmentSystem, RARITY_CONFIGS, SLOT_INFO } from '../systems/EquipmentSystem';
+import { EquipmentItem, EquipmentRarity, EquipmentSlotType, EquipmentSystem, RARITY_CONFIGS, SLOT_INFO } from '../systems/EquipmentSystem';
 import { AdService } from '../services/AdService';
 import { SoundSynth } from '../engine/SoundSynth';
 import { ShipRenderer } from '../engine/ShipRenderer';
@@ -255,6 +255,7 @@ export class MenuHangar {
   private currentChestItem: EquipmentItem | null = null;
   private currentRevealedItem: EquipmentItem | null = null;
   private isChestOpening: boolean = false;
+  private hasChestBeenOpened: boolean = false;
   private hasRerolledCurrentChest: boolean = false;
   private sound: SoundSynth = new SoundSynth();
 
@@ -1622,12 +1623,21 @@ export class MenuHangar {
         return `
           <div class="inv-item-card inv-card-chest" data-item-id="${item.id}" style="border-color: #F59E0B; box-shadow: 0 0 16px rgba(245, 158, 11, 0.45); background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);">
             <div class="inv-card-top">
-              <span class="inv-card-slot-icon chest-bounce">📦</span>
+              <span class="inv-card-slot-icon chest-bounce">
+                <svg class="inv-chest-svg-mini" viewBox="0 0 24 24" width="22" height="22" fill="none">
+                  <path d="M2.5 11h19v7.5a2.5 2.5 0 0 1-2.5 2.5h-14a2.5 2.5 0 0 1-2.5-2.5V11z" fill="#F59E0B" stroke="#FDE68A" stroke-width="1.2"/>
+                  <path d="M4.5 11h15v6.5a1.5 1.5 0 0 1-1.5 1.5h-12a1.5 1.5 0 0 1-1.5-1.5V11z" fill="#0F172A" opacity="0.38"/>
+                  <path d="M2 10.5V8a3.5 3.5 0 0 1 3.5-3.5h13A3.5 3.5 0 0 1 22 8v2.5H2z" fill="#FEF08A" stroke="#FDE68A" stroke-width="1.2"/>
+                  <line x1="2" y1="10.5" x2="22" y2="10.5" stroke="#FFFFFF" stroke-width="1.2" opacity="0.9"/>
+                  <rect x="9.5" y="8.5" width="5" height="5.5" rx="1.5" fill="#090D1A" stroke="#FDE68A" stroke-width="1"/>
+                  <circle cx="12" cy="11.2" r="1.3" fill="#00F0FF"/>
+                </svg>
+              </span>
               <span class="inv-card-rarity-tag" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; border: 1px solid #F59E0B;">SCELLÉ</span>
               <span class="inv-card-lvl">NIV. ${item.level || item.sourceMission || 1}</span>
             </div>
             <div class="inv-card-title" style="color: #FCD34D;">${item.name}</div>
-            <div class="inv-card-chest-hint">Trésor spatial scellé à ouvrir</div>
+            <div class="inv-card-chest-hint">Coffre contenant des pièces d'équipement</div>
             <div class="inv-card-bottom">
               <span class="inv-item-status-pill chest-action-pill">🔓 OUVRIR</span>
             </div>
@@ -2659,15 +2669,19 @@ export class MenuHangar {
     this.currentChestItem = chest;
     this.currentRevealedItem = null;
     this.isChestOpening = false;
+    this.hasChestBeenOpened = false;
     this.hasRerolledCurrentChest = !!chest.hasRerolled;
 
     if (this.elChestModalTitle) {
       this.elChestModalTitle.textContent = chest.name.toUpperCase();
     }
     if (this.elChestModalDesc) {
-      this.elChestModalDesc.textContent = (chest.sourceMission || chest.level) < 5
-        ? "Ce coffre mystère a été sécurisé lors de vos premières missions. Ouvrez-le pour enfin découvrir son équipement !"
-        : "Ce trésor spatial renferme un équipement forgé dans les nébuleuses de la mission. Brisez le sceau pour le révéler !";
+      this.elChestModalDesc.textContent = "Coffre contenant des pièces d'équipement pour vos vaisseaux. Touchez le coffre ou appuyez sur Ouvrir pour révéler son contenu !";
+    }
+
+    const modalEl = document.getElementById('modal-chest-opening');
+    if (modalEl) {
+      modalEl.style.setProperty('--chest-glow-color', '#94a3b8');
     }
 
     // Réinitialisation des étapes
@@ -2680,31 +2694,101 @@ export class MenuHangar {
 
   private closeChestModal() {
     this.elModalChestOpening?.classList.add('hidden');
+    const wasOpened = this.hasChestBeenOpened;
+    const revealed = this.currentRevealedItem;
+
+    this.isChestOpening = false;
+    this.hasChestBeenOpened = false;
     this.currentChestItem = null;
     this.currentRevealedItem = null;
-    this.isChestOpening = false;
     this.hasRerolledCurrentChest = false;
+
+    const modalEl = document.getElementById('modal-chest-opening');
+    if (modalEl) {
+      modalEl.style.removeProperty('--chest-glow-color');
+    }
+
+    // Si le coffre a été ouvert et que le joueur quitte avec la croix '✕',
+    // l'objet est déjà sécurisé dans l'inventaire : on affiche un toast récapitulatif
+    if (wasOpened && revealed) {
+      this.showHudToast(`🎉 ${revealed.name.toUpperCase()} AJOUTÉ À L'INVENTAIRE !`, false);
+      this.refreshCurrencies();
+      this.renderShipSlots();
+      this.renderInventory();
+      this.updateMainMenuDisplay();
+    }
   }
 
-  private triggerChestOpening() {
+  private async triggerChestOpening() {
     if (this.isChestOpening || !this.currentChestItem) return;
     this.isChestOpening = true;
+
+    const chest = this.currentChestItem;
+    // Tirage immédiat de l'objet
+    const finalItem = EquipmentSystem.openChest(chest);
+    this.currentRevealedItem = finalItem;
+    this.hasChestBeenOpened = true;
+
+    // Consommation IMMÉDIATE du coffre et versement de l'objet dans la sauvegarde locale
+    // pour garantir qu'aucun exploit de relance gratuite via la croix '✕' n'est possible
+    this.store.openChest(chest.id, finalItem);
+    this.store.recordDailyQuestProgress('open_chest', 1);
 
     // Transition vers l'animation d'ouverture
     this.elChestStageSealed?.classList.add('hidden');
     this.elChestStageOpening?.classList.remove('hidden');
+    this.elChestStageReward?.classList.add('hidden');
     this.sound.playChestOpen();
 
-    // Délai dramatique de déchiffrement quantique (1 seconde)
-    setTimeout(() => {
-      if (!this.currentChestItem) return;
-      this.currentRevealedItem = EquipmentSystem.openChest(this.currentChestItem);
-      this.renderChestReward();
-      this.elChestStageOpening?.classList.add('hidden');
-      this.elChestStageReward?.classList.remove('hidden');
-      this.sound.playVictory();
-      this.isChestOpening = false;
-    }, 1000);
+    // Séquence de montée en tension et de rareté : Gris -> Bleu -> Violet -> Orange -> Rouge
+    const RARITY_SEQUENCE: { rarity: EquipmentRarity; color: string; label: string; delayMs: number; pitch: number }[] = [
+      { rarity: 'COMMON', color: '#94a3b8', label: 'DÉCRYPTAGE DU SCEAU... [COMMUN]', delayMs: 650, pitch: 0.85 },
+      { rarity: 'RARE', color: '#00F0FF', label: 'SURCHARGE ÉNERGÉTIQUE ! [RARE ⚡]', delayMs: 650, pitch: 1.1 },
+      { rarity: 'EPIC', color: '#A855F7', label: 'RÉSONANCE QUANTIQUE ! [ÉPIQUE 🔮]', delayMs: 700, pitch: 1.35 },
+      { rarity: 'LEGENDARY', color: '#FF7700', label: 'FLUX HYPER-STELLAIRE ! [LÉGENDAIRE 🔥]', delayMs: 800, pitch: 1.6 },
+      { rarity: 'MYTHIC', color: '#FF0055', label: 'ANOMALIE SUPRÊME DÉTECTÉE ! [MYTHIQUE 💥]', delayMs: 950, pitch: 1.9 }
+    ];
+
+    const targetIndex = RARITY_SEQUENCE.findIndex(s => s.rarity === finalItem.rarity);
+    const maxIndex = targetIndex >= 0 ? targetIndex : 0;
+
+    await this.playChestOpeningSuspense(RARITY_SEQUENCE, maxIndex);
+
+    if (!this.isChestOpening) return;
+
+    this.renderChestReward();
+    this.elChestStageOpening?.classList.add('hidden');
+    this.elChestStageReward?.classList.remove('hidden');
+    this.sound.playVictory();
+    this.isChestOpening = false;
+  }
+
+  private async playChestOpeningSuspense(
+    sequence: { rarity: EquipmentRarity; color: string; label: string; delayMs: number; pitch: number }[],
+    maxIndex: number
+  ): Promise<void> {
+    const modalEl = document.getElementById('modal-chest-opening');
+    const labelEl = modalEl?.querySelector('.chest-opening-label') as HTMLElement | null;
+
+    for (let i = 0; i <= maxIndex; i++) {
+      if (!this.isChestOpening) break;
+      const step = sequence[i];
+
+      if (modalEl) {
+        modalEl.style.setProperty('--chest-glow-color', step.color);
+      }
+      if (labelEl) {
+        labelEl.textContent = step.label;
+        labelEl.style.color = step.color;
+        labelEl.style.textShadow = `0 0 14px ${step.color}`;
+      }
+
+      if (i > 0) {
+        this.sound.playLaser(step.pitch);
+      }
+
+      await new Promise(res => setTimeout(res, step.delayMs));
+    }
   }
 
   private renderChestReward() {
@@ -2774,21 +2858,67 @@ export class MenuHangar {
       if (!this.currentChestItem) return;
       this.hasRerolledCurrentChest = true;
       this.currentChestItem.hasRerolled = true;
-      this.store.save();
 
-      this.sound.playChestOpen();
       const fixedLvl = this.currentChestItem.level || this.currentChestItem.sourceMission || 1;
-      this.currentRevealedItem = EquipmentSystem.rerollChestLoot(fixedLvl);
-      this.renderChestReward();
-      this.showHudToast('🎲 NOUVEAU TIRAGE GÉNÉRÉ ! (RELANCE UNIQUE UTILISÉE)', false);
+      const newItem = EquipmentSystem.rerollChestLoot(fixedLvl);
+
+      // Remplacement immédiat dans l'inventaire du joueur pour synchroniser la sauvegarde
+      const prevId = this.currentRevealedItem?.id;
+      if (prevId) {
+        const idx = this.store.data.inventory.findIndex(i => i.id === prevId);
+        if (idx !== -1) {
+          this.store.data.inventory[idx] = newItem;
+        } else {
+          this.store.data.inventory.unshift(newItem);
+        }
+      } else {
+        this.store.data.inventory.unshift(newItem);
+      }
+      this.store.save();
+      this.currentRevealedItem = newItem;
+
+      // Masquage du bouton relance (usage unique)
+      if (this.elBtnChestRerollAd) {
+        this.elBtnChestRerollAd.style.display = 'none';
+      }
+
+      // Rejeu de l'animation de suspense avec le nouveau palier de rareté
+      this.isChestOpening = true;
+      this.elChestStageReward?.classList.add('hidden');
+      this.elChestStageOpening?.classList.remove('hidden');
+      this.sound.playChestOpen();
+
+      const RARITY_SEQUENCE: { rarity: EquipmentRarity; color: string; label: string; delayMs: number; pitch: number }[] = [
+        { rarity: 'COMMON', color: '#94a3b8', label: 'NOUVEAU DÉCRYPTAGE... [COMMUN]', delayMs: 550, pitch: 0.85 },
+        { rarity: 'RARE', color: '#00F0FF', label: 'SURCHARGE ÉNERGÉTIQUE ! [RARE ⚡]', delayMs: 600, pitch: 1.1 },
+        { rarity: 'EPIC', color: '#A855F7', label: 'RÉSONANCE QUANTIQUE ! [ÉPIQUE 🔮]', delayMs: 650, pitch: 1.35 },
+        { rarity: 'LEGENDARY', color: '#FF7700', label: 'FLUX HYPER-STELLAIRE ! [LÉGENDAIRE 🔥]', delayMs: 750, pitch: 1.6 },
+        { rarity: 'MYTHIC', color: '#FF0055', label: 'ANOMALIE SUPRÊME DÉTECTÉE ! [MYTHIQUE 💥]', delayMs: 900, pitch: 1.9 }
+      ];
+
+      const targetIndex = RARITY_SEQUENCE.findIndex(s => s.rarity === newItem.rarity);
+      const maxIndex = targetIndex >= 0 ? targetIndex : 0;
+
+      this.playChestOpeningSuspense(RARITY_SEQUENCE, maxIndex).then(() => {
+        if (!this.isChestOpening) return;
+        this.renderChestReward();
+        this.elChestStageOpening?.classList.add('hidden');
+        this.elChestStageReward?.classList.remove('hidden');
+        this.sound.playVictory();
+        this.isChestOpening = false;
+        this.showHudToast('🎲 NOUVEAU TIRAGE DÉCOUVERT ! (RELANCE UNIQUE UTILISÉE)', false);
+      });
     });
   }
 
   private claimChestReward() {
-    if (!this.currentChestItem || !this.currentRevealedItem) return;
+    if (!this.currentRevealedItem) {
+      this.closeChestModal();
+      return;
+    }
     const item = this.currentRevealedItem;
-    this.store.openChest(this.currentChestItem.id, item);
-    this.store.recordDailyQuestProgress('open_chest', 1);
+    // L'objet est déjà présent dans l'inventaire via triggerChestOpening ou rerollChestReward
+    this.hasChestBeenOpened = false; // Réinitialise pour éviter double notification dans closeChestModal
     this.closeChestModal();
     this.refreshCurrencies();
     this.renderShipSlots();

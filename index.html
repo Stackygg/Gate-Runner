@@ -885,7 +885,7 @@
                     <!-- Onglets de filtrage rapide -->
                     <div class="inventory-tabs-row">
                       <button class="inv-tab-btn active" data-filter="ALL">TOUT</button>
-                      <button class="inv-tab-btn" data-filter="CHEST">📦 COFFRES <span id="hangar-chests-count-pill" class="inv-chests-badge hidden">0</span></button>
+                      <button class="inv-tab-btn" data-filter="CHEST"><svg class="tab-chest-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" style="vertical-align: -2px; margin-right: 4px;"><path d="M2.5 11h19v7.5a2.5 2.5 0 0 1-2.5 2.5h-14a2.5 2.5 0 0 1-2.5-2.5V11z" fill="#F59E0B" stroke="#FDE68A" stroke-width="1.2"/><path d="M2 10.5V8a3.5 3.5 0 0 1 3.5-3.5h13A3.5 3.5 0 0 1 22 8v2.5H2z" fill="#FEF08A" stroke="#FDE68A" stroke-width="1.2"/><rect x="9.5" y="8.5" width="5" height="5.5" rx="1.5" fill="#090D1A" stroke="#FDE68A" stroke-width="1"/><circle cx="12" cy="11.2" r="1.2" fill="#00F0FF"/></svg>COFFRES <span id="hangar-chests-count-pill" class="inv-chests-badge hidden">0</span></button>
                       <button class="inv-tab-btn" data-filter="WEAPON">🔫 TOURELLES</button>
                       <button class="inv-tab-btn" data-filter="SHIELD">🛡️ BOUCLIERS</button>
                       <button class="inv-tab-btn" data-filter="ENGINE">⚡ MOTEURS</button>
@@ -894,7 +894,7 @@
                   </div>
 
                   <div id="hangar-inventory-empty" class="inventory-empty-state hidden">
-                    <span class="empty-icon">📦</span>
+                    <span class="empty-icon"><svg viewBox="0 0 24 24" width="38" height="38" fill="none" opacity="0.5"><path d="M2.5 11h19v7.5a2.5 2.5 0 0 1-2.5 2.5h-14a2.5 2.5 0 0 1-2.5-2.5V11z" fill="#64748b" stroke="#94a3b8" stroke-width="1.2"/><path d="M2 10.5V8a3.5 3.5 0 0 1 3.5-3.5h13A3.5 3.5 0 0 1 22 8v2.5H2z" fill="#475569" stroke="#94a3b8" stroke-width="1.2"/><rect x="9.5" y="8.5" width="5" height="5.5" rx="1.5" fill="#090D1A" stroke="#94a3b8" stroke-width="1"/></svg></span>
                     <span class="empty-text">Aucun équipement trouvé pour ce filtre.</span>
                     <span class="empty-sub">Terminez des missions pour débloquer du butin aléatoire !</span>
                   </div>
@@ -1479,17 +1479,63 @@
 
             <!-- Étape 1 : Coffre Scellé & Déclenchement -->
             <div id="chest-stage-sealed" class="chest-stage">
-              <div class="chest-banner-chip">TRÉSOR STELLAIRE SCELLÉ</div>
+              <div class="chest-banner-chip">COFFRE EXTRA-TERRESTRE</div>
               <h2 id="chest-modal-title" class="chest-modal-title">COFFRE NON IDENTIFIÉ</h2>
               <div class="chest-visual-container">
                 <div class="chest-glow-ring"></div>
                 <div id="chest-interactive-box" class="chest-interactive-box">
-                  <span class="chest-big-emoji">📦</span>
+                  <svg class="chest-alien-svg" viewBox="0 0 120 100" width="130" height="110" fill="none">
+                    <defs>
+                      <linearGradient id="chestBodyMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#1E293B"/>
+                        <stop offset="50%" stop-color="#0F172A"/>
+                        <stop offset="100%" stop-color="#030712"/>
+                      </linearGradient>
+                      <linearGradient id="chestLidMetal" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#334155"/>
+                        <stop offset="60%" stop-color="#1E293B"/>
+                        <stop offset="100%" stop-color="#0F172A"/>
+                      </linearGradient>
+                      <linearGradient id="chestPlateGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FDE047"/>
+                        <stop offset="100%" stop-color="#D97706"/>
+                      </linearGradient>
+                      <radialGradient id="chestCoreGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#FFFFFF"/>
+                        <stop offset="40%" stop-color="var(--chest-glow-color, #94a3b8)"/>
+                        <stop offset="100%" stop-color="transparent"/>
+                      </radialGradient>
+                    </defs>
+                    <ellipse cx="60" cy="94" rx="42" ry="6" fill="#000000" opacity="0.6"/>
+                    <path d="M18 42 L22 84 L30 92 L90 92 L98 84 L102 42 Z" fill="url(#chestBodyMetal)" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+                    <path d="M20 44 L30 44 L32 82 L24 82 Z" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+                    <path d="M100 44 L90 44 L88 82 L96 82 Z" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+                    <path d="M34 88 L86 88 L84 84 L36 84 Z" fill="#0F172A" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+                    <path class="chest-energy-line" d="M38 48 L38 72 L46 80" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path class="chest-energy-line" d="M82 48 L82 72 L74 80" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path class="chest-energy-line" d="M46 80 L74 80" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 3"/>
+                    <circle class="chest-energy-dot" cx="38" cy="48" r="2.5" fill="var(--chest-glow-color, #94a3b8)"/>
+                    <circle class="chest-energy-dot" cx="82" cy="48" r="2.5" fill="var(--chest-glow-color, #94a3b8)"/>
+                    <circle class="chest-energy-dot" cx="46" cy="80" r="2" fill="var(--chest-glow-color, #94a3b8)"/>
+                    <circle class="chest-energy-dot" cx="74" cy="80" r="2" fill="var(--chest-glow-color, #94a3b8)"/>
+                    <path d="M14 42 L24 16 L96 16 L106 42 Z" fill="url(#chestLidMetal)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+                    <path d="M36 16 L44 8 L76 8 L84 16 Z" fill="#1E293B" stroke="url(#chestPlateGold)" stroke-width="1"/>
+                    <path class="chest-energy-line" d="M28 32 L46 32 L52 38" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="2" stroke-linecap="round"/>
+                    <path class="chest-energy-line" d="M92 32 L74 32 L68 38" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="12" y1="42" x2="108" y2="42" stroke="rgba(255,255,255,0.7)" stroke-width="1.8"/>
+                    <line class="chest-energy-line" x1="16" y1="42" x2="104" y2="42" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="1.2" opacity="0.8"/>
+                    <rect x="22" y="38" width="6" height="8" rx="2" fill="#475569" stroke="#94A3B8" stroke-width="1"/>
+                    <rect x="92" y="38" width="6" height="8" rx="2" fill="#475569" stroke="#94A3B8" stroke-width="1"/>
+                    <polygon points="60,32 74,40 74,58 60,66 46,58 46,40" fill="#090D1A" stroke="url(#chestPlateGold)" stroke-width="1.5"/>
+                    <circle cx="60" cy="49" r="14" fill="url(#chestCoreGlow)" opacity="0.7"/>
+                    <polygon class="chest-core-gem" points="60,37 70,49 60,61 50,49" fill="var(--chest-glow-color, #94a3b8)" stroke="#FFFFFF" stroke-width="1.2"/>
+                    <circle cx="60" cy="49" r="3" fill="#FFFFFF"/>
+                  </svg>
                   <div class="chest-sparkles"></div>
                 </div>
               </div>
               <p id="chest-modal-desc" class="chest-modal-hint">
-                Touchez le coffre ou appuyez sur Ouvrir pour révéler l'équipement mystère !
+                Coffre contenant des pièces d'équipement pour vos vaisseaux. Touchez le coffre ou appuyez sur Ouvrir pour révéler son contenu !
               </p>
               <button id="btn-open-chest-action" class="btn-primary btn-open-chest">
                 <span>🔓 OUVRIR LE COFFRE</span>
@@ -1501,7 +1547,32 @@
               <div class="chest-visual-container opening-active">
                 <div class="chest-burst-light"></div>
                 <div class="chest-interactive-box chest-opening-anim">
-                  <span class="chest-big-emoji">📦</span>
+                  <svg class="chest-alien-svg" viewBox="0 0 120 100" width="130" height="110" fill="none">
+                    <ellipse cx="60" cy="94" rx="42" ry="6" fill="#000000" opacity="0.6"/>
+                    <path d="M18 42 L22 84 L30 92 L90 92 L98 84 L102 42 Z" fill="url(#chestBodyMetal)" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+                    <path d="M20 44 L30 44 L32 82 L24 82 Z" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+                    <path d="M100 44 L90 44 L88 82 L96 82 Z" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+                    <path d="M34 88 L86 88 L84 84 L36 84 Z" fill="#0F172A" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+                    <path class="chest-energy-line" d="M38 48 L38 72 L46 80" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path class="chest-energy-line" d="M82 48 L82 72 L74 80" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path class="chest-energy-line" d="M46 80 L74 80" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 3"/>
+                    <circle class="chest-energy-dot" cx="38" cy="48" r="2.5" fill="var(--chest-glow-color, #94a3b8)"/>
+                    <circle class="chest-energy-dot" cx="82" cy="48" r="2.5" fill="var(--chest-glow-color, #94a3b8)"/>
+                    <circle class="chest-energy-dot" cx="46" cy="80" r="2" fill="var(--chest-glow-color, #94a3b8)"/>
+                    <circle class="chest-energy-dot" cx="74" cy="80" r="2" fill="var(--chest-glow-color, #94a3b8)"/>
+                    <path d="M14 42 L24 16 L96 16 L106 42 Z" fill="url(#chestLidMetal)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+                    <path d="M36 16 L44 8 L76 8 L84 16 Z" fill="#1E293B" stroke="url(#chestPlateGold)" stroke-width="1"/>
+                    <path class="chest-energy-line" d="M28 32 L46 32 L52 38" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="2" stroke-linecap="round"/>
+                    <path class="chest-energy-line" d="M92 32 L74 32 L68 38" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="12" y1="42" x2="108" y2="42" stroke="rgba(255,255,255,0.7)" stroke-width="1.8"/>
+                    <line class="chest-energy-line" x1="16" y1="42" x2="104" y2="42" stroke="var(--chest-glow-color, #94a3b8)" stroke-width="1.2" opacity="0.8"/>
+                    <rect x="22" y="38" width="6" height="8" rx="2" fill="#475569" stroke="#94A3B8" stroke-width="1"/>
+                    <rect x="92" y="38" width="6" height="8" rx="2" fill="#475569" stroke="#94A3B8" stroke-width="1"/>
+                    <polygon points="60,32 74,40 74,58 60,66 46,58 46,40" fill="#090D1A" stroke="url(#chestPlateGold)" stroke-width="1.5"/>
+                    <circle cx="60" cy="49" r="14" fill="url(#chestCoreGlow)" opacity="0.7"/>
+                    <polygon class="chest-core-gem" points="60,37 70,49 60,61 50,49" fill="var(--chest-glow-color, #94a3b8)" stroke="#FFFFFF" stroke-width="1.2"/>
+                    <circle cx="60" cy="49" r="3" fill="#FFFFFF"/>
+                  </svg>
                 </div>
                 <div class="chest-rays"></div>
               </div>
