@@ -99,7 +99,6 @@ export class MenuHangar {
   private elTrackDiamondPips = document.getElementById('track-diamond-pips');
   private elTrackDiamondStepLabel = document.getElementById('track-diamond-step-label');
   private elBtnRecycleMissionDiamonds = document.getElementById('btn-recycle-mission-diamonds');
-  private elBtnRefundMissionUpgrades = document.getElementById('btn-refund-mission-upgrades');
   private elRecycleDiamondsLockedOverlay = document.getElementById('recycle-diamonds-locked-overlay');
 
   // Événements Saisonniers & Classement 100 Joueurs
@@ -417,18 +416,6 @@ export class MenuHangar {
     // Clic sur l'overlay de verrouillage du recyclage (Raffinerie requise)
     this.elRecycleDiamondsLockedOverlay?.addEventListener('click', () => {
       this.showHudToast('🔒 RAFFINERIE REQUISE : Le recyclage en Poudre de Diamant est disponible au Secteur Delta !', true);
-    });
-
-    // Réinitialisation des améliorations de la mission active & remboursement des diamants
-    this.elBtnRefundMissionUpgrades?.addEventListener('click', () => {
-      const curMission = this.store.data.selectedMission;
-      const res = this.store.refundMissionUpgrades(curMission);
-      if (res.success && res.diamondsRefunded > 0) {
-        this.refreshAll();
-        this.showHudToast(`🔄 AMÉLIORATIONS RÉINITIALISÉES : +${res.diamondsRefunded} 💎 REMBOURSÉS DANS LA MISSION !`, false);
-      } else {
-        this.showHudToast(`Aucune amélioration à réinitialiser sur cette mission.`, true);
-      }
     });
 
     // Boutons de lancement des Défis
@@ -1272,12 +1259,6 @@ export class MenuHangar {
           }
         }
       }
-    }
-
-    if (this.elBtnRefundMissionUpgrades) {
-      const hasUpgrades = (fr.tier > 1 || fr.step > 0) || (dmg.tier > 1 || dmg.step > 0) || (dia.tier > 1 || dia.step > 0);
-      (this.elBtnRefundMissionUpgrades as HTMLButtonElement).disabled = !hasUpgrades;
-      this.elBtnRefundMissionUpgrades.style.opacity = hasUpgrades ? '1' : '0.45';
     }
   }
 
