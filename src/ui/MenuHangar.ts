@@ -172,10 +172,6 @@ export class MenuHangar {
   private toastTimeout: number = 0;
 
   // Éléments de l'Écran Hangar Dédié
-  private elHangarCrystals = document.getElementById('hangar-screen-crystals');
-  private elHangarBars = document.getElementById('hangar-screen-bars');
-  private elHangarDust = document.getElementById('hangar-screen-dust');
-  private elHangarDiamonds = document.getElementById('hangar-screen-diamonds');
   private elHangarShipName = document.getElementById('hangar-ship-name');
   private elHangarShipArchetype = document.getElementById('hangar-ship-archetype');
   private elHangarShipSlotsCount = document.getElementById('hangar-ship-slots-count');
@@ -957,11 +953,6 @@ export class MenuHangar {
     if (this.elBarsTotal) this.elBarsTotal.textContent = bars;
     if (this.elDustTotal) this.elDustTotal.textContent = dust;
     if (this.elDiamondsTotal) this.elDiamondsTotal.textContent = diam;
-
-    if (this.elHangarCrystals) this.elHangarCrystals.textContent = crys;
-    if (this.elHangarBars) this.elHangarBars.textContent = bars;
-    if (this.elHangarDust) this.elHangarDust.textContent = dust;
-    if (this.elHangarDiamonds) this.elHangarDiamonds.textContent = diam;
 
     if (this.elMissionsScreenCrystals) this.elMissionsScreenCrystals.textContent = crys;
     if (this.elMissionsScreenBars) this.elMissionsScreenBars.textContent = bars;
