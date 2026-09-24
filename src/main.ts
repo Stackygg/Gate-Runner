@@ -1369,7 +1369,7 @@ export class GameApp {
         this.state = 'BOSS';
         this.music.playTrack('boss');
       }
-      const isFinal = (activeBoss.type === 'boss_final');
+      const isFinal = activeBoss.isLevelBoss || (activeBoss.type === 'boss_final');
       this.hud.showBoss(activeBoss.bossName, activeBoss.hp, activeBoss.maxHp, isFinal);
 
       if (isFinal) {

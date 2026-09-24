@@ -42,6 +42,7 @@ export class HUD {
   private lastLevel: number = -1;
   private lastPhase: number = -1;
   private lastIsChallenge: boolean | null = null;
+  private lastIsFinalBoss: boolean | null = null;
 
   public show() {
     this.elTopHud?.classList.remove('hidden');
@@ -54,6 +55,7 @@ export class HUD {
     this.lastLevel = -1;
     this.lastPhase = -1;
     this.lastIsChallenge = null;
+    this.lastIsFinalBoss = null;
   }
 
   public hide() {
@@ -202,16 +204,24 @@ export class HUD {
 
   public showBoss(name: string, hp: number, maxHp: number, isFinalBoss: boolean = false) {
     this.elBossHud?.classList.remove('hidden');
-    if (this.elBossName) this.elBossName.textContent = name;
-    if (isFinalBoss) {
-      this.elBossTimerBadge?.classList.remove('hidden');
-    } else {
-      this.elBossTimerBadge?.classList.add('hidden');
+    if (this.elBossName && this.elBossName.textContent !== name) {
+      this.elBossName.textContent = name;
+    }
+    if (this.lastIsFinalBoss !== isFinalBoss) {
+      this.lastIsFinalBoss = isFinalBoss;
+      if (isFinalBoss) {
+        this.elBossHud?.classList.add('is-final-boss');
+        this.elBossTimerBadge?.classList.remove('hidden');
+      } else {
+        this.elBossHud?.classList.remove('is-final-boss');
+        this.elBossTimerBadge?.classList.add('hidden');
+      }
     }
     this.updateBossHp(hp, maxHp);
   }
 
   public updateBossTimer(timeRemaining: number, multiplier: number, isEnraged: boolean = false) {
+    if (this.lastIsFinalBoss === false) return;
     this.elBossTimerBadge?.classList.remove('hidden');
     if (this.elBossTimerText) {
       this.elBossTimerText.textContent = `${Math.max(0, timeRemaining).toFixed(1)}s`;
@@ -240,7 +250,9 @@ export class HUD {
 
   public hideBoss() {
     this.elBossHud?.classList.add('hidden');
+    this.elBossHud?.classList.remove('is-final-boss');
     this.elBossTimerBadge?.classList.add('hidden');
+    this.lastIsFinalBoss = null;
   }
 
   public showMothership(hp: number, maxHp: number, customTitle?: string) {

@@ -399,6 +399,7 @@ html, body {
 
 /* Boss Health Bar */
 .boss-hud-container {
+  position: relative;
   pointer-events: auto;
   width: 90%;
   max-width: 600px;
@@ -409,6 +410,7 @@ html, body {
   border-radius: 12px;
   backdrop-filter: blur(8px);
   animation: pulse-border 1.5s infinite alternate;
+  box-sizing: border-box;
 }
 
 @keyframes pulse-border {
@@ -416,13 +418,57 @@ html, body {
   100% { border-color: rgba(255, 0, 90, 1); box-shadow: 0 0 20px rgba(255, 0, 90, 0.5); }
 }
 
+.boss-hud-container.is-final-boss {
+  border-color: rgba(255, 0, 90, 0.85);
+  box-shadow: 0 0 24px rgba(255, 0, 90, 0.45), inset 0 0 16px rgba(255, 0, 90, 0.2);
+}
+
+/* Têtes de mort dans les coins supérieurs pour le Boss Final */
+.boss-skull {
+  display: none;
+  position: absolute;
+  top: 7px;
+  font-size: 1.35rem;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 0 8px rgba(255, 0, 90, 0.95)) drop-shadow(0 0 2px #FFFFFF);
+  animation: skullPulse 1.2s ease-in-out infinite alternate;
+  z-index: 5;
+}
+
+.boss-skull-left {
+  left: 12px;
+}
+
+.boss-skull-right {
+  right: 12px;
+}
+
+.boss-hud-container.is-final-boss .boss-skull {
+  display: block;
+}
+
+@keyframes skullPulse {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 6px rgba(255, 0, 90, 0.7));
+  }
+  100% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 14px rgba(255, 0, 90, 1)) drop-shadow(0 0 4px #FFFFFF);
+  }
+}
+
 .boss-hud-header {
   position: relative;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin-bottom: 6px;
-  min-height: 24px;
+  gap: 5px;
+  margin-bottom: 7px;
+  padding: 0 32px;
 }
 
 .boss-name {
@@ -436,17 +482,16 @@ html, body {
 }
 
 .boss-timer-badge {
-  position: absolute;
-  right: 0;
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   background: rgba(255, 230, 0, 0.18);
   border: 1px solid var(--neon-yellow);
-  padding: 3px 12px;
+  padding: 2px 10px;
   border-radius: 20px;
   font-family: var(--font-cyber);
-  box-shadow: 0 0 12px rgba(255, 230, 0, 0.35);
+  box-shadow: 0 0 10px rgba(255, 230, 0, 0.35);
   animation: pulse-badge 1s infinite alternate;
 }
 
@@ -479,12 +524,27 @@ html, body {
 }
 
 @media (max-width: 480px) {
+  .boss-skull {
+    font-size: 1.15rem;
+    top: 6px;
+  }
+  .boss-skull-left {
+    left: 8px;
+  }
+  .boss-skull-right {
+    right: 8px;
+  }
+  .boss-hud-header {
+    padding: 0 24px;
+    gap: 4px;
+    margin-bottom: 5px;
+  }
   .boss-name {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     letter-spacing: 0.8px;
   }
   .boss-timer-badge {
-    padding: 1px 6px;
+    padding: 1px 7px;
     gap: 4px;
   }
   .boss-timer-badge .timer-sec {
