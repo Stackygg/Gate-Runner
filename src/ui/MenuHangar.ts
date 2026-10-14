@@ -10,11 +10,13 @@ import { EquipmentItem, EquipmentRarity, EquipmentSlotType, EquipmentSystem, RAR
 import { AdService } from '../services/AdService';
 import { SoundSynth } from '../engine/SoundSynth';
 import { ShipRenderer } from '../engine/ShipRenderer';
+import { TutorialSystem } from '../systems/TutorialSystem';
 
 export class MenuHangar {
   private store: UpgradeStore;
   private onStartCallback: () => void;
   private onOpenShopCallback?: () => void;
+  private tutorial?: TutorialSystem;
 
   // Canvases de prévisualisation de vaisseau
   private mainPreviewCanvas: HTMLCanvasElement | null;
@@ -254,10 +256,11 @@ export class MenuHangar {
   private hasRerolledCurrentChest: boolean = false;
   private sound: SoundSynth = new SoundSynth();
 
-  constructor(store: UpgradeStore, onStart: () => void, onOpenShop?: () => void) {
+  constructor(store: UpgradeStore, onStart: () => void, onOpenShop?: () => void, tutorial?: TutorialSystem) {
     this.store = store;
     this.onStartCallback = onStart;
     this.onOpenShopCallback = onOpenShop;
+    this.tutorial = tutorial;
 
     this.mainPreviewCanvas = document.getElementById('ship-preview-canvas') as HTMLCanvasElement | null;
     this.mainPreviewCtx = this.mainPreviewCanvas ? this.mainPreviewCanvas.getContext('2d') : null;
@@ -901,6 +904,7 @@ export class MenuHangar {
     this.startPreviewLoop();
     this.updateHangarShipDisplay();
     this.refreshCurrencies();
+    this.tutorial?.checkHangarTutorial();
   }
 
   public show() {

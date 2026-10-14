@@ -443,4 +443,36 @@ export class SoundSynth {
   public stopBgm() {
     this.isBgmPlaying = false;
   }
+
+  // Bip-boop mélodieux & amical de Sparcky (Copilote de bord)
+  public playSparckyChirp() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const notes = [
+        { f1: 880, f2: 1174, start: now, dur: 0.08 },
+        { f1: 1318, f2: 1760, start: now + 0.09, dur: 0.12 }
+      ];
+
+      notes.forEach((n) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(n.f1, n.start);
+        osc.frequency.exponentialRampToValueAtTime(n.f2, n.start + n.dur);
+
+        gain.gain.setValueAtTime(0.12, n.start);
+        gain.gain.exponentialRampToValueAtTime(0.001, n.start + n.dur);
+
+        osc.connect(gain);
+        gain.connect(this.getDestination());
+
+        osc.start(n.start);
+        osc.stop(n.start + n.dur);
+      });
+    } catch {}
+  }
 }

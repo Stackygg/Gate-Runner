@@ -1,0 +1,508 @@
+/* ==========================================================================
+   SPARCKY : COPILOTE DE BORD (TUTORIEL & GUIDE TACTIQUE)
+   ========================================================================== */
+
+/* Bouton Sparcky dans les barres d'outils */
+.nav-btn-sparcky {
+  border-color: rgba(0, 240, 255, 0.5) !important;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(255, 107, 0, 0.12) 100%) !important;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25) !important;
+  position: relative;
+}
+
+.nav-btn-sparcky:hover {
+  border-color: #00F0FF !important;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.5) !important;
+  transform: translateY(-2px);
+}
+
+.sparcky-nav-icon {
+  font-size: 1.25rem;
+  display: inline-block;
+  animation: sparckyWiggle 4s ease-in-out infinite;
+}
+
+@keyframes sparckyWiggle {
+  0%, 85%, 100% { transform: rotate(0deg); }
+  90% { transform: rotate(-10deg) scale(1.1); }
+  95% { transform: rotate(10deg) scale(1.1); }
+}
+
+/* Overlay en vol */
+.tutorial-sparcky-overlay {
+  position: absolute;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 28px);
+  max-width: 520px;
+  z-index: 100;
+  pointer-events: auto;
+  cursor: pointer;
+  animation: sparckySlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes sparckySlideDown {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.tutorial-sparcky-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(10, 16, 36, 0.94);
+  border: 1.5px solid rgba(0, 240, 255, 0.55);
+  border-radius: 18px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), 0 0 25px rgba(0, 240, 255, 0.35);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.tutorial-sparcky-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 17px;
+  background: radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Avatar animé */
+.sparcky-avatar-wrap {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: sparckyFloat 3s ease-in-out infinite;
+}
+
+@keyframes sparckyFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.sparcky-halo {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.35) 0%, transparent 70%);
+  animation: sparckyGlowPulse 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sparckyGlowPulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 0.9; }
+}
+
+.sparcky-svg-avatar {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 10px rgba(0, 240, 255, 0.4));
+}
+
+.tutorial-sparcky-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tutorial-sparcky-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sparcky-tag {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #00F0FF;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+.btn-tutorial-skip {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #94A3B8;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-tutorial-skip:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #EF4444;
+  color: #F87171;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.tutorial-sparcky-text {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #F8FAFC;
+  line-height: 1.35;
+  margin: 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.tutorial-sparcky-prompt {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #FF6B00;
+  letter-spacing: 1px;
+  margin-top: 2px;
+  animation: promptBlink 1.4s ease-in-out infinite;
+}
+
+@keyframes promptBlink {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Aide Swipe Directionnel */
+.tutorial-swipe-hint {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 90;
+  pointer-events: none;
+  background: rgba(10, 16, 36, 0.75);
+  border: 1px dashed rgba(0, 240, 255, 0.4);
+  padding: 10px 18px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.tutorial-swipe-hint .swipe-hand {
+  font-size: 2rem;
+  animation: handSwipe 1.8s ease-in-out infinite;
+}
+
+@keyframes handSwipe {
+  0% { transform: translateX(-35px); }
+  50% { transform: translateX(35px); }
+  100% { transform: translateX(-35px); }
+}
+
+.tutorial-swipe-hint .swipe-text {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #00F0FF;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+}
+
+/* Modale Manuel de vol Sparcky */
+.sparcky-tips-modal-card {
+  max-width: 580px !important;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sparcky-tips-body {
+  overflow-y: auto;
+  padding: 14px 18px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  touch-action: pan-y;
+}
+
+.sparcky-tips-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.sparcky-mini-avatar {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+}
+
+.sparcky-mini-avatar.large {
+  width: 64px;
+  height: 64px;
+}
+
+.sparcky-mini-avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sparcky-tips-banner-title {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #FF6B00;
+  letter-spacing: 1px;
+}
+
+.sparcky-tips-banner-sub {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: #CBD5E1;
+  margin: 3px 0 0 0;
+  line-height: 1.35;
+}
+
+.sparcky-tips-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sparcky-tip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+}
+
+.sparcky-tip-card:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(0, 240, 255, 0.3);
+}
+
+.tip-card-icon {
+  font-size: 1.4rem;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.tip-card-content {
+  flex: 1;
+}
+
+.tip-card-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #F1F5F9;
+  margin: 0 0 3px 0;
+  letter-spacing: 0.4px;
+}
+
+.tip-card-desc {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: #94A3B8;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.tip-card-desc strong {
+  color: #38BDF8;
+}
+
+.sparcky-tips-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.btn-replay-tutorial {
+  flex: 1;
+  background: rgba(255, 107, 0, 0.12);
+  border: 1.5px solid rgba(255, 107, 0, 0.5);
+  color: #FFB074;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 12px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-replay-tutorial:hover {
+  background: rgba(255, 107, 0, 0.25);
+  border-color: #FF6B00;
+  color: #FFF;
+  box-shadow: 0 0 16px rgba(255, 107, 0, 0.45);
+}
+
+.btn-ok-sparcky {
+  flex: 1.2;
+  background: linear-gradient(135deg, #00F0FF 0%, #0284C7 100%);
+  border: none;
+  color: #030712;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 900;
+  padding: 12px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.4);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-ok-sparcky:hover {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.6);
+}
+
+/* Modale Bienvenue Hangar */
+.sparcky-hangar-card {
+  max-width: 480px !important;
+  padding: 22px 20px !important;
+}
+
+.sparcky-hangar-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+  padding-bottom: 14px;
+}
+
+.sparcky-hangar-title-group {
+  flex: 1;
+}
+
+.sparcky-hangar-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #F8FAFC;
+  margin: 3px 0 0 0;
+  letter-spacing: 0.5px;
+}
+
+.sparcky-hangar-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sparcky-hangar-intro {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  color: #CBD5E1;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.sparcky-hangar-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hangar-feat-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.feat-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.feat-desc {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: #94A3B8;
+  line-height: 1.35;
+}
+
+.feat-desc strong {
+  color: #38BDF8;
+}
+
+.btn-hangar-start {
+  width: 100%;
+  margin-top: 6px;
+  padding: 14px !important;
+  font-size: 0.95rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 1px !important;
+}
+
+@media (max-width: 600px) {
+  .tutorial-sparcky-overlay {
+    top: 76px;
+    width: calc(100% - 20px);
+  }
+  .tutorial-sparcky-card {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .sparcky-avatar-wrap {
+    width: 52px;
+    height: 52px;
+  }
+  .tutorial-sparcky-text {
+    font-size: 0.8rem;
+  }
+  .tutorial-swipe-hint {
+    bottom: 90px;
+    padding: 8px 14px;
+  }
+  .sparcky-tips-actions {
+    flex-direction: column;
+  }
+}

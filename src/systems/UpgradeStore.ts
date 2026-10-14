@@ -89,6 +89,9 @@ export interface PlayerSaveData {
   dailyQuests: DailyQuestsState;
   achievements: AchievementsState;
   inboxMessages: InboxMessage[];
+  // Tutoriel Sparcky
+  tutorialCompleted?: boolean;
+  hangarTutorialSeen?: boolean;
   // Proxies dynamiques pour le niveau actif
   diamonds: number;
   upgradeTracks: {
@@ -391,6 +394,8 @@ export class UpgradeStore {
       },
       achievements: {},
       inboxMessages: DEFAULT_INBOX_MESSAGES.map(m => ({ ...m })),
+      tutorialCompleted: false,
+      hangarTutorialSeen: false,
       eventSeason: {
         eventId: 'event_season_1',
         seasonName: 'OPÉRATION NÉBULEUSE NOIRE // SAISON 1',
@@ -482,6 +487,16 @@ export class UpgradeStore {
           defaultData.inboxMessages = parsed.inboxMessages;
         }
         if (parsed.eventSeason !== undefined) defaultData.eventSeason = parsed.eventSeason;
+        if (parsed.tutorialCompleted !== undefined) {
+          defaultData.tutorialCompleted = parsed.tutorialCompleted;
+        } else if (defaultData.completedMissions.length > 0 || defaultData.maxUnlockedMission > 1) {
+          defaultData.tutorialCompleted = true;
+        }
+        if (parsed.hangarTutorialSeen !== undefined) {
+          defaultData.hangarTutorialSeen = parsed.hangarTutorialSeen;
+        } else if (defaultData.maxUnlockedMission > 5) {
+          defaultData.hangarTutorialSeen = true;
+        }
       }
       // Règle stricte : Avant de débloquer le Hangar (Niveau 5), le vaisseau ne dispose d'aucun objet équipé
       // mais conserve précieusement ses coffres non identifiés gagnés en mission !

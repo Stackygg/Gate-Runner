@@ -24,6 +24,7 @@ import { ShopModal } from './ui/ShopModal';
 import { AdService } from './services/AdService';
 import { SplashScreen } from './ui/SplashScreen';
 import { Stargate } from './entities/Stargate';
+import { TutorialSystem } from './systems/TutorialSystem';
 
 export type GameState = 'MENU' | 'PRE_FLIGHT' | 'PLAYING' | 'BOSS' | 'GAUNTLET' | 'GAMEOVER' | 'PAUSED';
 
@@ -36,6 +37,7 @@ export class GameApp {
   private particles: ParticleSystem;
   private store: UpgradeStore;
   private hud: HUD;
+  private tutorial: TutorialSystem;
   private hangar: MenuHangar;
   private gameOverModal: GameOverModal;
   private bottomUpgradeDock: BottomUpgradeDock;
@@ -97,6 +99,18 @@ export class GameApp {
     this.particles = new ParticleSystem();
     this.store = new UpgradeStore();
     this.hud = new HUD();
+    this.tutorial = new TutorialSystem(this.store, this.sound);
+    this.tutorial.init({
+      onReplay: () => {
+        this.store.data.selectedMission = 1;
+        this.enterMissionPreparation();
+        this.launchFlight();
+      },
+      setScrollSpeed: (speed: number) => {
+        this.scrollSpeed = speed;
+      }
+    });
+
     this.splashScreen = new SplashScreen(() => {
       // Synchronisation : Démarrer la musique principale seulement à l'arrivée sur le menu (après l'animation Stacky)
       if (this.state === 'MENU') {
@@ -135,7 +149,8 @@ export class GameApp {
     this.hangar = new MenuHangar(
       this.store,
       () => this.enterMissionPreparation(),
-      () => this.shopModal.show()
+      () => this.shopModal.show(),
+      this.tutorial
     );
 
     this.gameOverModal = new GameOverModal(
@@ -628,6 +643,12 @@ export class GameApp {
 
     // Démarrage de la musique de combat en vol (Chip Funk Pulse)
     this.music.playTrack('music1');
+
+    // Déclenchement du tutoriel de vol avec Sparcky (Mission 1)
+    const missionNum = this.currentLevelData?.levelNumber || this.store.data.selectedMission;
+    if (this.tutorial.shouldRunFlightTutorial(missionNum)) {
+      this.tutorial.startFlightTutorial(this.fleet ? this.fleet.centerX : 270);
+    }
   }
 
   private handleNextOrRetry() {
@@ -899,6 +920,7 @@ export class GameApp {
       this.victoryOutroTimer = 0;
       this.stargateFleetSpeed = 0;
       this.fleet.canShoot = false;
+      this.tutorial.onMissionVictory();
 
       // Déclenchement de la Supernova éclatante à l'emplacement exact de la singularité
       const novaX = levelBoss ? levelBoss.x : 270;
@@ -953,6 +975,33 @@ export class GameApp {
       this.hud.showPhaseBanner(newPhase, phaseNames[newPhase]);
       this.sound.playGatePass();
     }
+
+    // Mise à jour continue du copilote Sparcky (Tutoriel)
+    let nearestGateDist = 9999;
+    for (let i = 0; i < this.gates.length; i++) {
+      const g = this.gates[i];
+      if (!g.isPassed && g.y < this.fleet.centerY) {
+        const d = this.fleet.centerY - g.y;
+        if (d < nearestGateDist) nearestGateDist = d;
+      }
+    }
+    let nearestObstacleDist = 9999;
+    for (let i = 0; i < this.enemies.length; i++) {
+      const e = this.enemies[i];
+      if (!e.isDead && e.y < this.fleet.centerY) {
+        const d = this.fleet.centerY - e.y;
+        if (d < nearestObstacleDist) nearestObstacleDist = d;
+      }
+    }
+    const isBossActive = !!(this.currentLevelData?.bossEnemy && !this.currentLevelData.bossEnemy.isDead && this.currentLevelData.bossEnemy.y > 0);
+
+    this.tutorial.update(
+      dt,
+      this.fleet.centerX,
+      nearestGateDist,
+      nearestObstacleDist,
+      isBossActive
+    );
 
     const aliveBlackHoles = this.enemies.filter(e => e.type === 'black_hole' && !e.isDead);
 
