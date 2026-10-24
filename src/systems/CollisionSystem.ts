@@ -17,7 +17,6 @@ export interface CollisionResults {
   screenShake: number;
   fleetDamageTaken: number;
   rescuedShipsSpawned: RescuedShip[];
-  killedEnemies: Enemy[];
 }
 
 export class CollisionSystem {
@@ -42,8 +41,7 @@ export class CollisionSystem {
       highestGauntletMultiplier: 1.0,
       screenShake: 0,
       fleetDamageTaken: 0,
-      rescuedShipsSpawned: [],
-      killedEnemies: []
+      rescuedShipsSpawned: []
     };
 
     // 1. Tirs du joueur contre les Portails (Seuls les portails SPÉCIAUX absorbent les tirs pour monter en valeur)
@@ -138,7 +136,6 @@ export class CollisionSystem {
               particles.spawnExplosion(other.x, other.y, '#FF9900', 5);
               if (killedOther) {
                 results.enemiesKilled++;
-                results.killedEnemies.push(other);
               }
             }
           }
@@ -146,7 +143,6 @@ export class CollisionSystem {
 
           if (isKilled) {
             results.enemiesKilled++;
-            results.killedEnemies.push(enemy);
             const isShootingShipOrBoss = enemy.isBossType() || enemy.type === 'corner_turret' || enemy.type === 'drone' || enemy.type === 'fast' || enemy.type === 'heavy' || enemy.type === 'shield_generator' || enemy.type === 'boss_minion';
             if (isShootingShipOrBoss) {
               results.shootingShipsKilled++;
@@ -331,13 +327,20 @@ export class CollisionSystem {
         const right = enemy.x + enemy.width / 2;
 
         if (fleet.centerX >= left - 35 && fleet.centerX <= right + 35) {
+          // Vague d'entraînement : l'impact détruit l'objet sans coûter de vaisseau
+          if (enemy.isHarmless) {
+            enemy.takeDamage(999);
+            sound.playExplosion(false);
+            particles.spawnExplosion(enemy.x, enemy.y, '#FFAA00', 14);
+            particles.spawnFloatingText(fleet.centerX, fleet.centerY - 35, 'OUPS ! VISE-LE 🎯', '#FFAA00', 20);
+            continue;
+          }
+
           const dmg = enemy.isBossType() ? fleet.shipCount : 1;
           const lost = fleet.takeDamage(dmg);
 
           // L'astéroïde / ennemi ayant percuté le joueur est détruit
           enemy.takeDamage(999);
-          results.enemiesKilled++;
-          results.killedEnemies.push(enemy);
           sound.playExplosion(false);
 
           if (lost === -1) {

@@ -104,20 +104,24 @@ export class GameApp {
       onReplay: () => {
         this.store.data.selectedMission = 1;
         this.enterMissionPreparation();
-        this.launchFlight();
       },
-      setScrollSpeed: (speed: number) => {
-        this.scrollSpeed = speed;
-      },
-      onReloadPreparation: () => {
+      onRetry: () => {
         this.enterMissionPreparation();
       },
       onFinishTutorial: () => {
-        this.showHangar();
+        // Fin (ou abandon) du vol d'initiation : préparation de la vraie mission 1
+        this.store.data.selectedMission = 1;
+        this.enterMissionPreparation();
       }
     });
 
     this.splashScreen = new SplashScreen(() => {
+      // Premier lancement : le joueur part directement en vol d'initiation, sans passer par les menus
+      if (this.state === 'MENU' && this.tutorial.shouldRunFlightTutorial(1) && this.store.data.maxUnlockedMission <= 1) {
+        this.store.data.selectedMission = 1;
+        this.enterMissionPreparation();
+        return;
+      }
       // Synchronisation : Démarrer la musique principale seulement à l'arrivée sur le menu (après l'animation Stacky)
       if (this.state === 'MENU') {
         this.music.playTrack('main');
@@ -454,13 +458,15 @@ export class GameApp {
     this.victoryDelayTimer = undefined;
     this.currentPhase = 1;
     this.renderer.currentPhase = 1;
-    this.hud.showPhaseBanner(1, 'AVANT-POSTE DE RECONNAISSANCE');
+    if (!this.tutorial.shouldRunFlightTutorial(this.store.data.selectedMission)) {
+      this.hud.showPhaseBanner(1, 'AVANT-POSTE DE RECONNAISSANCE');
+    }
 
     // Génération du niveau (Défi Convoi, Tutoriel dédié ou mission standard)
     const activeChallenge = this.store.getActiveChallenge();
     if (activeChallenge && activeChallenge.id === 'bars') {
       this.currentLevelData = LevelGenerator.generateCargoDefenseLevel(activeChallenge.level);
-    } else if (this.tutorial.isTutorialActive() || (!this.store.data.tutorialCompleted && this.store.data.selectedMission === 1)) {
+    } else if (this.tutorial.shouldRunFlightTutorial(this.store.data.selectedMission)) {
       this.currentLevelData = LevelGenerator.generateTutorialLevel();
     } else {
       this.currentLevelData = LevelGenerator.generateLevel(this.store.data.selectedMission);
@@ -527,12 +533,15 @@ export class GameApp {
     this.store.resetSessionTierAllowance();
 
     // Affichage du Dock d'améliorations en bas (uniquement en mode classique/runner)
-    if (isArena) {
+    // Premier vol d'initiation : décollage immédiat, la barre d'améliorations viendra après le premier vol
+    const isFirstTutorialFlight = !!this.currentLevelData.isTutorialLevel && this.tutorial.isFirstAttempt();
+    if (isArena || isFirstTutorialFlight) {
       this.bottomUpgradeDock.hide();
+      this.updateHudStats();
       this.launchFlight();
-    } else {
-      this.bottomUpgradeDock.show();
+      return;
     }
+    this.bottomUpgradeDock.show();
 
     // Mise à jour du HUD
     this.updateHudStats();
@@ -655,8 +664,10 @@ export class GameApp {
     this.music.playTrack('music1');
 
     // Déclenchement du tutoriel de vol avec Sparcky (Niveau Dédié Tutoriel)
-    if (this.currentLevelData?.isTutorialLevel || this.tutorial.isTutorialActive()) {
+    if (this.currentLevelData?.isTutorialLevel) {
       this.tutorial.startFlightTutorial(this.fleet ? this.fleet.centerX : 270);
+    } else {
+      this.tutorial.onFlightLaunched();
     }
   }
 
@@ -695,14 +706,13 @@ export class GameApp {
     let rewardLoot: any = undefined;
 
     // Détection Tutoriel Dédié : gestion spécifique par Sparcky (bilan diamants, améliorations et choix)
-    const isTutorial = !!(this.currentLevelData && this.currentLevelData.isTutorialLevel) || this.tutorial.isTutorialActive();
-    if (isTutorial) {
+    if (this.currentLevelData?.isTutorialLevel) {
       if (isVictory) {
         this.sound.playVictory();
       } else {
         this.sound.playExplosion(true);
       }
-      const earned = Math.max(15, Math.round(this.sessionDiamonds));
+      const earned = Math.round(this.sessionDiamonds);
       this.store.addDiamondsToMission(1, earned);
       this.store.save();
       this.hangar.refreshCurrencies();
@@ -855,15 +865,16 @@ export class GameApp {
     } else if (this.state === 'PLAYING' || this.state === 'BOSS' || this.state === 'GAUNTLET') {
       const isTutorialPaused = this.tutorial.isGamePaused();
       if (isTutorialPaused) {
-        // En pause tutoriel : on met à jour le tutoriel pour détecter le délai min d'1s et le mouvement du joueur
-        this.tutorial.update(dt, this.fleet ? this.fleet.centerX : 270, this.input.getIsPointerDown());
+        // En pause tutoriel : le monde est figé, Sparcky guette un mouvement ou un toucher du joueur
         this.updateGame(0);
+        this.tutorial.update(dt, this.input.getTargetX(), this.gates, this.enemies);
         this.renderFrame(dt, 0);
       } else {
         if (this.currentLevelData?.gameplayType === 'arena_defense') {
           this.updateArenaDefense(dt);
         } else {
           this.updateGame(dt);
+          this.tutorial.update(dt, this.input.getTargetX(), this.gates, this.enemies);
         }
         this.renderFrame(dt, this.currentLevelData?.gameplayType === 'arena_defense' ? 0 : this.scrollSpeed);
       }
@@ -953,7 +964,6 @@ export class GameApp {
       this.victoryOutroTimer = 0;
       this.stargateFleetSpeed = 0;
       this.fleet.canShoot = false;
-      this.tutorial.onMissionVictory();
 
       // Déclenchement de la Supernova éclatante à l'emplacement exact de la singularité
       const novaX = levelBoss ? levelBoss.x : 270;
@@ -996,7 +1006,7 @@ export class GameApp {
     else if (this.traveledDistance >= 2800) newPhase = 2;
     else newPhase = 1;
 
-    if (newPhase !== this.currentPhase) {
+    if (newPhase !== this.currentPhase && !this.currentLevelData?.isTutorialLevel) {
       this.currentPhase = newPhase;
       this.renderer.currentPhase = newPhase;
       const phaseNames: Record<number, string> = {
@@ -1008,31 +1018,6 @@ export class GameApp {
       this.hud.showPhaseBanner(newPhase, phaseNames[newPhase]);
       this.sound.playGatePass();
     }
-
-    // Mise à jour continue du copilote Sparcky (Tutoriel)
-    let nearestGateDist = 9999;
-    for (let i = 0; i < this.gates.length; i++) {
-      const g = this.gates[i];
-      if (!g.isPassed && g.y < this.fleet.centerY) {
-        const d = this.fleet.centerY - g.y;
-        if (d < nearestGateDist) nearestGateDist = d;
-      }
-    }
-    let nearestObstacleDist = 9999;
-    for (let i = 0; i < this.enemies.length; i++) {
-      const e = this.enemies[i];
-      if (!e.isDead && e.y < this.fleet.centerY) {
-        const d = this.fleet.centerY - e.y;
-        if (d < nearestObstacleDist) nearestObstacleDist = d;
-      }
-    }
-    const isBossActive = !!(this.currentLevelData?.bossEnemy && !this.currentLevelData.bossEnemy.isDead && this.currentLevelData.bossEnemy.y > 0);
-
-    this.tutorial.update(
-      dt,
-      this.fleet.centerX,
-      this.input.getIsPointerDown()
-    );
 
     const aliveBlackHoles = this.enemies.filter(e => e.type === 'black_hole' && !e.isDead);
 
@@ -1068,6 +1053,15 @@ export class GameApp {
     const leftBHs = aliveBlackHoles.filter(bh => bh.x <= 200).sort((a, b) => b.y - a.y);
     for (let i = 0; i < leftBHs.length; i++) {
       const bh = leftBHs[i];
+
+      // Trou noir du tutoriel : il arrive avec le défilement, au moment prévu dans le niveau
+      if (bh.tutorialTag) {
+        if (bh.y < 360) {
+          bh.y = Math.min(360, bh.y + this.scrollSpeed * dt);
+        }
+        continue;
+      }
+
       let targetY = (this.currentLevelData?.isFunLevel) ? 360 : (360 - i * 330);
 
       // Tous les trous noirs surveillent les portails libérés en descente devant eux pour ne pas les écraser
@@ -1182,6 +1176,12 @@ export class GameApp {
 
       if (isEscort || gate.isBossReward) {
         gate.update(dt, 340);
+        continue;
+      }
+
+      // Vol d'initiation : les portails libres défilent au rythme du niveau pour laisser le temps de viser
+      if (this.currentLevelData?.isTutorialLevel && !gate.assignedBH) {
+        gate.update(dt, this.scrollSpeed);
         continue;
       }
 
@@ -1308,11 +1308,6 @@ export class GameApp {
     this.sessionDiamonds += collisionResults.diamondsEarned;
     this.sessionKills += collisionResults.enemiesKilled;
     this.fleetDamageTakenInRun += collisionResults.fleetDamageTaken;
-
-    // Signalement des ennemis éliminés au système de tutoriel
-    for (const killed of collisionResults.killedEnemies) {
-      this.tutorial.onEnemyKilled(killed);
-    }
     if (collisionResults.shootingShipsKilled > 0) {
       this.store.recordDailyQuestProgress('shooting_enemies', collisionResults.shootingShipsKilled);
     }
@@ -2009,6 +2004,9 @@ export class GameApp {
 
     // 10. Dessin des Particules, Gemmes récoltables et Textes Flottants (+1, +10, etc.)
     this.particles.draw3D(this.renderer.ctx, this.renderer);
+
+    // 11. Flèches de repère de Sparcky (vol d'initiation)
+    this.tutorial.drawHighlight(this.renderer.ctx, this.renderer);
   }
 }
 

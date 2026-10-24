@@ -36,6 +36,8 @@ export class Enemy {
   public diamondReward: number = 0;
   public generatorSide?: 'left' | 'center' | 'right';
   public targetBoss?: Enemy;
+  public tutorialTag: string | null = null; // Repère utilisé par Sparcky pour déclencher ses leçons
+  public isHarmless: boolean = false; // Percuter cet objet ne coûte aucun vaisseau (vague d'entraînement)
 
   private rotAngle: number = 0;
   private rotSpeed: number = 0;

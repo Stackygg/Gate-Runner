@@ -563,7 +563,9 @@ export class UpgradeStore {
         eventSeason: this.data.eventSeason,
         dailyQuests: this.data.dailyQuests,
         achievements: this.data.achievements,
-        inboxMessages: this.data.inboxMessages
+        inboxMessages: this.data.inboxMessages,
+        tutorialCompleted: this.data.tutorialCompleted,
+        hangarTutorialSeen: this.data.hangarTutorialSeen
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch {}

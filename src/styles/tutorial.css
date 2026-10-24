@@ -36,10 +36,10 @@
   95% { transform: rotate(8deg) scale(1.08); }
 }
 
-/* Overlay en vol */
+/* Overlay en vol : en bas de l'écran pour laisser visibles le HUD et ce qui arrive devant le vaisseau */
 .tutorial-sparcky-overlay {
   position: absolute;
-  top: 90px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 28px);
@@ -47,7 +47,25 @@
   z-index: 100;
   pointer-events: auto;
   cursor: pointer;
-  animation: sparckySlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: sparckySlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* En préparation de vol, la barre d'améliorations occupe le bas : la carte remonte sous le HUD */
+.tutorial-sparcky-overlay.at-top {
+  bottom: auto;
+  top: 96px;
+  animation-name: sparckySlideDown;
+}
+
+@keyframes sparckySlideUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
 }
 
 @keyframes sparckySlideDown {
@@ -186,16 +204,25 @@
   transition: all 0.2s ease;
 }
 
-.btn-tutorial-skip:hover {
+.btn-tutorial-skip:hover,
+.btn-tutorial-skip.armed {
   background: rgba(239, 68, 68, 0.25);
   border-color: #EF4444;
   color: #F87171;
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }
 
+.tutorial-sparcky-text .tuto-blue {
+  color: #38BDF8;
+}
+
+.tutorial-sparcky-text .tuto-red {
+  color: #FF3366;
+}
+
 .tutorial-sparcky-text {
   font-family: var(--font-sans);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #F8FAFC;
   line-height: 1.4;
@@ -238,7 +265,7 @@
 /* Aide Swipe Directionnel (flèches horizontales à gauche et à droite de l'icône) */
 .tutorial-swipe-hint {
   position: absolute;
-  bottom: 140px;
+  top: 38%;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -604,8 +631,10 @@
 
 @media (max-width: 600px) {
   .tutorial-sparcky-overlay {
-    top: 76px;
     width: calc(100% - 20px);
+  }
+  .tutorial-sparcky-overlay.at-top {
+    top: 76px;
   }
   .tutorial-sparcky-card {
     padding: 12px 14px;
@@ -616,10 +645,9 @@
     height: 56px;
   }
   .tutorial-sparcky-text {
-    font-size: 0.82rem;
+    font-size: 0.88rem;
   }
   .tutorial-swipe-hint {
-    bottom: 90px;
     padding: 8px 14px;
   }
   .sparcky-tips-actions {

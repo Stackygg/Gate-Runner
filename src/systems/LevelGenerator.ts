@@ -50,72 +50,84 @@ export class LevelGenerator {
 
   /**
    * 🌟 NIVEAU DÉDIÉ AU TUTORIEL D'INITIATION (SPARCKY)
-   * - Voie Gauche : 1 Trou Noir (5 PV) bloquant 2 Portails (+1 et +1 Vaisseau)
-   * - Vague 1 : 10 astéroïdes (1 PV) bien disséminés pour tester le pilotage et le tir
-   * - Vague 2 : 50 astéroïdes pour accumuler des diamants
-   * - Boss Final : 300 PV (Boss d'Initiation)
+   * Chaque objet porte un tutorialTag qui déclenche une leçon de Sparcky à son approche.
+   * - Vague d'entraînement : 6 astéroïdes inoffensifs, alternés gauche / droite / centre
+   * - Portail +4 au centre, puis choix +2 / x2, puis portail rouge -4 face à un +3
+   * - Vague 2 : astéroïdes réels (ils coûtent des vaisseaux)
+   * - Trou noir (voie gauche) bloquant un portail x2
+   * - Boss d'initiation
    */
   public static generateTutorialLevel(): LevelData {
     const gates: Gate[] = [];
     const enemies: Enemy[] = [];
+    const H = GAME_CONFIG.GATE_HEIGHT;
 
-    const leftLaneX = 100;
-    const leftGateWidth = 115;
-
-    // 1. Séquence Voie Gauche : Trou Noir (5 PV) à Y = 360 + 2 Portails bloqués (+1 et +1)
-    const bh = new Enemy(leftLaneX, 360, 80, 80, 'black_hole', 5);
-    (bh as any).isTutorialBlackHole = true;
-    enemies.push(bh);
-
-    const g1 = new Gate(leftLaneX, 250, leftGateWidth, GAME_CONFIG.GATE_HEIGHT, 'ADD_SHIPS', 1, false);
-    const g2 = new Gate(leftLaneX, 140, leftGateWidth, GAME_CONFIG.GATE_HEIGHT, 'ADD_SHIPS', 1, false);
-    g1.assignedBH = bh;
-    g2.assignedBH = bh;
-    gates.push(g1, g2);
-
-    // 2. Vague 1 : 10 astéroïdes bien disséminés (1 PV chacun)
-    // Répartis sur le couloir central et droit (X: 180 à 450)
-    const wave1Positions = [
-      { x: 260, y: 240 },
-      { x: 380, y: 200 },
-      { x: 200, y: 160 },
-      { x: 330, y: 120 },
-      { x: 440, y: 80 },
-      { x: 230, y: 40 },
-      { x: 360, y: 0 },
-      { x: 190, y: -40 },
-      { x: 410, y: -80 },
-      { x: 280, y: -120 }
+    // 1. Vague d'entraînement : percuter un astéroïde ne coûte rien
+    const trainingWave = [
+      { x: 170, y: 300 },
+      { x: 380, y: 140 },
+      { x: 270, y: -20 },
+      { x: 150, y: -180 },
+      { x: 400, y: -340 },
+      { x: 270, y: -500 }
     ];
-
-    for (const pos of wave1Positions) {
-      const ast = new Enemy(pos.x, pos.y, 44, 40, 'block', 1);
-      (ast as any).isTutorialWave1 = true;
+    for (const pos of trainingWave) {
+      const ast = new Enemy(pos.x, pos.y, 46, 42, 'block', 1);
+      ast.isHarmless = true;
+      ast.tutorialTag = 'wave1';
       enemies.push(ast);
     }
 
-    // 3. Vague 2 : 50 astéroïdes après le trou noir pour accumuler des diamants (Y = -350 à -2300)
-    for (let i = 0; i < 50; i++) {
-      const y = -350 - (i * 38) + (Math.random() - 0.5) * 15;
-      const x = 75 + Math.random() * 390;
-      const size = 36 + Math.random() * 20;
-      const hp = 1 + (Math.random() < 0.35 ? 1 : 0); // 1 ou 2 PV
-      const ast = new Enemy(x, y, size, size * 0.85, 'block', hp);
-      (ast as any).isTutorialWave2 = true;
+    // 2. Premier portail : large, au centre, impossible à rater
+    const gAdd = new Gate(270, -900, 230, H, 'ADD_SHIPS', 4, false);
+    gAdd.tutorialTag = 'gate_add';
+    gates.push(gAdd);
+
+    // 3. Choix exclusif : +2 ou x2 (avec 5 vaisseaux, x2 rapporte davantage)
+    const gChoiceAdd = new Gate(165, -1600, 170, H, 'ADD_SHIPS', 2, false);
+    const gChoiceMul = new Gate(375, -1600, 170, H, 'MULTIPLY_SHIPS', 2, false);
+    gChoiceAdd.pairGate = gChoiceMul;
+    gChoiceMul.pairGate = gChoiceAdd;
+    gChoiceAdd.tutorialTag = 'gate_choice';
+    gChoiceMul.tutorialTag = 'gate_choice';
+    gates.push(gChoiceAdd, gChoiceMul);
+
+    // 4. Portail rouge du côté où le joueur vient de passer (x2), le bon portail est de l'autre côté
+    const gRed = new Gate(375, -2300, 170, H, 'SUBTRACT_SHIPS', 4, false);
+    const gSafe = new Gate(165, -2300, 170, H, 'ADD_SHIPS', 3, false);
+    gRed.pairGate = gSafe;
+    gSafe.pairGate = gRed;
+    gRed.tutorialTag = 'gate_red';
+    gates.push(gRed, gSafe);
+
+    // 5. Vague 2 : de vrais astéroïdes, qui rapportent les diamants du tutoriel
+    for (let i = 0; i < 16; i++) {
+      const y = -2900 - i * 70;
+      const x = 110 + ((i * 137) % 320);
+      const ast = new Enemy(x, y, 44, 40, 'block', i % 3 === 0 ? 3 : 2);
+      ast.tutorialTag = 'wave2';
       enemies.push(ast);
     }
 
-    // 4. Boss Final d'Initiation (300 PV)
-    const boss = new Enemy(270, -2600, 160, 95, 'boss_v1', 300, "BOSS D'INITIATION");
+    // 6. Trou noir sur la voie gauche, verrouillant un portail x2
+    const bh = new Enemy(100, -4300, 80, 80, 'black_hole', 12);
+    bh.tutorialTag = 'black_hole';
+    enemies.push(bh);
+    const gBh = new Gate(100, -4430, 125, H, 'MULTIPLY_SHIPS', 2, false);
+    gBh.assignedBH = bh;
+    gates.push(gBh);
+
+    // 7. Boss d'initiation
+    const boss = new Enemy(270, -5900, 160, 95, 'boss_v1', 250, "BOSS D'INITIATION");
     boss.isLevelBoss = true;
-    (boss as any).isTutorialBoss = true;
+    boss.tutorialTag = 'boss';
     enemies.push(boss);
 
     return {
       levelNumber: 1,
       missionType: 'expedition',
       isFunLevel: false,
-      totalDistance: 3200,
+      totalDistance: 6600,
       gates,
       enemies,
       hasBoss: true,

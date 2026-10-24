@@ -25,6 +25,7 @@ export class Gate {
   public isBossReward: boolean = false;
   public pairGate?: Gate; // Portail jumeau (choix exclusif : franchir l'un fait disparaître l'autre)
   public assignedBH?: Enemy; // Trou noir spécifiquement associé dont dépend la libération du portail
+  public tutorialTag: string | null = null; // Repère utilisé par Sparcky pour déclencher ses leçons
   
   public hitPulse: number = 1.0;
   public energyPhase: number = 0;
