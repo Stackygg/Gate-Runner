@@ -51,6 +51,7 @@ export interface EquipmentItem {
   isChest?: boolean;
   sourceMission?: number;
   hasRerolled?: boolean;
+  guaranteedRarity?: EquipmentRarity; // Coffre de récompense : rareté garantie de l'objet obtenu
 }
 
 export interface RarityConfig {
@@ -395,14 +396,15 @@ export class EquipmentSystem {
     missionNum: number,
     forceHighRarity: boolean = false,
     forceSpecialEffect: boolean = false,
-    fixedLevel?: number
+    fixedLevel?: number,
+    fixedRarity?: EquipmentRarity
   ): EquipmentItem {
     const slotTypes: EquipmentSlotType[] = ['WEAPON', 'SHIELD', 'ENGINE', 'CORE'];
     const slotType = slotTypes[Math.floor(Math.random() * slotTypes.length)];
 
     // NIVEAU D'OBJET : Fixé selon la mission d'obtention ou fixedLevel
     const itemLevel = fixedLevel !== undefined ? fixedLevel : Math.max(1, missionNum);
-    const rarity = this.rollRarity(itemLevel, forceHighRarity);
+    const rarity = fixedRarity ?? this.rollRarity(itemLevel, forceHighRarity);
     const rarityConfig = RARITY_CONFIGS[rarity];
 
     const nameData = ITEM_NAMES[slotType];
@@ -778,15 +780,27 @@ export class EquipmentSystem {
    */
   public static openChest(chest: EquipmentItem): EquipmentItem {
     const itemLevel = chest.level || chest.sourceMission || 1;
-    return this.generateLoot(itemLevel, false, true, itemLevel);
+    return this.generateLoot(itemLevel, false, true, itemLevel, chest.guaranteedRarity);
   }
 
   /**
    * Relance le tirage du butin d'un coffre (avec Effet Spécial garanti).
    * L'équipement conserve STRICTEMENT le même Niveau d'objet d'origine
-   * et respecte rigoureusement la table de pourcentages de rareté de ce niveau.
+   * et respecte rigoureusement la table de pourcentages de rareté de ce niveau
+   * (ou la rareté garantie d'un coffre de récompense).
    */
-  public static rerollChestLoot(itemLevel: number): EquipmentItem {
-    return this.generateLoot(itemLevel, false, true, itemLevel);
+  public static rerollChestLoot(itemLevel: number, guaranteedRarity?: EquipmentRarity): EquipmentItem {
+    return this.generateLoot(itemLevel, false, true, itemLevel, guaranteedRarity);
+  }
+
+  /**
+   * Coffre de récompense (calendrier de connexion) : l'objet obtenu a une rareté garantie
+   */
+  public static generateRewardChest(itemLevel: number, rarity: EquipmentRarity, name: string): EquipmentItem {
+    const chest = this.generateChest(itemLevel);
+    chest.name = name;
+    chest.rarity = rarity;
+    chest.guaranteedRarity = rarity;
+    return chest;
   }
 }

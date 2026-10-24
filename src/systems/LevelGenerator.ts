@@ -57,7 +57,7 @@ export class LevelGenerator {
    *   avec des astéroïdes d'entraînement entre les rangées
    * - Vague 2 : astéroïdes réels (ils coûtent des vaisseaux)
    * - Portail mur rouge sur toute la largeur, à remonter au tir (infranchissable sans améliorations)
-   * - Trou noir (voie gauche) bloquant un portail x2
+   * - Trou noir (voie gauche) bloquant deux portails de puissance : +100% cadence et +100% dégâts
    * - Boss d'initiation
    */
   public static generateTutorialLevel(): LevelData {
@@ -66,13 +66,14 @@ export class LevelGenerator {
     const H = GAME_CONFIG.GATE_HEIGHT;
 
     // 1. Vague d'entraînement : percuter un astéroïde ne coûte rien
+    // (assez loin pour laisser le joueur essayer de se déplacer avant que Sparcky les présente)
     const trainingWave = [
-      { x: 170, y: 300 },
-      { x: 380, y: 140 },
-      { x: 270, y: -20 },
-      { x: 150, y: -180 },
-      { x: 400, y: -340 },
-      { x: 270, y: -500 }
+      { x: 170, y: 100 },
+      { x: 380, y: -60 },
+      { x: 270, y: -220 },
+      { x: 150, y: -380 },
+      { x: 400, y: -540 },
+      { x: 270, y: -700 }
     ];
     for (const pos of trainingWave) {
       const ast = new Enemy(pos.x, pos.y, 46, 42, 'block', 1);
@@ -120,9 +121,7 @@ export class LevelGenerator {
     for (let i = 0; i < 16; i++) {
       const y = -2900 - i * 70;
       const x = 110 + ((i * 137) % 320);
-      const ast = new Enemy(x, y, 44, 40, 'block', i % 3 === 0 ? 3 : 2);
-      ast.tutorialTag = 'wave2';
-      enemies.push(ast);
+      enemies.push(new Enemy(x, y, 44, 40, 'block', i % 3 === 0 ? 3 : 2));
     }
 
     // 6. Portail mur : toute la largeur, négatif, à remonter au tir pendant qu'il fonce vers la flotte.
@@ -133,13 +132,17 @@ export class LevelGenerator {
     gWall.visibleFromY = TUTORIAL_WALL.shootableY;
     gates.push(gWall);
 
-    // 7. Trou noir sur la voie gauche, verrouillant un portail x2
+    // 7. Trou noir sur la voie gauche, verrouillant deux portails de puissance (+100% cadence, +100% dégâts)
     const bh = new Enemy(100, -6650, 80, 80, 'black_hole', 12);
     bh.tutorialTag = 'black_hole';
     enemies.push(bh);
-    const gBh = new Gate(100, -6780, 125, H, 'MULTIPLY_SHIPS', 2, false);
-    gBh.assignedBH = bh;
-    gates.push(gBh);
+    const gFireRate = new Gate(100, -6780, 125, H, 'ADD_FIRERATE', 100, false);
+    const gDamage = new Gate(100, -6890, 125, H, 'ADD_DAMAGE', 100, false);
+    for (const g of [gFireRate, gDamage]) {
+      g.assignedBH = bh;
+      g.tutorialTag = 'gate_boost';
+      gates.push(g);
+    }
 
     // 8. Boss d'initiation : assez résistant pour apprendre à esquiver ses salves
     const boss = new Enemy(270, -8250, 160, 95, 'boss_v1', 1500, "BOSS D'INITIATION");

@@ -379,6 +379,13 @@
             </div>
 
             <!-- Actions en bas : Nouveautés à gauche, Quêtes à droite (surélevés au-dessus de la version) -->
+            <!-- Calendrier de connexion (au-dessus des actions du bas) -->
+            <button id="btn-main-calendar" class="main-screen-action-btn calendar-btn" title="Calendrier de connexion" type="button">
+              <span class="action-btn-icon">📅</span>
+              <span class="action-btn-text">CALENDRIER</span>
+              <span id="calendar-badge" class="quests-badge-pill hidden">!</span>
+            </button>
+
             <div class="main-screen-bottom-actions">
               <button id="btn-main-news" class="main-screen-action-btn news-btn" title="Nouveautés & Mises à jour" type="button">
                 <span class="action-btn-icon">📢</span>
@@ -1112,6 +1119,33 @@
           </div>
         </div>
 
+        <!-- Calendrier de connexion : récompenses des connexions consécutives (31 jours) -->
+        <div id="modal-login-calendar" class="modal-overlay hidden">
+          <div class="modal-card login-calendar-card">
+            <button id="btn-close-login-calendar" class="login-calendar-close" title="Fermer" type="button">✕</button>
+            <div class="modal-badge victory">CONNEXION QUOTIDIENNE</div>
+            <h2 class="modal-title">CALENDRIER DE BORD</h2>
+            <p id="login-calendar-subtitle" class="login-calendar-subtitle"></p>
+            <div id="login-calendar-grid" class="login-calendar-grid"></div>
+            <p id="login-calendar-today" class="login-calendar-today"></p>
+            <button id="btn-login-calendar-claim" class="btn-primary" type="button">RÉCUPÉRER 🎁</button>
+          </div>
+        </div>
+
+        <!-- Résurrection : repartir une fois par essai en regardant une pub -->
+        <div id="modal-revive" class="modal-overlay hidden">
+          <div class="modal-card revive-card">
+            <div class="modal-badge defeat">FLOTTE DÉTRUITE !</div>
+            <h2 class="modal-title">REVIVRE ?</h2>
+            <div class="revive-countdown"><span id="revive-countdown-val">5</span></div>
+            <p class="revive-desc">Regarde une pub pour repartir avec <strong id="revive-ships">3</strong> vaisseaux 🚀</p>
+            <div class="modal-actions-col">
+              <button id="btn-revive-ad" class="btn-primary">🎬 REVIVRE</button>
+              <button id="btn-revive-decline" class="btn-secondary">NON MERCI</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Pause Overlay -->
         <div id="modal-pause" class="modal-overlay hidden">
           <div class="modal-card pause-card">
@@ -1208,6 +1242,20 @@
                 </div>
               </div>
 
+              <!-- Item 3b: Vibrations (retours haptiques) -->
+              <div class="settings-item-card">
+                <div class="settings-item-top">
+                  <div class="settings-item-left">
+                    <span class="settings-icon">📳</span>
+                    <div class="settings-text">
+                      <span class="settings-title">VIBRATIONS</span>
+                      <span class="settings-subtitle">Portails, impacts, explosions & fin de niveau</span>
+                    </div>
+                  </div>
+                  <button id="btn-settings-toggle-haptics" class="btn-audio-toggle-chip active">ON</button>
+                </div>
+              </div>
+
               <!-- Item 4: Réinitialiser la sauvegarde -->
               <div class="settings-item-card" style="border-color: rgba(255, 0, 85, 0.4); background: rgba(255, 0, 85, 0.08);">
                 <div class="settings-item-top">
@@ -1272,28 +1320,29 @@
             <p class="shop-subtitle">Offres quotidiennes gratuites, packs de ressources & Pass VIP Anti-Pub</p>
 
             <div class="shop-sections-scroll">
-              <!-- Section 1 : Offres Quotidiennes (Pubs Gratuites - 5/jour) -->
+              <!-- Section 1 : Offres Quotidiennes (Pubs Gratuites) -->
               <div class="shop-section">
                 <div class="shop-section-header">
                   <span class="shop-section-title">🎁 RÉCOMPENSES QUOTIDIENNES (PUBS)</span>
-                  <span id="shop-daily-ad-count" class="shop-daily-count">5 / 5 restantes</span>
                 </div>
                 <div class="shop-cards-row">
                   <div class="shop-item-card daily-ad-card">
-                    <div class="shop-item-icon">💎</div>
-                    <div class="shop-item-name">+50 DIAMANTS</div>
-                    <div class="shop-item-desc">Ravitaillement instantané</div>
-                    <button id="btn-shop-ad-diamonds" class="btn-shop-action btn-ad-claim">
+                    <div class="shop-item-icon"><span class="icon-diamond-dust shop-dust-icon"></span></div>
+                    <div class="shop-item-name">+500 POUDRE DE DIAMANT</div>
+                    <div class="shop-item-desc">Améliore tes équipements</div>
+                    <button id="btn-shop-ad-dust" class="btn-shop-action btn-ad-claim">
                       <span>🎬 REGARDER (GRATUIT)</span>
                     </button>
+                    <div id="shop-ad-dust-remaining" class="shop-daily-count">5 / 5 aujourd'hui</div>
                   </div>
                   <div class="shop-item-card daily-ad-card">
-                    <div class="shop-item-icon"><span class="icon-iridium shop-iridium-icon"></span></div>
-                    <div class="shop-item-name">+1 IRIDIUM</div>
-                    <div class="shop-item-desc">Métal rare & sauts de palier</div>
-                    <button id="btn-shop-ad-crystal" class="btn-shop-action btn-ad-claim">
+                    <div class="shop-item-icon"><span class="icon-iridium-bar shop-iridium-icon"></span></div>
+                    <div class="shop-item-name">+1 BARRE D'IRIDIUM</div>
+                    <div class="shop-item-desc">Débloque de nouveaux vaisseaux</div>
+                    <button id="btn-shop-ad-bar" class="btn-shop-action btn-ad-claim">
                       <span>🎬 REGARDER (GRATUIT)</span>
                     </button>
+                    <div id="shop-ad-bar-remaining" class="shop-daily-count">2 / 2 aujourd'hui</div>
                   </div>
                 </div>
               </div>
@@ -1309,7 +1358,7 @@
                     <div class="shop-item-icon">🛡️</div>
                     <div class="vip-info">
                       <div class="vip-title">PASS DÉFINITIF NO-ADS</div>
-                      <div class="vip-desc">Supprime toutes les pubs obligatoires + accorde instantanément tous les bonus publicitaires sans visionnage !</div>
+                      <div class="vip-desc">Supprime définitivement les pubs obligatoires entre les essais. Les pubs à récompense restent disponibles.</div>
                     </div>
                   </div>
                   <button id="btn-shop-buy-noads" class="btn-shop-action btn-buy-vip">
@@ -1324,19 +1373,12 @@
                   <span class="shop-section-title"><span class="icon-iridium"></span> PACKS D'IRIDIUM (SKINS & PALIERS)</span>
                 </div>
                 <div class="shop-cards-row">
-                  <div class="shop-item-card">
-                    <div class="shop-item-icon"><span class="icon-iridium shop-iridium-icon"></span></div>
-                    <div class="shop-item-amount">10 IRIDIUM</div>
-                    <button class="btn-shop-action btn-buy-crystals" data-amount="10">
-                      <span>1,99 €</span>
-                    </button>
-                  </div>
                   <div class="shop-item-card popular-card">
                     <div class="item-tag-hot">POPULAIRE</div>
                     <div class="shop-item-icon"><span class="icon-iridium shop-iridium-icon"></span></div>
-                    <div class="shop-item-amount">35 IRIDIUM</div>
-                    <button class="btn-shop-action btn-buy-crystals" data-amount="35">
-                      <span>4,99 €</span>
+                    <div class="shop-item-amount">50 IRIDIUM</div>
+                    <button class="btn-shop-action btn-buy-crystals" data-amount="50">
+                      <span>5,99 €</span>
                     </button>
                   </div>
                   <div class="shop-item-card best-card">
@@ -1344,37 +1386,46 @@
                     <div class="shop-item-icon"><span class="icon-iridium shop-iridium-icon"></span></div>
                     <div class="shop-item-amount">100 IRIDIUM</div>
                     <button class="btn-shop-action btn-buy-crystals" data-amount="100">
-                      <span>11,99 €</span>
+                      <span>9,99 €</span>
                     </button>
                   </div>
                 </div>
               </div>
 
-              <!-- Section 4 : Packs de Diamants -->
+              <!-- Section 4 : Packs de Poudre de Diamant (amélioration des équipements) -->
               <div class="shop-section">
                 <div class="shop-section-header">
-                  <span class="shop-section-title">💎 DIAMANTS D'AMÉLIORATION</span>
+                  <span class="shop-section-title"><span class="icon-diamond-dust"></span> POUDRE DE DIAMANT (ÉQUIPEMENTS)</span>
                 </div>
                 <div class="shop-cards-row">
                   <div class="shop-item-card">
-                    <div class="shop-item-icon">💎</div>
-                    <div class="shop-item-amount">300 DIAMANTS</div>
-                    <button class="btn-shop-action btn-buy-diamonds" data-amount="300">
+                    <div class="shop-item-icon"><span class="icon-diamond-dust shop-dust-icon"></span></div>
+                    <div class="shop-item-amount">5 000 POUDRE</div>
+                    <button class="btn-shop-action btn-buy-dust" data-amount="5000">
                       <span>0,99 €</span>
                     </button>
                   </div>
-                  <div class="shop-item-card">
-                    <div class="shop-item-icon">💎</div>
-                    <div class="shop-item-amount">1 200 DIAMANTS</div>
-                    <button class="btn-shop-action btn-buy-diamonds" data-amount="1200">
+                  <div class="shop-item-card popular-card">
+                    <div class="item-tag-hot">POPULAIRE</div>
+                    <div class="shop-item-icon"><span class="icon-diamond-dust shop-dust-icon"></span></div>
+                    <div class="shop-item-amount">25 000 POUDRE</div>
+                    <button class="btn-shop-action btn-buy-dust" data-amount="25000">
                       <span>2,99 €</span>
                     </button>
                   </div>
                   <div class="shop-item-card">
-                    <div class="shop-item-icon">💎</div>
-                    <div class="shop-item-amount">5 000 DIAMANTS</div>
-                    <button class="btn-shop-action btn-buy-diamonds" data-amount="5000">
-                      <span>8,99 €</span>
+                    <div class="shop-item-icon"><span class="icon-diamond-dust shop-dust-icon"></span></div>
+                    <div class="shop-item-amount">50 000 POUDRE</div>
+                    <button class="btn-shop-action btn-buy-dust" data-amount="50000">
+                      <span>5,99 €</span>
+                    </button>
+                  </div>
+                  <div class="shop-item-card best-card">
+                    <div class="item-tag-best">MEILLEUR PRIX</div>
+                    <div class="shop-item-icon"><span class="icon-diamond-dust shop-dust-icon"></span></div>
+                    <div class="shop-item-amount">200 000 POUDRE</div>
+                    <button class="btn-shop-action btn-buy-dust" data-amount="200000">
+                      <span>9,99 €</span>
                     </button>
                   </div>
                 </div>
@@ -1397,7 +1448,8 @@
                 <div class="ad-core-ring"></div>
                 <div class="ad-logo-icon">⚡</div>
                 <div id="ad-sponsor-name" class="ad-sponsor-text">CYBER-CORE V2 // BOOSTER QUANTIQUE</div>
-                <div class="ad-reward-notice">RÉCOMPENSE À DÉBLOQUER : <span id="ad-reward-title" class="ad-reward-bold">BONUS</span></div>
+                <div id="ad-reward-notice" class="ad-reward-notice">RÉCOMPENSE À DÉBLOQUER : <span id="ad-reward-title" class="ad-reward-bold">BONUS</span></div>
+                <div id="ad-interstitial-notice" class="ad-reward-notice hidden">PLUS DE PUBS ENTRE LES ESSAIS AVEC LE <span class="ad-reward-bold">PASS VIP</span></div>
               </div>
               <div class="ad-progress-track">
                 <div id="ad-progress-fill" class="ad-progress-fill"></div>

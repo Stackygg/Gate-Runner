@@ -1,4 +1,8 @@
 // Service de Publicités Récompensées & Interstitielles (Simulateur / Passerelle d'intégration AdMob / UnityAds)
+//
+// - Pub à récompense : regardée volontairement contre un bonus (aussi pour les joueurs VIP).
+// - Pub obligatoire : tous les 3 à 4 essais, supprimée par le Pass VIP Anti-Pub.
+// Toute pub regardée remet à zéro le compteur des pubs obligatoires.
 
 import { UpgradeStore } from '../systems/UpgradeStore';
 
@@ -10,11 +14,15 @@ export class AdService {
   private static elBtnClose = document.getElementById('btn-ad-close');
   private static elRewardTag = document.getElementById('ad-reward-title');
   private static elAdSponsorText = document.getElementById('ad-sponsor-name');
+  private static elRewardNotice: HTMLElement | null = null;
+  private static elInterstitialNotice: HTMLElement | null = null;
 
   private static adTimer: number | null = null;
-  private static countdownVal = 5;
+  private static isInterstitial: boolean = false;
   private static currentOnReward: (() => void) | null = null;
   private static currentOnDismiss: (() => void) | null = null;
+
+  private static readonly AD_DURATION_MS = 5000;
 
   private static readonly SPONSORS = [
     'CYBER-CORE V2 // BOOSTER D\'ÉNERGIE QUANTIQUE',
@@ -31,45 +39,63 @@ export class AdService {
     this.elBtnClose = document.getElementById('btn-ad-close');
     this.elRewardTag = document.getElementById('ad-reward-title');
     this.elAdSponsorText = document.getElementById('ad-sponsor-name');
+    this.elRewardNotice = document.getElementById('ad-reward-notice');
+    this.elInterstitialNotice = document.getElementById('ad-interstitial-notice');
 
     this.elBtnClose?.addEventListener('click', () => {
+      if (this.elBtnClose?.classList.contains('disabled')) return;
       this.closeAd(true);
     });
   }
 
+  /**
+   * Pub à récompense : le bonus est versé à la fin de la vidéo
+   */
   public static showRewardedAd(
     rewardName: string,
     onReward: () => void,
     onDismiss?: () => void
   ) {
-    // Si le joueur possède le PASS NO-ADS VIP (Anti-Pub), récompense instantanée sans vidéo !
-    if (this.store && this.store.data.noAdsPurchased) {
-      this.showNoAdsToast(rewardName);
-      onReward();
-      return;
-    }
-
+    this.isInterstitial = false;
     this.currentOnReward = onReward;
     this.currentOnDismiss = onDismiss || null;
-    this.countdownVal = 5;
-
     if (this.elRewardTag) this.elRewardTag.textContent = rewardName;
+    this.play('Récompense dans', 'RÉCOMPENSE VALIDÉE ! 🎁', 'RÉCUPÉRER LE BONUS 🎁');
+  }
+
+  /**
+   * Pub obligatoire entre deux essais (jamais affichée aux joueurs VIP)
+   */
+  public static showInterstitialAd(onDone: () => void) {
+    if (this.store?.data.noAdsPurchased) {
+      onDone();
+      return;
+    }
+    this.isInterstitial = true;
+    this.currentOnReward = onDone;
+    this.currentOnDismiss = null;
+    this.play('Fin de la pub dans', 'MERCI POUR VOTRE SOUTIEN !', 'CONTINUER ▶');
+  }
+
+  private static play(countdownLabel: string, doneLabel: string, closeLabel: string) {
+    this.elRewardNotice?.classList.toggle('hidden', this.isInterstitial);
+    this.elInterstitialNotice?.classList.toggle('hidden', !this.isInterstitial);
+
     if (this.elAdSponsorText) {
       const randSponsor = this.SPONSORS[Math.floor(Math.random() * this.SPONSORS.length)];
       this.elAdSponsorText.textContent = randSponsor;
     }
 
+    const durationSec = Math.ceil(this.AD_DURATION_MS / 1000);
     if (this.elBtnClose) {
       this.elBtnClose.classList.add('disabled');
-      this.elBtnClose.textContent = `PATIENTEZ (${this.countdownVal}s)`;
+      this.elBtnClose.textContent = `PATIENTEZ (${durationSec}s)`;
     }
-
     if (this.elProgressBar) {
       this.elProgressBar.style.width = '0%';
     }
-
     if (this.elTimerText) {
-      this.elTimerText.textContent = `Récompense dans ${this.countdownVal}s...`;
+      this.elTimerText.textContent = `${countdownLabel} ${durationSec}s...`;
     }
 
     this.elModal?.classList.remove('hidden');
@@ -79,23 +105,17 @@ export class AdService {
     }
 
     const startTime = Date.now();
-    const duration = 5000;
-
     this.adTimer = window.setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const progress = Math.min(1, elapsed / duration);
-      const remainingSec = Math.max(0, Math.ceil((duration - elapsed) / 1000));
+      const progress = Math.min(1, elapsed / this.AD_DURATION_MS);
+      const remainingSec = Math.max(0, Math.ceil((this.AD_DURATION_MS - elapsed) / 1000));
 
       if (this.elProgressBar) {
         this.elProgressBar.style.width = `${progress * 100}%`;
       }
 
       if (this.elTimerText) {
-        if (remainingSec > 0) {
-          this.elTimerText.textContent = `Récompense dans ${remainingSec}s...`;
-        } else {
-          this.elTimerText.textContent = 'RÉCOMPENSE VALIDÉE ! 🎁';
-        }
+        this.elTimerText.textContent = remainingSec > 0 ? `${countdownLabel} ${remainingSec}s...` : doneLabel;
       }
 
       if (this.elBtnClose) {
@@ -103,15 +123,13 @@ export class AdService {
           this.elBtnClose.textContent = `PATIENTEZ (${remainingSec}s)`;
         } else {
           this.elBtnClose.classList.remove('disabled');
-          this.elBtnClose.textContent = 'RÉCUPÉRER LE BONUS 🎁';
+          this.elBtnClose.textContent = closeLabel;
         }
       }
 
-      if (elapsed >= duration) {
-        if (this.adTimer !== null) {
-          clearInterval(this.adTimer);
-          this.adTimer = null;
-        }
+      if (elapsed >= this.AD_DURATION_MS && this.adTimer !== null) {
+        clearInterval(this.adTimer);
+        this.adTimer = null;
       }
     }, 100);
   }
@@ -124,6 +142,11 @@ export class AdService {
 
     this.elModal?.classList.add('hidden');
 
+    // Une pub regardée jusqu'au bout repousse la prochaine pub obligatoire
+    if (rewardGranted) {
+      this.store?.resetForcedAdCounter();
+    }
+
     if (rewardGranted && this.currentOnReward) {
       const rewardCb = this.currentOnReward;
       this.currentOnReward = null;
@@ -133,19 +156,5 @@ export class AdService {
       this.currentOnDismiss = null;
       dismissCb();
     }
-  }
-
-  private static showNoAdsToast(rewardName: string) {
-    const toast = document.createElement('div');
-    toast.className = 'no-ads-vip-toast';
-    toast.innerHTML = `🛡️ <strong>PASS VIP NO-ADS</strong> : Bonus <em>${rewardName}</em> accordé instantanément !`;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.classList.add('show');
-    }, 50);
-    setTimeout(() => {
-      toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 400);
-    }, 2800);
   }
 }

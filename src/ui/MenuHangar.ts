@@ -2836,7 +2836,7 @@ export class MenuHangar {
       this.currentChestItem.hasRerolled = true;
 
       const fixedLvl = this.currentChestItem.level || this.currentChestItem.sourceMission || 1;
-      const newItem = EquipmentSystem.rerollChestLoot(fixedLvl);
+      const newItem = EquipmentSystem.rerollChestLoot(fixedLvl, this.currentChestItem.guaranteedRarity);
 
       // Remplacement immédiat dans l'inventaire du joueur pour synchroniser la sauvegarde
       const prevId = this.currentRevealedItem?.id;

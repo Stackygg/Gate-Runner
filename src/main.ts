@@ -19,14 +19,17 @@ import { RescuedShip, SHIP_RANKS } from './entities/RescuedShip';
 import { HUD } from './ui/HUD';
 import { MenuHangar } from './ui/MenuHangar';
 import { GameOverModal } from './ui/GameOverModal';
+import { ReviveModal } from './ui/ReviveModal';
+import { LoginCalendarModal } from './ui/LoginCalendarModal';
 import { BottomUpgradeDock } from './ui/BottomUpgradeDock';
 import { ShopModal } from './ui/ShopModal';
 import { AdService } from './services/AdService';
+import { HapticService } from './services/HapticService';
 import { SplashScreen } from './ui/SplashScreen';
 import { Stargate } from './entities/Stargate';
 import { TutorialSystem, TUTORIAL_WALL } from './systems/TutorialSystem';
 
-export type GameState = 'MENU' | 'PRE_FLIGHT' | 'PLAYING' | 'BOSS' | 'GAUNTLET' | 'GAMEOVER' | 'PAUSED';
+export type GameState = 'MENU' | 'PRE_FLIGHT' | 'PLAYING' | 'BOSS' | 'GAUNTLET' | 'GAMEOVER' | 'PAUSED' | 'REVIVE';
 
 export class GameApp {
   private canvas: HTMLCanvasElement;
@@ -40,12 +43,20 @@ export class GameApp {
   private tutorial: TutorialSystem;
   private hangar: MenuHangar;
   private gameOverModal: GameOverModal;
+  private reviveModal: ReviveModal;
+  private loginCalendarModal?: LoginCalendarModal;
+  private loginCalendarAutoShown: boolean = false;
   private bottomUpgradeDock: BottomUpgradeDock;
   private shopModal: ShopModal;
   private splashScreen: SplashScreen;
 
   private state: GameState = 'MENU';
   private previousState: GameState = 'PLAYING';
+  // Résurrection : 1 fois par essai, contre une pub
+  private hasRevivedThisRun: boolean = false;
+  private peakFleetThisRun: number = 0;
+  private reviveInvincibleTimer: number = 0;
+  private stateBeforeRevive: GameState = 'PLAYING';
   private lastTime: number = 0;
 
   // Entités du monde en cours de partie
@@ -98,6 +109,7 @@ export class GameApp {
     this.music = new MusicSynth();
     this.particles = new ParticleSystem();
     this.store = new UpgradeStore();
+    HapticService.setEnabled(this.store.data.hapticsEnabled !== false);
     this.hud = new HUD();
     this.tutorial = new TutorialSystem(this.store, this.sound);
     this.tutorial.init({
@@ -125,6 +137,7 @@ export class GameApp {
       // Synchronisation : Démarrer la musique principale seulement à l'arrivée sur le menu (après l'animation Stacky)
       if (this.state === 'MENU') {
         this.music.playTrack('main');
+        this.maybeShowLoginCalendar();
       }
     });
 
@@ -159,13 +172,13 @@ export class GameApp {
 
     this.hangar = new MenuHangar(
       this.store,
-      () => this.enterMissionPreparation(),
+      () => this.withForcedAd(() => this.enterMissionPreparation()),
       () => this.shopModal.show(),
       this.tutorial
     );
 
     this.gameOverModal = new GameOverModal(
-      () => this.handleNextOrRetry(),
+      () => this.withForcedAd(() => this.handleNextOrRetry()),
       () => this.handleReturnToHangar(),
       (bonusDiamonds: number) => {
         // Callback lors du doublement de diamants par pub
@@ -185,6 +198,9 @@ export class GameApp {
         this.hangar.updateChallengesDisplay();
       }
     );
+
+    this.reviveModal = new ReviveModal();
+    this.loginCalendarModal = new LoginCalendarModal(this.store, () => this.hangar.refreshAll());
 
     this.setupGlobalControls();
     this.showHangar();
@@ -342,9 +358,30 @@ export class GameApp {
       syncPerfUI();
     });
 
+    // Vibrations (retours haptiques), mémorisées dans la sauvegarde
+    const btnSettingsToggleHaptics = document.getElementById('btn-settings-toggle-haptics');
+    const syncHapticsUI = () => {
+      const isOn = HapticService.isEnabled();
+      if (btnSettingsToggleHaptics) {
+        btnSettingsToggleHaptics.textContent = isOn ? 'ON' : 'OFF';
+        btnSettingsToggleHaptics.className = `btn-audio-toggle-chip ${isOn ? 'active' : 'muted'}`;
+      }
+    };
+
+    btnSettingsToggleHaptics?.addEventListener('click', () => {
+      const isOn = !HapticService.isEnabled();
+      HapticService.setEnabled(isOn);
+      this.store.data.hapticsEnabled = isOn;
+      this.store.save();
+      // Petite vibration de confirmation à l'activation
+      if (isOn) HapticService.medium();
+      syncHapticsUI();
+    });
+
     btnHangarSettings?.addEventListener('click', () => {
       syncAudioUI();
       syncPerfUI();
+      syncHapticsUI();
       modalSettings?.classList.remove('hidden');
     });
 
@@ -354,6 +391,7 @@ export class GameApp {
 
     syncAudioUI();
     syncPerfUI();
+    syncHapticsUI();
 
     // Bouton Sélecteur de Morceau
     const btnMusic = document.getElementById('btn-music-track');
@@ -426,6 +464,20 @@ export class GameApp {
       this.hangar.showHangar();
     } else {
       this.hangar.showMainMenu();
+      if (!this.splashScreen || this.splashScreen.getIsDismissed()) {
+        this.maybeShowLoginCalendar();
+      }
+    }
+  }
+
+  // Calendrier de connexion : ouvert automatiquement une fois par session s'il y a une récompense à prendre
+  // (jamais avant la fin du vol d'initiation)
+  private maybeShowLoginCalendar() {
+    this.loginCalendarModal?.refreshBadge();
+    if (this.loginCalendarAutoShown || !this.store.data.tutorialCompleted) return;
+    if (this.loginCalendarModal?.canClaimToday()) {
+      this.loginCalendarAutoShown = true;
+      this.loginCalendarModal.show();
     }
   }
 
@@ -455,6 +507,9 @@ export class GameApp {
     this.particles.clear();
     this.input.resetToCenter();
     this.fleetDamageTakenInRun = 0;
+    this.hasRevivedThisRun = false;
+    this.peakFleetThisRun = 0;
+    this.reviveInvincibleTimer = 0;
     this.mothershipDamageTakenInRun = 0;
     this.victoryDelayTimer = undefined;
     this.currentPhase = 1;
@@ -699,6 +754,60 @@ export class GameApp {
     this.showHangar();
   }
 
+  // --- RÉSURRECTION (1 fois par essai, contre une pub) ---
+  // Le vol d'initiation et les défis d'arène n'en proposent pas
+  private canOfferRevive(): boolean {
+    return !this.hasRevivedThisRun &&
+      !this.currentLevelData?.isTutorialLevel &&
+      this.currentLevelData?.gameplayType !== 'arena_defense';
+  }
+
+  // Vaisseaux rendus : la moitié de la flotte maximale atteinte pendant l'essai, 3 au minimum
+  private getReviveShipCount(): number {
+    return Math.max(3, Math.ceil(this.peakFleetThisRun / 2));
+  }
+
+  private offerRevive() {
+    this.stateBeforeRevive = this.state;
+    this.state = 'REVIVE';
+    this.reviveModal.show(
+      this.getReviveShipCount(),
+      () => this.revive(),
+      () => this.triggerGameOver(false, 'FLEET_DESTROYED')
+    );
+  }
+
+  private revive() {
+    this.hasRevivedThisRun = true;
+    this.fleet.shipCount = this.getReviveShipCount();
+    this.fleet.rebuildFormation();
+
+    // Zone dégagée autour de la flotte : tirs ennemis effacés, astéroïdes et ennemis proches détruits (sans butin)
+    this.enemyProjectiles = [];
+    for (const enemy of this.enemies) {
+      if (!enemy.isDead && !enemy.isBossType() && enemy.type !== 'black_hole' && enemy.y > this.fleet.centerY - 350) {
+        enemy.isDead = true;
+        this.particles.spawnExplosion(enemy.x, enemy.y, '#00F0FF', 12);
+      }
+    }
+
+    // Quelques secondes d'invincibilité pour se replacer
+    this.fleet.isInvincible = true;
+    this.reviveInvincibleTimer = 2.5;
+    this.particles.spawnFloatingText(this.fleet.centerX, this.fleet.centerY - 40, '🚀 FLOTTE RECONSTITUÉE !', '#00F0FF', 24);
+    this.sound.playWarp();
+    this.state = this.stateBeforeRevive;
+  }
+
+  // Pub obligatoire tous les 3 à 4 essais avant de relancer une mission (jamais pour les joueurs VIP)
+  private withForcedAd(next: () => void) {
+    if (!this.store.isForcedAdDue()) {
+      next();
+      return;
+    }
+    AdService.showInterstitialAd(next);
+  }
+
   private triggerGameOver(isVictory: boolean, defeatReason: 'FLEET_DESTROYED' | 'MOTHERSHIP_DESTROYED' = 'FLEET_DESTROYED') {
     this.state = 'GAMEOVER';
     this.music.stop();
@@ -737,6 +846,9 @@ export class GameApp {
       }
       return;
     }
+
+    // Chaque essai terminé hors tutoriel rapproche la prochaine pub obligatoire
+    this.store.countRunForForcedAd();
 
     // Détection Défi Quotidien (Convoi d'Iridium ou Raid de Diamant)
     const isChallenge = !!(this.currentLevelData && (this.currentLevelData.challengeId || this.currentLevelData.gameplayType === 'arena_defense'));
@@ -896,6 +1008,9 @@ export class GameApp {
         }
         this.renderFrame(dt, this.currentLevelData?.gameplayType === 'arena_defense' ? 0 : this.scrollSpeed);
       }
+    } else if (this.state === 'REVIVE') {
+      // Monde figé pendant la proposition de résurrection
+      this.renderFrame(dt, 0);
     } else if (this.state === 'MENU') {
       this.renderer.clear(dt, 0);
     }
@@ -919,6 +1034,7 @@ export class GameApp {
 
   // Explosion stellaire SuperNova qui détruit tout sauf la flotte alliée
   private triggerNovaBlast(x: number, y: number) {
+    HapticService.heavy();
     this.renderer.triggerNovaFlash();
     this.particles.spawnSuperNova(x, y);
     this.sound.playExplosion(true);
@@ -948,6 +1064,14 @@ export class GameApp {
   }
 
   private updateGame(dt: number) {
+    // Invincibilité temporaire après une résurrection
+    if (this.reviveInvincibleTimer > 0) {
+      this.reviveInvincibleTimer -= dt;
+      if (this.reviveInvincibleTimer <= 0) {
+        this.fleet.isInvincible = false;
+      }
+    }
+
     const levelBoss = this.currentLevelData?.bossEnemy;
     const isBossDying = !!(levelBoss && levelBoss.isDying && !levelBoss.isDead);
 
@@ -1413,6 +1537,7 @@ export class GameApp {
         this.hud.updateMothershipHp(this.mothershipHp, this.maxMothershipHp);
 
         if (this.mothershipHp <= 0) {
+          HapticService.heavy();
           this.sound.playExplosion(true);
           this.particles.spawnExplosion(GAME_CONFIG.WORLD_WIDTH / 2, 830, '#FF0055', 40);
           this.triggerGameOver(false, 'MOTHERSHIP_DESTROYED');
@@ -1566,8 +1691,14 @@ export class GameApp {
     }
 
     // 6. Conditions de Fin de Partie
+    this.peakFleetThisRun = Math.max(this.peakFleetThisRun, this.fleet.shipCount);
     if (this.fleet.shipCount <= 0) {
-      this.triggerGameOver(false, 'FLEET_DESTROYED');
+      HapticService.heavy();
+      if (this.canOfferRevive()) {
+        this.offerRevive();
+      } else {
+        this.triggerGameOver(false, 'FLEET_DESTROYED');
+      }
       return;
     }
 
@@ -1686,6 +1817,7 @@ export class GameApp {
       this.cargoShip.update(dt);
       this.hud.showMothership(this.cargoShip.hp, this.cargoShip.maxHp, "🛡️ INTÉGRITÉ DU CARGO D'IRIDIUM");
       if (this.cargoShip.isDestroyed()) {
+        HapticService.heavy();
         this.sound.playExplosion(true);
         this.particles.spawnExplosion(this.cargoShip.x, this.cargoShip.y, '#FF0055', 40);
         this.renderer.addScreenShake(18);

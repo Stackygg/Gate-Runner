@@ -7,6 +7,7 @@ import { Projectile } from '../entities/Projectile';
 import { ParticleSystem } from '../entities/Particle';
 import { SoundSynth } from '../engine/SoundSynth';
 import { RescuedShip, SHIP_RANKS } from '../entities/RescuedShip';
+import { HapticService } from '../services/HapticService';
 
 export interface CollisionResults {
   diamondsEarned: number;
@@ -270,6 +271,7 @@ export class CollisionSystem {
         if (fleet.centerX >= left - 25 && fleet.centerX <= right + 25) {
           gate.isPassed = true;
           results.gatesPassed++;
+          HapticService.light();
 
           // Si le portail fait partie d'une paire exclusive (ex: butin de boss), dissoudre instantanément l'autre portail
           if (gate.pairGate && !gate.pairGate.isPassed) {
@@ -327,6 +329,8 @@ export class CollisionSystem {
         const right = enemy.x + enemy.width / 2;
 
         if (fleet.centerX >= left - 35 && fleet.centerX <= right + 35) {
+          HapticService.medium();
+
           // Vague d'entraînement : l'impact détruit l'objet sans coûter de vaisseau
           if (enemy.isHarmless) {
             enemy.takeDamage(999);

@@ -12,6 +12,7 @@
     "@capacitor/android": "^8.5.1",
     "@capacitor/cli": "^8.5.1",
     "@capacitor/core": "^8.5.1",
+    "@capacitor/haptics": "^8.0.2",
     "canvas-confetti": "^1.9.3"
   },
   "devDependencies": {

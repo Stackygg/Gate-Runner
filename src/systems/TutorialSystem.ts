@@ -53,6 +53,11 @@ interface TutorialLesson {
 
 const TUTORIAL_LESSONS: TutorialLesson[] = [
   {
+    tag: 'wave1',
+    text: "Les astéroïdes détruisent tes vaisseaux s'ils te touchent. Tire dessus pour gagner des 💎 !",
+    triggerY: 250
+  },
+  {
     tag: 'gate_add',
     text: 'Les portails <strong class="tuto-blue">bleus</strong> ajoutent des vaisseaux. Passe dedans !',
     triggerY: 120
@@ -68,19 +73,19 @@ const TUTORIAL_LESSONS: TutorialLesson[] = [
     triggerY: 120
   },
   {
-    tag: 'wave2',
-    text: 'Attention : ces astéroïdes détruisent tes vaisseaux. Tire-les pour gagner des 💎 !',
-    triggerY: 60
-  },
-  {
     tag: 'gate_wall',
     text: 'Ce portail rouge barre toute la route ! Tire dedans avant qu\'il t\'atteigne : chaque tir le fait remonter.',
     triggerY: TUTORIAL_WALL.lessonY
   },
   {
     tag: 'black_hole',
-    text: 'Un trou noir bloque ce portail. Va à gauche et tire dessus pour le libérer !',
+    text: 'Un trou noir bloque ces portails. Va à gauche et tire dessus pour les libérer !',
     triggerY: 200
+  },
+  {
+    tag: 'gate_boost',
+    text: "Portails de puissance : <strong>+100% vitesse d'attaque</strong> ⚡ et <strong>+100% dégâts</strong> 🎯 jusqu'à la fin du vol. Prends les deux !",
+    triggerY: 150
   },
   {
     tag: 'boss',
@@ -293,7 +298,7 @@ export class TutorialSystem {
 
     this.sound.playSparckyChirp();
     this.showMessage(
-      "Salut, je suis Sparcky ! Déplace ton vaisseau : il tire tout seul. Détruis les astéroïdes !",
+      "Salut, je suis Sparcky ! Glisse pour déplacer ton vaisseau : il tire tout seul.",
       null
     );
   }
@@ -384,7 +389,8 @@ export class TutorialSystem {
       if (this.triggeredThisRun.has(lesson.tag)) continue;
 
       const targets: TutorialTarget[] = [
-        ...gates.filter(g => g.tutorialTag === lesson.tag && !g.isPassed),
+        // Un portail encore verrouillé par un trou noir n'est pas encore une cible de leçon
+        ...gates.filter(g => g.tutorialTag === lesson.tag && !g.isPassed && (!g.assignedBH || g.assignedBH.isDead)),
         ...enemies.filter(e => e.tutorialTag === lesson.tag && !e.isDead)
       ];
       if (targets.length === 0) continue;
@@ -392,7 +398,7 @@ export class TutorialSystem {
 
       this.triggeredThisRun.add(lesson.tag);
       // Les astéroïdes forment une vague : un seul repère suffit, sur le plus proche
-      const highlighted = lesson.tag === 'wave2'
+      const highlighted = lesson.tag === 'wave1'
         ? [targets.reduce((a, b) => (b.y > a.y ? b : a))]
         : targets;
       this.highlightTargets.push(...highlighted);

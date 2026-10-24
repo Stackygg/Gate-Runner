@@ -69,10 +69,7 @@ export interface PlayerSaveData {
   selectedSkinId: string;
   unlockedSkinIds: string[];
   noAdsPurchased: boolean;    // 🛡️ Pass VIP Anti-Pub acheté
-  dailyAdsWatched: {
-    date: string; // 'YYYY-MM-DD'
-    count: number; // Max 5 par jour
-  };
+  dailyAdsWatched: DailyAdsWatchedState;
   levelUpgrades: {
     [missionNum: number]: LevelUpgradeData;
   };
@@ -92,6 +89,13 @@ export interface PlayerSaveData {
   // Tutoriel Sparcky
   tutorialCompleted?: boolean;
   hangarTutorialSeen?: boolean;
+  // Pubs obligatoires : essais terminés depuis la dernière pub (obligatoire ou à récompense)
+  forcedAdRunCount: number;
+  forcedAdThreshold: number; // 3 ou 4 essais
+  // Calendrier de connexion : dernier jour réclamé de la série (1 à 31) et sa date
+  loginCalendar: LoginCalendarState;
+  // Paramètres : retours haptiques (vibrations)
+  hapticsEnabled: boolean;
   // Proxies dynamiques pour le niveau actif
   diamonds: number;
   upgradeTracks: {
@@ -99,6 +103,21 @@ export interface PlayerSaveData {
     damage: UpgradeStepState;
     diamondBoost: UpgradeStepState;
   };
+}
+
+// Pubs quotidiennes de la boutique : nombre de visionnages autorisés par jour et par offre
+export const SHOP_DAILY_AD_LIMITS = { dust: 5, bars: 2 };
+export type ShopDailyAdType = keyof typeof SHOP_DAILY_AD_LIMITS;
+
+export interface DailyAdsWatchedState {
+  date: string; // 'YYYY-MM-DD'
+  dust: number;
+  bars: number;
+}
+
+export interface LoginCalendarState {
+  day: number; // 0 tant qu'aucun jour n'a été réclamé
+  lastClaimDate: string | null; // 'YYYY-MM-DD' (heure de Paris)
 }
 
 export interface DailyChallengesState {
@@ -373,7 +392,7 @@ export class UpgradeStore {
       selectedSkinId: 'stacky_interceptor',
       unlockedSkinIds: ['stacky_interceptor'],
       noAdsPurchased: false,
-      dailyAdsWatched: { date: today, count: 0 },
+      dailyAdsWatched: { date: today, dust: 0, bars: 0 },
       levelUpgrades: {
         1: this.createDefaultLevelData()
       },
@@ -396,6 +415,10 @@ export class UpgradeStore {
       inboxMessages: DEFAULT_INBOX_MESSAGES.map(m => ({ ...m })),
       tutorialCompleted: false,
       hangarTutorialSeen: false,
+      forcedAdRunCount: 0,
+      forcedAdThreshold: UpgradeStore.rollForcedAdThreshold(),
+      loginCalendar: { day: 0, lastClaimDate: null },
+      hapticsEnabled: true,
       eventSeason: {
         eventId: 'event_season_1',
         seasonName: 'OPÉRATION NÉBULEUSE NOIRE // SAISON 1',
@@ -497,6 +520,10 @@ export class UpgradeStore {
         } else if (defaultData.maxUnlockedMission > 5) {
           defaultData.hangarTutorialSeen = true;
         }
+        if (parsed.forcedAdRunCount !== undefined) defaultData.forcedAdRunCount = parsed.forcedAdRunCount;
+        if (parsed.forcedAdThreshold !== undefined) defaultData.forcedAdThreshold = parsed.forcedAdThreshold;
+        if (parsed.loginCalendar !== undefined) defaultData.loginCalendar = parsed.loginCalendar;
+        if (parsed.hapticsEnabled !== undefined) defaultData.hapticsEnabled = parsed.hapticsEnabled;
       }
       // Règle stricte : Avant de débloquer le Hangar (Niveau 5), le vaisseau ne dispose d'aucun objet équipé
       // mais conserve précieusement ses coffres non identifiés gagnés en mission !
@@ -512,30 +539,57 @@ export class UpgradeStore {
     return defaultData;
   }
 
-  public getDailyAdsRemaining(): number {
+  // --- PUBS QUOTIDIENNES DE LA BOUTIQUE (limite propre à chaque offre) ---
+  private getDailyAdsState(): DailyAdsWatchedState {
     const today = new Date().toISOString().slice(0, 10);
     if (!this.data.dailyAdsWatched || this.data.dailyAdsWatched.date !== today) {
-      this.data.dailyAdsWatched = { date: today, count: 0 };
+      this.data.dailyAdsWatched = { date: today, dust: 0, bars: 0 };
       this.save();
     }
-    return Math.max(0, 5 - this.data.dailyAdsWatched.count);
+    return this.data.dailyAdsWatched;
   }
 
-  public canWatchDailyAd(): boolean {
-    return this.getDailyAdsRemaining() > 0;
+  public getDailyAdsRemaining(type: ShopDailyAdType): number {
+    const watched = this.getDailyAdsState()[type] || 0;
+    return Math.max(0, SHOP_DAILY_AD_LIMITS[type] - watched);
   }
 
-  public recordDailyAdWatch(): boolean {
-    if (this.canWatchDailyAd()) {
-      this.data.dailyAdsWatched.count++;
-      this.save();
-      return true;
-    }
-    return false;
+  public canWatchDailyAd(type: ShopDailyAdType): boolean {
+    return this.getDailyAdsRemaining(type) > 0;
+  }
+
+  public recordDailyAdWatch(type: ShopDailyAdType): boolean {
+    if (!this.canWatchDailyAd(type)) return false;
+    const state = this.getDailyAdsState();
+    state[type] = (state[type] || 0) + 1;
+    this.save();
+    return true;
   }
 
   public buyNoAds(): void {
     this.data.noAdsPurchased = true;
+    this.save();
+  }
+
+  // --- PUBS OBLIGATOIRES (tous les 3 à 4 essais, supprimées par le Pass VIP) ---
+  private static rollForcedAdThreshold(): number {
+    return Math.random() < 0.5 ? 3 : 4;
+  }
+
+  // Compte un essai terminé (victoire ou défaite) hors tutoriel
+  public countRunForForcedAd() {
+    this.data.forcedAdRunCount = (this.data.forcedAdRunCount || 0) + 1;
+    this.save();
+  }
+
+  public isForcedAdDue(): boolean {
+    return !this.data.noAdsPurchased && (this.data.forcedAdRunCount || 0) >= (this.data.forcedAdThreshold || 3);
+  }
+
+  // Après une pub (obligatoire ou à récompense), le compteur repart de zéro
+  public resetForcedAdCounter() {
+    this.data.forcedAdRunCount = 0;
+    this.data.forcedAdThreshold = UpgradeStore.rollForcedAdThreshold();
     this.save();
   }
 
@@ -565,7 +619,11 @@ export class UpgradeStore {
         achievements: this.data.achievements,
         inboxMessages: this.data.inboxMessages,
         tutorialCompleted: this.data.tutorialCompleted,
-        hangarTutorialSeen: this.data.hangarTutorialSeen
+        hangarTutorialSeen: this.data.hangarTutorialSeen,
+        forcedAdRunCount: this.data.forcedAdRunCount,
+        forcedAdThreshold: this.data.forcedAdThreshold,
+        loginCalendar: this.data.loginCalendar,
+        hapticsEnabled: this.data.hapticsEnabled
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch {}
