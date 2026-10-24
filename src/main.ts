@@ -24,7 +24,7 @@ import { ShopModal } from './ui/ShopModal';
 import { AdService } from './services/AdService';
 import { SplashScreen } from './ui/SplashScreen';
 import { Stargate } from './entities/Stargate';
-import { TutorialSystem } from './systems/TutorialSystem';
+import { TutorialSystem, TUTORIAL_WALL } from './systems/TutorialSystem';
 
 export type GameState = 'MENU' | 'PRE_FLIGHT' | 'PLAYING' | 'BOSS' | 'GAUNTLET' | 'GAMEOVER' | 'PAUSED';
 
@@ -143,6 +143,7 @@ export class GameApp {
       () => {
         this.reapplyUpgradesToFleet();
         this.updateHudStats();
+        this.tutorial.onUpgradeChanged();
       },
       () => {
         // Bonus +1 Vaisseau de départ
@@ -429,6 +430,7 @@ export class GameApp {
   }
 
   private currentPhase: number = 1;
+  private tutorialWallHoldTimer: number = 0;
   private finalBossTimer: number = 30.0;
   private finalBossMultiplier: number = 5.0;
 
@@ -454,6 +456,7 @@ export class GameApp {
     this.particles.clear();
     this.input.resetToCenter();
     this.fleetDamageTakenInRun = 0;
+    this.tutorialWallHoldTimer = TUTORIAL_WALL.holdSeconds;
     this.mothershipDamageTakenInRun = 0;
     this.victoryDelayTimer = undefined;
     this.currentPhase = 1;
@@ -657,6 +660,12 @@ export class GameApp {
   public launchFlight() {
     if (this.state !== 'PRE_FLIGHT') return;
 
+    // Vol d'initiation : Sparcky peut exiger une amélioration avant de repartir
+    if (this.currentLevelData?.isTutorialLevel && !this.tutorial.canLaunch()) {
+      this.tutorial.onLaunchBlocked();
+      return;
+    }
+
     this.state = 'PLAYING';
     this.bottomUpgradeDock.hide();
 
@@ -666,8 +675,6 @@ export class GameApp {
     // Déclenchement du tutoriel de vol avec Sparcky (Niveau Dédié Tutoriel)
     if (this.currentLevelData?.isTutorialLevel) {
       this.tutorial.startFlightTutorial(this.fleet ? this.fleet.centerX : 270);
-    } else {
-      this.tutorial.onFlightLaunched();
     }
   }
 
@@ -1181,7 +1188,11 @@ export class GameApp {
 
       // Vol d'initiation : les portails libres défilent au rythme du niveau pour laisser le temps de viser
       if (this.currentLevelData?.isTutorialLevel && !gate.assignedBH) {
-        gate.update(dt, this.scrollSpeed);
+        if (gate.tutorialTag === 'gate_wall') {
+          this.updateTutorialWallGate(gate, dt);
+        } else {
+          gate.update(dt, this.scrollSpeed);
+        }
         continue;
       }
 
@@ -1442,6 +1453,13 @@ export class GameApp {
       this.scrollSpeed = Math.max(GAME_CONFIG.BASE_SCROLL_SPEED, this.scrollSpeed - dt * decelSpeed);
     }
 
+    // Vol d'initiation : la flotte s'arrête devant le portail mur le temps de le remonter au tir
+    const isWallHolding = !!this.currentLevelData?.isTutorialLevel && this.tutorialWallHoldTimer > 0 &&
+      this.gates.some(g => g.tutorialTag === 'gate_wall' && g.isSpecial && !g.isPassed);
+    if (isWallHolding) {
+      this.scrollSpeed = 0;
+    }
+
     // 5. État et Affichage des Boss de Vagues & Timer Dégressif (30s de x5.0 à x1.0)
     const activeBoss = this.enemies.find(e => e.isBossType() && !e.isDead && e.y >= bossHorizonY && e.y < 750);
     if (activeBoss) {
@@ -1616,6 +1634,31 @@ export class GameApp {
 
     // 7. Mise à jour de l'interface HUD
     this.updateHudStats();
+  }
+
+  // Portail mur du vol d'initiation : il approche avec le niveau, s'arrête devant la flotte
+  // le temps de la remontée au tir, puis avance vers le joueur
+  private updateTutorialWallGate(gate: Gate, dt: number) {
+    if (!gate.isSpecial) {
+      // Pendant l'approche, sa valeur suit la flotte : infranchissable tant que les améliorations exigées manquent
+      gate.rawValue = -this.tutorial.computeWallValue(
+        this.fleet.shipCount,
+        this.fleet.fireRate * this.fleet.evolutionFireRateMultiplier,
+        this.fleet.bulletDamage * this.fleet.evolutionDamageMultiplier
+      );
+      gate.value = gate.rawValue;
+      gate.update(dt, this.scrollSpeed, TUTORIAL_WALL.holdY);
+      if (gate.y >= TUTORIAL_WALL.holdY) {
+        gate.isSpecial = true;
+      }
+      return;
+    }
+    if (this.tutorialWallHoldTimer > 0) {
+      this.tutorialWallHoldTimer -= dt;
+      gate.update(dt, 0);
+      return;
+    }
+    gate.update(dt, TUTORIAL_WALL.releaseSpeed);
   }
 
   // --- DÉFI SPÉCIAL : CONVOI D'IRIDIUM (MODE ARÈNE DÉFENSE 360°) ---

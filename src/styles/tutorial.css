@@ -57,6 +57,19 @@
   animation-name: sparckySlideDown;
 }
 
+/* Secousse quand le joueur tente de décoller sans avoir suivi la consigne */
+.tutorial-sparcky-overlay.nudge {
+  animation: sparckyNudge 0.45s ease-in-out;
+}
+
+@keyframes sparckyNudge {
+  0%, 100% { transform: translateX(-50%); }
+  20% { transform: translateX(calc(-50% - 10px)); }
+  40% { transform: translateX(calc(-50% + 10px)); }
+  60% { transform: translateX(calc(-50% - 6px)); }
+  80% { transform: translateX(calc(-50% + 6px)); }
+}
+
 @keyframes sparckySlideUp {
   0% {
     opacity: 0;

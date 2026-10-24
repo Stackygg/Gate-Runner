@@ -4,7 +4,10 @@
 // 1. INTRO     : pause, « glisse pour piloter », reprise dès que le joueur bouge
 // 2. Leçons    : chaque objet repéré (tutorialTag) met le jeu en pause à son approche,
 //                avec une flèche sur la cible et un message d'une ligne
-// 3. Fin de vol : bilan (victoire ou défaite), puis passage par la barre d'améliorations
+// 3. Portail mur : calculé pour être infranchissable avec la cadence de base,
+//                le premier vol se termine donc par une défaite
+// 4. Défaite  : le décollage reste bloqué tant que 2 niveaux de Vitesse tir ne sont pas achetés
+// 5. Victoire : fin du tutoriel, la mission 1 démarre de zéro (diamants et améliorations remis à zéro)
 // Les leçons déjà vues ne remettent plus le jeu en pause lors d'un nouvel essai :
 // seule la flèche de repère réapparaît.
 import { UpgradeStore } from './UpgradeStore';
@@ -12,6 +15,7 @@ import { SoundSynth } from '../engine/SoundSynth';
 import { Renderer } from '../engine/Renderer';
 import { Enemy } from '../entities/Enemy';
 import { Gate } from '../entities/Gate';
+import { GAME_CONFIG, UPGRADE_TRACKS_CONFIG } from '../config';
 
 type TutorialFlightStep =
   | 'IDLE'
@@ -20,8 +24,22 @@ type TutorialFlightStep =
   | 'FLYING'
   | 'RUN_END'
   | 'AFTER_DEFEAT'
-  | 'FINAL_UPGRADE'
   | 'COMPLETE';
+
+type MissionProgress = ReturnType<UpgradeStore['getCurrentLevelData']>;
+
+// Réglages du portail mur (voir main.ts : updateTutorialWallGate)
+export const TUTORIAL_WALL = {
+  holdY: 250,              // Profondeur où il s'arrête devant la flotte
+  holdSeconds: 7,          // Durée de l'arrêt, pendant laquelle la flotte tire dedans
+  releaseSpeed: 200,       // Vitesse d'avance vers la flotte après l'arrêt (px/s)
+  // Les vaisseaux tirent en salves synchronisées : la marge avec ce que la flotte peut tirer se compte en salves.
+  // Sans les niveaux exigés, il reste au moins une salve complète de négatif en plus : toute la flotte y passe.
+  failVolleyMargin: 2.5,
+  // Avec les niveaux exigés, le portail bascule au positif avec cette marge.
+  passVolleyMargin: 1.5,
+  requiredFireRateSteps: 2 // Niveaux de Vitesse tir exigés avant de repartir (+16 %)
+};
 
 interface TutorialTarget {
   x: number;
@@ -55,6 +73,11 @@ const TUTORIAL_LESSONS: TutorialLesson[] = [
     tag: 'wave2',
     text: 'Attention : ces astéroïdes détruisent tes vaisseaux. Tire-les pour gagner des 💎 !',
     triggerY: 60
+  },
+  {
+    tag: 'gate_wall',
+    text: 'Ce portail rouge barre toute la route ! Tire dedans : chaque tir le fait remonter.',
+    triggerY: TUTORIAL_WALL.holdY
   },
   {
     tag: 'black_hole',
@@ -93,6 +116,10 @@ export class TutorialSystem {
   private highlightPhase: number = 0;
   private highlightAge: number = 0;
   private skipArmedTimer?: number;
+  private wallGate: Gate | null = null;
+  private lastBlockedNudge: number = 0;
+  // Progression réelle de la mission 1, mise de côté quand un joueur rejoue le tutoriel depuis le guide
+  private savedMission1: MissionProgress | null = null;
 
   // Éléments du DOM (Overlay en vol)
   private elOverlay: HTMLElement | null = null;
@@ -102,7 +129,7 @@ export class TutorialSystem {
   private elSwipeIcon: HTMLElement | null = null;
   private elSwipeText: HTMLElement | null = null;
   private elBtnSkip: HTMLElement | null = null;
-  private elDock: HTMLElement | null = null;
+  private elFireRateCard: HTMLElement | null = null;
 
   // Modal Conseils de Sparcky
   private elModalTips: HTMLElement | null = null;
@@ -132,7 +159,7 @@ export class TutorialSystem {
     this.elSwipeIcon = document.getElementById('tutorial-swipe-icon');
     this.elSwipeText = document.getElementById('tutorial-swipe-text');
     this.elBtnSkip = document.getElementById('btn-tutorial-skip');
-    this.elDock = document.getElementById('bottom-upgrade-dock');
+    this.elFireRateCard = document.getElementById('dock-card-fireRate');
     this.elModalTips = document.getElementById('modal-sparcky-tips');
 
     this.elBtnSkip?.addEventListener('click', (e) => {
@@ -189,6 +216,19 @@ export class TutorialSystem {
   }
 
   /**
+   * Valeur (positive) à remonter sur le portail mur pour la flotte actuelle :
+   * - sans les niveaux de Vitesse tir exigés, la flotte entière y passe ;
+   * - avec, il bascule au positif avant d'atteindre la flotte.
+   * fireRate et damage : cadence et dégâts réels d'un vaisseau (améliorations comprises).
+   */
+  public computeWallValue(shipCount: number, fireRate: number, damage: number): number {
+    const releaseTime = (GAME_CONFIG.PLAYER_BASE_Y - TUTORIAL_WALL.holdY) / TUTORIAL_WALL.releaseSpeed;
+    const volleys = fireRate * (TUTORIAL_WALL.holdSeconds + releaseTime);
+    const margin = this.hasRequiredFireRate() ? -TUTORIAL_WALL.passVolleyMargin : TUTORIAL_WALL.failVolleyMargin;
+    return Math.max(1, Math.round(shipCount * damage * (volleys + margin)));
+  }
+
+  /**
    * Premier essai : le vol démarre directement, sans passer par la barre d'améliorations
    */
   public isFirstAttempt(): boolean {
@@ -203,6 +243,7 @@ export class TutorialSystem {
     this.isFlightTutorialRunning = true;
     this.triggeredThisRun.clear();
     this.highlightTargets = [];
+    this.wallGate = null;
     this.setDockHighlight(false);
 
     if (this.hasSeenIntro) {
@@ -235,18 +276,6 @@ export class TutorialSystem {
   }
 
   /**
-   * Appelé à chaque décollage hors vol d'initiation (ferme le dernier conseil de Sparcky)
-   */
-  public onFlightLaunched() {
-    if (this.activeStep === 'FINAL_UPGRADE') {
-      this.activeStep = 'COMPLETE';
-      this.isFlightTutorialRunning = false;
-      this.setDockHighlight(false);
-      this.hideOverlay();
-    }
-  }
-
-  /**
    * Progression manuelle de l'utilisateur (bouton d'action ou toucher de la carte)
    */
   private onUserAdvance() {
@@ -264,7 +293,7 @@ export class TutorialSystem {
       case 'RUN_END':
         this.sound.playClick();
         if (this.store.data.tutorialCompleted) {
-          this.showFinalUpgrade();
+          this.finishTutorial();
         } else {
           this.showRetryPreparation();
         }
@@ -313,6 +342,9 @@ export class TutorialSystem {
     }
 
     if (this.activeStep !== 'FLYING') return;
+
+    // Le portail mur quitte la liste une fois franchi : on garde sa trace pour le bilan de fin de vol
+    this.wallGate = gates.find(g => g.tutorialTag === 'gate_wall') ?? this.wallGate;
 
     // Retire les repères des objets franchis ou détruits, ou ignorés depuis trop longtemps (trou noir laissé de côté)
     this.highlightAge += dt;
@@ -404,58 +436,125 @@ export class TutorialSystem {
     this.activeStep = 'RUN_END';
     this.highlightTargets = [];
     this.elSwipeHint?.classList.add('hidden');
-
-    if (isVictory) {
-      // Le tutoriel est validé dès la victoire : une fermeture de l'app ne le relance plus
-      this.store.data.tutorialCompleted = true;
-      this.store.save();
-    }
-
     this.sound.playSparckyChirp();
+
     if (isVictory) {
+      // Le tutoriel est validé dès la victoire : une fermeture de l'app ne le relance plus,
+      // et la mission 1 démarre de zéro
+      this.store.data.tutorialCompleted = true;
+      this.restoreMission1();
       this.showMessage(
-        `Boss vaincu, bravo Commandant ! 🎉 Tu as gagné <strong>${earnedDiamonds} 💎</strong>.`,
-        'AMÉLIORER MA FLOTTE ▶',
+        'Boss vaincu, bravo Commandant ! 🎉 Ton entraînement est terminé.',
+        'MISSION 1 ▶',
         false,
         false
       );
-    } else {
-      this.showMessage(
-        `Ta flotte a été détruite ! Tu gardes tes <strong>${earnedDiamonds} 💎</strong> : renforce-toi et réessaie.`,
-        'AMÉLIORER ET RÉESSAYER ▶'
-      );
+      return;
     }
+
+    // Franchi alors qu'il était encore négatif : c'est le portail mur qui a détruit la flotte
+    const diedAtWall = !!this.wallGate && this.wallGate.isPassed && this.wallGate.type === 'SUBTRACT_SHIPS';
+    this.showMessage(
+      diedAtWall
+        ? 'Presque ! Il te manquait de la puissance de feu pour remonter ce portail.'
+        : `Ta flotte a été détruite ! Tu gardes tes <strong>${earnedDiamonds} 💎</strong> : renforce-toi et réessaie.`,
+      'AMÉLIORER ET RÉESSAYER ▶'
+    );
   }
 
   /**
-   * Après une défaite : retour sur la piste avec la barre d'améliorations mise en valeur
+   * Après une défaite : retour sur la piste, décollage bloqué jusqu'à l'achat des niveaux de Vitesse tir
    */
   private showRetryPreparation() {
     this.activeStep = 'AFTER_DEFEAT';
     this.isPaused = false;
+
+    // Sparcky avance les diamants manquants pour ne jamais bloquer un joueur qui en a récolté trop peu
+    const missing = this.getFireRateCostToRequirement() - this.store.getCurrentLevelData().diamonds;
+    if (missing > 0) {
+      this.store.addDiamondsToMission(1, missing);
+    }
+
     this.onRetryCallback?.();
     this.setDockHighlight(true);
+    this.showRetryMessage(missing > 0 ? missing : 0);
+  }
+
+  private showRetryMessage(advancedDiamonds: number = 0) {
+    if (this.hasRequiredFireRate()) {
+      this.showMessage("Parfait, tes vaisseaux tirent plus vite ! Touche l'écran pour repartir 🚀", null, true);
+      return;
+    }
+    const required = TUTORIAL_WALL.requiredFireRateSteps;
+    const advance = advancedDiamonds > 0 ? ` Je t'avance les ${advancedDiamonds} 💎 qui manquent.` : '';
     this.showMessage(
-      "Achète une amélioration avec tes 💎, puis touche l'écran pour repartir. Astuce : vise les portails bleus !",
+      `Achète <strong>${required} niveaux de Vitesse tir ⚡</strong> : tes vaisseaux tireront plus vite (${this.getFireRateStepsDone()}/${required}).${advance}`,
       null,
       true
     );
   }
 
   /**
-   * Après la victoire : préparation de la mission 1 avec les diamants gagnés
+   * Le vol d'initiation peut-il redécoller ? (après une défaite, il faut les niveaux de Vitesse tir exigés)
    */
-  private showFinalUpgrade() {
-    this.activeStep = 'FINAL_UPGRADE';
+  public canLaunch(): boolean {
+    return this.activeStep !== 'AFTER_DEFEAT' || this.hasRequiredFireRate();
+  }
+
+  /**
+   * Toucher l'écran sans avoir acheté les améliorations : Sparcky secoue sa carte et rappelle la consigne
+   */
+  public onLaunchBlocked() {
+    const now = performance.now();
+    if (now - this.lastBlockedNudge < 800) return;
+    this.lastBlockedNudge = now;
+
+    this.sound.playSparckyChirp();
+    this.showRetryMessage();
+    this.elOverlay?.classList.remove('nudge');
+    void this.elOverlay?.offsetWidth; // Relance l'animation de secousse
+    this.elOverlay?.classList.add('nudge');
+  }
+
+  /**
+   * Appelé après chaque achat dans la barre d'améliorations
+   */
+  public onUpgradeChanged() {
+    if (this.activeStep === 'AFTER_DEFEAT') {
+      this.showRetryMessage();
+    }
+  }
+
+  private getFireRateStepsDone(): number {
+    const track = this.store.data.upgradeTracks.fireRate;
+    return track.tier > 1 ? TUTORIAL_WALL.requiredFireRateSteps : Math.min(track.step, TUTORIAL_WALL.requiredFireRateSteps);
+  }
+
+  public hasRequiredFireRate(): boolean {
+    return this.getFireRateStepsDone() >= TUTORIAL_WALL.requiredFireRateSteps;
+  }
+
+  // Coût restant (en diamants) pour atteindre les niveaux de Vitesse tir exigés
+  private getFireRateCostToRequirement(): number {
+    const config = UPGRADE_TRACKS_CONFIG.fireRate;
+    const track = this.store.data.upgradeTracks.fireRate;
+    let cost = 0;
+    for (let step = this.getFireRateStepsDone(); step < TUTORIAL_WALL.requiredFireRateSteps; step++) {
+      cost += Math.round((config.baseStepCost + step * config.costPerStep) * track.tier);
+    }
+    return cost;
+  }
+
+  /**
+   * Après la victoire : sortie du tutoriel vers la mission 1
+   */
+  private finishTutorial() {
+    this.activeStep = 'COMPLETE';
     this.isPaused = false;
+    this.isFlightTutorialRunning = false;
+    this.setDockHighlight(false);
+    this.hideOverlay();
     this.onFinishTutorialCallback?.();
-    this.setDockHighlight(true);
-    this.showMessage(
-      "Dépense tes 💎 dans une amélioration, puis touche l'écran pour lancer la mission 1 !",
-      null,
-      true,
-      false
-    );
   }
 
   /**
@@ -486,21 +585,23 @@ export class TutorialSystem {
    * Passer le tutoriel : on quitte le vol d'initiation pour la vraie mission 1
    */
   public skipTutorial() {
-    const wasFinalStep = this.activeStep === 'FINAL_UPGRADE';
-    this.isPaused = false;
-    this.isFlightTutorialRunning = false;
-    this.activeStep = 'COMPLETE';
     this.highlightTargets = [];
     this.store.data.tutorialCompleted = true;
-    this.store.save();
-
-    this.setDockHighlight(false);
-    this.hideOverlay();
+    this.restoreMission1();
     this.elSwipeHint?.classList.add('hidden');
+    this.finishTutorial();
+  }
 
-    // Déjà en préparation de la mission 1 : rien à recharger
-    if (!wasFinalStep) {
-      this.onFinishTutorialCallback?.();
+  /**
+   * Rend à la mission 1 sa progression d'avant le tutoriel (rejeu depuis le guide), ou la remet à zéro
+   */
+  private restoreMission1() {
+    if (this.savedMission1) {
+      this.store.data.levelUpgrades[1] = this.savedMission1;
+      this.savedMission1 = null;
+      this.store.save();
+    } else {
+      this.store.resetMissionProgress(1);
     }
   }
 
@@ -546,9 +647,13 @@ export class TutorialSystem {
    * Recommencer le tutoriel depuis le début (intro et leçons comprises)
    */
   public resetAndReplayTutorial() {
+    // Le tutoriel utilise le porte-monnaie de la mission 1 : on met de côté la vraie progression du joueur
+    if (this.store.data.levelUpgrades?.[1] && !this.savedMission1) {
+      this.savedMission1 = JSON.parse(JSON.stringify(this.store.data.levelUpgrades[1]));
+    }
     this.store.data.tutorialCompleted = false;
     this.store.data.selectedMission = 1;
-    this.store.save();
+    this.store.resetMissionProgress(1);
     this.attempts = 0;
     this.hasSeenIntro = false;
     this.seenLessons.clear();
@@ -556,8 +661,9 @@ export class TutorialSystem {
     this.onReplayCallback?.();
   }
 
+  // Met en valeur la carte « Vitesse tir » de la barre d'améliorations
   private setDockHighlight(on: boolean) {
-    this.elDock?.classList.toggle('dock-tutorial-highlight', on);
+    this.elFireRateCard?.classList.toggle('dock-tutorial-highlight', on);
   }
 
   private hideOverlay() {

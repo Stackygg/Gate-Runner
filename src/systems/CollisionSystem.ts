@@ -291,9 +291,9 @@ export class CollisionSystem {
               particles.spawnFloatingText(fleet.centerX, fleet.centerY - 30, `x${gate.value.toFixed(1)} 🚀`, '#00FF88', 24);
               break;
             case 'SUBTRACT_SHIPS':
-              fleet.shipCount = Math.max(0, fleet.shipCount - Math.abs(Math.round(gate.value)));
+              fleet.shipCount = Math.max(0, fleet.shipCount - gate.getShipLoss());
               sound.playGatePass(false);
-              particles.spawnFloatingText(fleet.centerX, fleet.centerY - 30, `-${Math.abs(Math.round(gate.value))} 🚀`, '#FF0055', 22);
+              particles.spawnFloatingText(fleet.centerX, fleet.centerY - 30, `-${gate.getShipLoss()} 🚀`, '#FF0055', 22);
               break;
             case 'DIVIDE_SHIPS':
               fleet.shipCount = Math.max(0, Math.floor(fleet.shipCount / Math.max(1, gate.value)));

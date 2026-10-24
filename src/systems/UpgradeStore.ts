@@ -597,6 +597,15 @@ export class UpgradeStore {
     this.save();
   }
 
+  // Remet à zéro les diamants et améliorations d'une mission (ex : mission 1 après le vol d'initiation)
+  public resetMissionProgress(missionNum: number) {
+    if (!this.data.levelUpgrades) {
+      this.data.levelUpgrades = {};
+    }
+    this.data.levelUpgrades[missionNum] = this.createDefaultLevelData();
+    this.save();
+  }
+
   public addCrystals(amount: number) {
     this.data.violetCrystals += Math.round(amount);
     this.save();

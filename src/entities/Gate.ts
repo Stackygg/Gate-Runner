@@ -73,22 +73,26 @@ export class Gate {
     }
 
     // Portail spécial : améliorable au tir
+    // Les dégâts comptent avec leur fraction (1,2 de dégâts = +1,2) : chaque amélioration de puissance se ressent
     const effectivePower = damage * upgradeMultiplier;
 
     switch (this.type) {
       case 'ADD_SHIPS':
-        this.value += Math.max(1, Math.round(effectivePower));
+        this.rawValue += effectivePower;
+        this.value = this.rawValue;
         break;
       case 'MULTIPLY_SHIPS':
         this.rawValue += 0.05 * effectivePower;
         this.value = Math.round(this.rawValue * 10) / 10;
         break;
       case 'SUBTRACT_SHIPS':
-        this.value += Math.max(1, Math.round(effectivePower));
-        if (this.value >= 0) {
+        // Valeur négative qui remonte vers zéro, puis bascule en portail positif
+        this.rawValue = -Math.abs(this.rawValue) + effectivePower;
+        if (this.rawValue >= 0) {
           this.type = 'ADD_SHIPS';
-          this.value = Math.max(1, this.value);
+          this.rawValue = Math.max(1, this.rawValue);
         }
+        this.value = this.rawValue;
         break;
       case 'DIVIDE_SHIPS':
         this.rawValue -= 0.05 * effectivePower;
@@ -101,13 +105,20 @@ export class Gate {
         }
         break;
       case 'ADD_FIRERATE':
-        this.value += Math.max(1, Math.round(2 * effectivePower));
+        this.rawValue += 2 * effectivePower;
+        this.value = this.rawValue;
         break;
       case 'ADD_DAMAGE':
-        this.value += Math.max(1, Math.round(effectivePower));
+        this.rawValue += effectivePower;
+        this.value = this.rawValue;
         break;
     }
     return true;
+  }
+
+  // Vaisseaux retirés par un portail négatif : -0,4 coûte encore 1 vaisseau tant qu'il n'est pas passé au positif
+  public getShipLoss(): number {
+    return Math.ceil(Math.abs(this.value));
   }
 
   public isPositive(): boolean {
@@ -121,7 +132,7 @@ export class Gate {
       case 'MULTIPLY_SHIPS':
         return { title: `x${this.value.toFixed(1)} 🚀`, subtitle: '' };
       case 'SUBTRACT_SHIPS':
-        return { title: `-${Math.abs(Math.round(this.value))} 🚀`, subtitle: '' };
+        return { title: `-${this.getShipLoss()} 🚀`, subtitle: '' };
       case 'DIVIDE_SHIPS':
         return { title: `÷${this.value.toFixed(1)} 🚀`, subtitle: '' };
       case 'ADD_FIRERATE':
@@ -146,10 +157,13 @@ export class Gate {
 
     // Palette de couleurs :
     // - Portails Normaux : Bleu roi (#0088FF) pour positif, Rouge (#FF0055) pour négatif
-    // - Portails Spéciaux : Bleu Cyan / Bleu Vert (#00FFCC / #00FFAA) pour vaisseaux, Orange néon (#FF7700 / #FFAA00) pour cadence/boost
+    // - Portails Spéciaux : Bleu Cyan / Bleu Vert (#00FFCC / #00FFAA) pour vaisseaux, Orange néon (#FF7700 / #FFAA00) pour cadence/boost,
+    //   Rouge (#FF0055) tant qu'ils sont négatifs
     let mainColor: string;
     if (this.isSpecial) {
-      if (this.type === 'ADD_FIRERATE' || this.type === 'ADD_DAMAGE') {
+      if (!isPos) {
+        mainColor = '#FF0055';
+      } else if (this.type === 'ADD_FIRERATE' || this.type === 'ADD_DAMAGE') {
         mainColor = '#FF8800'; // Orange néon au lieu de jaune
       } else {
         mainColor = '#00FFCC'; // Bleu Cyan / Bleu Vert au lieu de bleu
@@ -173,7 +187,11 @@ export class Gate {
     // Champ de force holographique énergétique
     const forcefieldGrad = ctx.createLinearGradient(left, top, left + drawW, top + drawH);
     if (this.isSpecial) {
-      if (this.type === 'ADD_FIRERATE' || this.type === 'ADD_DAMAGE') {
+      if (!isPos) {
+        forcefieldGrad.addColorStop(0, 'rgba(255, 0, 85, 0.5)');
+        forcefieldGrad.addColorStop(0.5, 'rgba(120, 0, 40, 0.65)');
+        forcefieldGrad.addColorStop(1, 'rgba(255, 0, 85, 0.5)');
+      } else if (this.type === 'ADD_FIRERATE' || this.type === 'ADD_DAMAGE') {
         forcefieldGrad.addColorStop(0, 'rgba(255, 120, 0, 0.45)');
         forcefieldGrad.addColorStop(0.5, 'rgba(255, 60, 0, 0.6)');
         forcefieldGrad.addColorStop(1, 'rgba(255, 160, 0, 0.45)');
