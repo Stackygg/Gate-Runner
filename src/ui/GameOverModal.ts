@@ -721,7 +721,7 @@ export class GameOverModal {
         this.elLootDetails.innerHTML = `
           <div class="tuto-loot-sparcky">
             <img src="./sparcky-mascotte.png" alt="Sparcky" class="tuto-loot-sparcky-avatar" />
-            <p>L'Iridium <span class="icon-iridium"></span> est rare : il débloque les paliers d'amélioration avancés et peut t'offrir un vaisseau de plus au départ.</p>
+            <p>L'Iridium <span class="icon-iridium"></span> est rare : Vous en débloquez 1 à chaque première finition de mission et pouvez l'utiliser de diverses manières.</p>
           </div>
         `;
       }
