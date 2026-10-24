@@ -36,10 +36,10 @@ export interface TutorialCompleteStats {
 
 // Compétences présentées dans le bilan du vol d'initiation
 const TUTORIAL_SKILLS = [
-  { title: 'PORTAILS', desc: 'Bleus, ×2 et rouges : choisir le bon chemin' },
+  { title: 'PORTAILS', desc: 'Agrandis la flotte, évite les rouges !' },
   { title: 'TROUS NOIRS', desc: 'Les détruire pour libérer les portails' },
-  { title: 'AMÉLIORATIONS', desc: 'Dépenser ses 💎 pour tirer plus vite' },
-  { title: 'BOSS', desc: 'Esquiver ses salves en gardant le cap' }
+  { title: 'DIAMANTS', desc: 'Détruis les astéroïdes, trous noirs et ennemis pour obtenir des diamants !' },
+  { title: 'AMÉLIORATIONS', desc: 'Les 💎 permettent de t\'améliorer' }
 ];
 
 export class GameOverModal {
@@ -690,7 +690,7 @@ export class GameOverModal {
       if (this.elQuestsTitle) this.elQuestsTitle.textContent = 'COMPÉTENCES ACQUISES';
       this.elQuestsBox.style.display = 'block';
       this.elQuestsList.innerHTML = TUTORIAL_SKILLS.map(skill => `
-        <div class="gameover-quest-row">
+        <div class="gameover-quest-row tuto-skill-row">
           <div class="quest-row-left">
             <span class="quest-status-badge quest-chip-done">✅ ACQUIS</span>
             <div class="quest-row-info">
@@ -702,34 +702,30 @@ export class GameOverModal {
       `).join('');
     }
 
-    // Récompense d'Iridium, avec l'explication de Sparcky
+    // Butin : la case Iridium, avec l'explication de Sparcky.
+    // Le tutoriel rejoué depuis le guide n'offre pas d'Iridium une seconde fois : la case l'indique.
     if (this.elLootBox && this.elLootGrid) {
-      if (stats.iridiumEarned > 0) {
-        const headerTitle = this.elLootBox.querySelector('.loot-header-title');
-        if (headerTitle) headerTitle.textContent = "RÉCOMPENSE D'ENTRAÎNEMENT";
-        this.elLootGrid.innerHTML = `
-          <div class="loot-slot-cell cell-iridium" title="Iridium">
-            <div class="loot-cell-icon-wrap">
-              <span class="loot-cell-icon"><span class="icon-iridium"></span></span>
-            </div>
-            <div class="loot-cell-val val-iridium">+${stats.iridiumEarned}</div>
-            <div class="loot-cell-title">IRIDIUM</div>
+      const headerTitle = this.elLootBox.querySelector('.loot-header-title');
+      if (headerTitle) headerTitle.textContent = "BUTIN DE L'ENTRAÎNEMENT";
+      const iridiumVal = stats.iridiumEarned > 0 ? `+${stats.iridiumEarned}` : 'DÉJÀ REÇU';
+      this.elLootGrid.innerHTML = `
+        <div class="loot-slot-cell cell-iridium" title="Iridium">
+          <div class="loot-cell-icon-wrap">
+            <span class="loot-cell-icon"><span class="icon-iridium"></span></span>
+          </div>
+          <div class="loot-cell-val val-iridium">${iridiumVal}</div>
+          <div class="loot-cell-title">IRIDIUM</div>
+        </div>
+      `;
+      if (this.elLootDetails) {
+        this.elLootDetails.innerHTML = `
+          <div class="tuto-loot-sparcky">
+            <img src="./sparcky-mascotte.png" alt="Sparcky" class="tuto-loot-sparcky-avatar" />
+            <p>L'Iridium <span class="icon-iridium"></span> est rare : il débloque les paliers d'amélioration avancés et peut t'offrir un vaisseau de plus au départ.</p>
           </div>
         `;
-        if (this.elLootDetails) {
-          this.elLootDetails.innerHTML = `
-            <div class="tuto-loot-sparcky">
-              <img src="./sparcky-mascotte.png" alt="Sparcky" class="tuto-loot-sparcky-avatar" />
-              <p>L'Iridium <span class="icon-iridium"></span> est rare : il débloque les paliers d'amélioration avancés et peut t'offrir un vaisseau de plus au départ.</p>
-            </div>
-          `;
-        }
-        this.elLootBox.classList.remove('hidden');
-      } else {
-        this.elLootGrid.innerHTML = '';
-        if (this.elLootDetails) this.elLootDetails.innerHTML = '';
-        this.elLootBox.classList.add('hidden');
       }
+      this.elLootBox.classList.remove('hidden');
     }
 
     if (this.elBtnNext) {

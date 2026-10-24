@@ -699,3 +699,10 @@
   line-height: 1.35;
   color: #E2E8F0;
 }
+
+/* Bilan du vol d'initiation : les descriptions des compétences s'affichent en entier */
+.tuto-skill-row .quest-row-desc {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
