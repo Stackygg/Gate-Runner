@@ -89,7 +89,7 @@ export const SKINS_CONFIG: ShipSkin[] = [
     name: 'STACKY SCOUT',
     shipClass: 'Éclaireur',
     archetype: 'Éclaireur',
-    perkText: '⚡ Vitesse d\'attaque +10%',
+    perkText: 'Aucun bonus (vaisseau de départ)',
     primaryColor: '#00F0FF',
     secondaryColor: '#7928CA',
     glowColor: '#00F0FF',
@@ -97,7 +97,7 @@ export const SKINS_CONFIG: ShipSkin[] = [
     costInBars: 0,
     costInCrystals: 0,
     slots: ['WEAPON', 'ENGINE'],
-    statBonus: { fireRateMultiplier: 1.10, damageMultiplier: 1.0, speedMultiplier: 1.0 }
+    statBonus: { fireRateMultiplier: 1.0, damageMultiplier: 1.0, speedMultiplier: 1.0 }
   },
   {
     id: 'cyber_viper',

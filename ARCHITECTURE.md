@@ -57,7 +57,7 @@ $$\text{Dégâts} = \text{BASE\_BULLET\_DAMAGE} \times \text{Multiplicateur Amé
 
 | ID | Nom | Archétype | Bonus Passif | Coût Barres 🟦 | Slots Équipement |
 | :--- | :--- | :--- | :--- | :---: | :--- |
-| `stacky_interceptor` | **Stacky Interceptor** | Chasseur Éclaireur | ⚡ Cadence +10% | `0` (Par défaut) | `WEAPON`, `ENGINE` |
+| `stacky_interceptor` | **Stacky Interceptor** | Chasseur Éclaireur | Aucun bonus | `0` (Par défaut) | `WEAPON`, `ENGINE` |
 | `cyber_viper` | **Cyber Viper** | Intercepteur Furtif | 🚀 Vitesse & Cadence +15% | `2` | `WEAPON`, `ENGINE`, `CORE` |
 | `void_dreadnought` | **Void Phantom** | Bombardier Plasma | 💥 Dégâts Laser +25% | `5` | `WEAPON`, `WEAPON`, `CORE` |
 | `titan_aegis` | **Titan Aegis** | Cuirassé Défensif | 🛡️ +2 Vaisseaux au départ | `8` | `WEAPON`, `SHIELD`, `SHIELD`, `CORE` |
