@@ -17,6 +17,7 @@ export interface CollisionResults {
   screenShake: number;
   fleetDamageTaken: number;
   rescuedShipsSpawned: RescuedShip[];
+  killedEnemies: Enemy[];
 }
 
 export class CollisionSystem {
@@ -41,7 +42,8 @@ export class CollisionSystem {
       highestGauntletMultiplier: 1.0,
       screenShake: 0,
       fleetDamageTaken: 0,
-      rescuedShipsSpawned: []
+      rescuedShipsSpawned: [],
+      killedEnemies: []
     };
 
     // 1. Tirs du joueur contre les Portails (Seuls les portails SPÉCIAUX absorbent les tirs pour monter en valeur)
@@ -136,6 +138,7 @@ export class CollisionSystem {
               particles.spawnExplosion(other.x, other.y, '#FF9900', 5);
               if (killedOther) {
                 results.enemiesKilled++;
+                results.killedEnemies.push(other);
               }
             }
           }
@@ -143,6 +146,7 @@ export class CollisionSystem {
 
           if (isKilled) {
             results.enemiesKilled++;
+            results.killedEnemies.push(enemy);
             const isShootingShipOrBoss = enemy.isBossType() || enemy.type === 'corner_turret' || enemy.type === 'drone' || enemy.type === 'fast' || enemy.type === 'heavy' || enemy.type === 'shield_generator' || enemy.type === 'boss_minion';
             if (isShootingShipOrBoss) {
               results.shootingShipsKilled++;
@@ -332,6 +336,8 @@ export class CollisionSystem {
 
           // L'astéroïde / ennemi ayant percuté le joueur est détruit
           enemy.takeDamage(999);
+          results.enemiesKilled++;
+          results.killedEnemies.push(enemy);
           sound.playExplosion(false);
 
           if (lost === -1) {

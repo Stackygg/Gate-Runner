@@ -108,6 +108,12 @@ export class GameApp {
       },
       setScrollSpeed: (speed: number) => {
         this.scrollSpeed = speed;
+      },
+      onReloadPreparation: () => {
+        this.enterMissionPreparation();
+      },
+      onFinishTutorial: () => {
+        this.showHangar();
       }
     });
 
@@ -450,10 +456,12 @@ export class GameApp {
     this.renderer.currentPhase = 1;
     this.hud.showPhaseBanner(1, 'AVANT-POSTE DE RECONNAISSANCE');
 
-    // Génération du niveau (Défi Convoi ou mission standard)
+    // Génération du niveau (Défi Convoi, Tutoriel dédié ou mission standard)
     const activeChallenge = this.store.getActiveChallenge();
     if (activeChallenge && activeChallenge.id === 'bars') {
       this.currentLevelData = LevelGenerator.generateCargoDefenseLevel(activeChallenge.level);
+    } else if (this.tutorial.isTutorialActive() || (!this.store.data.tutorialCompleted && this.store.data.selectedMission === 1)) {
+      this.currentLevelData = LevelGenerator.generateTutorialLevel();
     } else {
       this.currentLevelData = LevelGenerator.generateLevel(this.store.data.selectedMission);
     }
@@ -608,7 +616,9 @@ export class GameApp {
     const isBossDuel = !!this.currentLevelData.isSectorBossDuel;
 
     let customLabel: string | undefined = undefined;
-    if (isArena) {
+    if (this.currentLevelData.isTutorialLevel) {
+      customLabel = "VOL D'INITIATION // SPARCKY";
+    } else if (isArena) {
       customLabel = `CONVOI D'IRIDIUM • NIVEAU ${challengeLvl}`;
     } else if (isBossDuel) {
       customLabel = `Secteur ${sectorName} : Boss`;
@@ -644,9 +654,8 @@ export class GameApp {
     // Démarrage de la musique de combat en vol (Chip Funk Pulse)
     this.music.playTrack('music1');
 
-    // Déclenchement du tutoriel de vol avec Sparcky (Mission 1)
-    const missionNum = this.currentLevelData?.levelNumber || this.store.data.selectedMission;
-    if (this.tutorial.shouldRunFlightTutorial(missionNum)) {
+    // Déclenchement du tutoriel de vol avec Sparcky (Niveau Dédié Tutoriel)
+    if (this.currentLevelData?.isTutorialLevel || this.tutorial.isTutorialActive()) {
       this.tutorial.startFlightTutorial(this.fleet ? this.fleet.centerX : 270);
     }
   }
@@ -684,6 +693,22 @@ export class GameApp {
     let finalMultiplier = this.maxMultiplierAchieved;
     let newlyCompletedQuests: any[] = [];
     let rewardLoot: any = undefined;
+
+    // Détection Tutoriel Dédié : gestion spécifique par Sparcky (bilan diamants, améliorations et choix)
+    const isTutorial = !!(this.currentLevelData && this.currentLevelData.isTutorialLevel) || this.tutorial.isTutorialActive();
+    if (isTutorial) {
+      if (isVictory) {
+        this.sound.playVictory();
+      } else {
+        this.sound.playExplosion(true);
+      }
+      const earned = Math.max(15, Math.round(this.sessionDiamonds));
+      this.store.addDiamondsToMission(1, earned);
+      this.store.save();
+      this.hangar.refreshCurrencies();
+      this.tutorial.handleRunEnd(isVictory, earned);
+      return;
+    }
 
     // Détection Défi Quotidien (Convoi d'Iridium ou Raid de Diamant)
     const isChallenge = !!(this.currentLevelData && (this.currentLevelData.challengeId || this.currentLevelData.gameplayType === 'arena_defense'));
@@ -828,12 +853,20 @@ export class GameApp {
       this.updatePreFlight(dt);
       this.renderFrame(dt, 0);
     } else if (this.state === 'PLAYING' || this.state === 'BOSS' || this.state === 'GAUNTLET') {
-      if (this.currentLevelData?.gameplayType === 'arena_defense') {
-        this.updateArenaDefense(dt);
+      const isTutorialPaused = this.tutorial.isGamePaused();
+      if (isTutorialPaused) {
+        // En pause tutoriel : on met à jour le tutoriel pour détecter le délai min d'1s et le mouvement du joueur
+        this.tutorial.update(dt, this.fleet ? this.fleet.centerX : 270, this.input.getIsPointerDown());
+        this.updateGame(0);
+        this.renderFrame(dt, 0);
       } else {
-        this.updateGame(dt);
+        if (this.currentLevelData?.gameplayType === 'arena_defense') {
+          this.updateArenaDefense(dt);
+        } else {
+          this.updateGame(dt);
+        }
+        this.renderFrame(dt, this.currentLevelData?.gameplayType === 'arena_defense' ? 0 : this.scrollSpeed);
       }
-      this.renderFrame(dt, this.currentLevelData?.gameplayType === 'arena_defense' ? 0 : this.scrollSpeed);
     } else if (this.state === 'MENU') {
       this.renderer.clear(dt, 0);
     }
@@ -947,9 +980,9 @@ export class GameApp {
       targetX = this.input.update(dt);
     }
 
-    // 1. Déplacement de la Flotte & Tir automatique (bloqué si canShoot est faux ou si boss en train d'imploser)
+    // 1. Déplacement de la Flotte & Tir automatique (bloqué si canShoot est faux, si boss en train d'imploser ou si tutoriel en pause)
     const newBullets = this.fleet.update(dt, targetX);
-    if (this.fleet.canShoot && !isBossDying && newBullets.length > 0) {
+    if (this.fleet.canShoot && !isBossDying && !this.tutorial.isGamePaused() && newBullets.length > 0) {
       this.projectiles.push(...newBullets);
       this.sound.playLaser();
     }
@@ -998,9 +1031,7 @@ export class GameApp {
     this.tutorial.update(
       dt,
       this.fleet.centerX,
-      nearestGateDist,
-      nearestObstacleDist,
-      isBossActive
+      this.input.getIsPointerDown()
     );
 
     const aliveBlackHoles = this.enemies.filter(e => e.type === 'black_hole' && !e.isDead);
@@ -1277,6 +1308,11 @@ export class GameApp {
     this.sessionDiamonds += collisionResults.diamondsEarned;
     this.sessionKills += collisionResults.enemiesKilled;
     this.fleetDamageTakenInRun += collisionResults.fleetDamageTaken;
+
+    // Signalement des ennemis éliminés au système de tutoriel
+    for (const killed of collisionResults.killedEnemies) {
+      this.tutorial.onEnemyKilled(killed);
+    }
     if (collisionResults.shootingShipsKilled > 0) {
       this.store.recordDailyQuestProgress('shooting_enemies', collisionResults.shootingShipsKilled);
     }

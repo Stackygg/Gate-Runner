@@ -2,24 +2,45 @@
 import { UpgradeStore } from './UpgradeStore';
 import { SoundSynth } from '../engine/SoundSynth';
 import { GAME_CONFIG } from '../config';
+import { Enemy } from '../entities/Enemy';
 
-export type TutorialFlightStep = 'IDLE' | 'WELCOME' | 'MOVEMENT' | 'MOVEMENT_DONE' | 'GATES' | 'OBSTACLES' | 'BOSS' | 'COMPLETE';
+export type TutorialFlightStep = 
+  | 'IDLE' 
+  | 'WELCOME' 
+  | 'MOVEMENT' 
+  | 'PLAYING_WAVE_1' 
+  | 'BLACK_HOLE' 
+  | 'PLAYING_WAVE_2' 
+  | 'RUN_END_SUMMARY' 
+  | 'PRE_FLIGHT_UPGRADES' 
+  | 'DECIDE_REPLAY_OR_FINISH' 
+  | 'COMPLETE';
 
 export class TutorialSystem {
   private store: UpgradeStore;
   private sound: SoundSynth;
   private activeStep: TutorialFlightStep = 'IDLE';
-  private stepTimer: number = 0;
   private isFlightTutorialRunning: boolean = false;
+  private isPaused: boolean = false;
   private playerInitialX: number = 270;
-  private totalMovementDetected: number = 0;
+  private movementStartTime: number = 0;
+  private movementAllowedToResume: boolean = false;
+
+  // Progression au sein du niveau tutoriel
+  private wave1KilledCount: number = 0;
+  private hasWonTutorialLevel: boolean = false;
+  private sessionEarnedDiamonds: number = 0;
 
   // Éléments du DOM (Overlay en vol)
   private elOverlay: HTMLElement | null = null;
   private elText: HTMLElement | null = null;
-  private elPrompt: HTMLElement | null = null;
+  private elBtnAction: HTMLElement | null = null;
+  private elBtnSecondary: HTMLElement | null = null;
   private elSwipeHint: HTMLElement | null = null;
+  private elSwipeIcon: HTMLElement | null = null;
+  private elSwipeText: HTMLElement | null = null;
   private elBtnSkip: HTMLElement | null = null;
+  private elDock: HTMLElement | null = null;
 
   // Modal Conseils de Sparcky
   private elModalTips: HTMLElement | null = null;
@@ -29,6 +50,8 @@ export class TutorialSystem {
 
   private onReplayCallback?: () => void;
   private gameSetScrollSpeed?: (speed: number) => void;
+  private onReloadPreparationCallback?: () => void;
+  private onFinishTutorialCallback?: () => void;
 
   constructor(store: UpgradeStore, sound: SoundSynth) {
     this.store = store;
@@ -38,15 +61,23 @@ export class TutorialSystem {
   public init(options?: {
     onReplay?: () => void;
     setScrollSpeed?: (speed: number) => void;
+    onReloadPreparation?: () => void;
+    onFinishTutorial?: () => void;
   }) {
     this.onReplayCallback = options?.onReplay;
     this.gameSetScrollSpeed = options?.setScrollSpeed;
+    this.onReloadPreparationCallback = options?.onReloadPreparation;
+    this.onFinishTutorialCallback = options?.onFinishTutorial;
 
     this.elOverlay = document.getElementById('tutorial-sparcky-overlay');
     this.elText = document.getElementById('tutorial-sparcky-text');
-    this.elPrompt = document.getElementById('tutorial-sparcky-prompt');
+    this.elBtnAction = document.getElementById('tutorial-sparcky-btn-action');
+    this.elBtnSecondary = document.getElementById('tutorial-sparcky-btn-secondary');
     this.elSwipeHint = document.getElementById('tutorial-swipe-hint');
+    this.elSwipeIcon = document.getElementById('tutorial-swipe-icon');
+    this.elSwipeText = document.getElementById('tutorial-swipe-text');
     this.elBtnSkip = document.getElementById('btn-tutorial-skip');
+    this.elDock = document.getElementById('bottom-upgrade-dock');
 
     this.elModalTips = document.getElementById('modal-sparcky-tips');
     this.elBtnCloseTips = document.getElementById('btn-close-sparcky-tips');
@@ -59,8 +90,18 @@ export class TutorialSystem {
       this.skipTutorial();
     });
 
+    this.elBtnAction?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onUserAdvance();
+    });
+
+    this.elBtnSecondary?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onSecondaryAdvance();
+    });
+
     this.elOverlay?.addEventListener('click', () => {
-      this.onOverlayClicked();
+      this.onUserAdvance();
     });
 
     // Modal Tips
@@ -77,6 +118,20 @@ export class TutorialSystem {
   }
 
   /**
+   * Indique si le jeu doit être mis en pause tactique par Sparcky
+   */
+  public isGamePaused(): boolean {
+    return this.isFlightTutorialRunning && this.isPaused;
+  }
+
+  /**
+   * Indique si le tutoriel de vol est actuellement actif
+   */
+  public isTutorialActive(): boolean {
+    return this.isFlightTutorialRunning;
+  }
+
+  /**
    * Vérifie si le tutoriel en vol doit être lancé pour cette mission
    */
   public shouldRunFlightTutorial(missionNum: number): boolean {
@@ -84,49 +139,266 @@ export class TutorialSystem {
   }
 
   /**
-   * Démarre la séquence de tutoriel en vol pour la Mission 1
+   * Démarre la séquence de tutoriel en vol
    */
   public startFlightTutorial(currentX: number) {
     this.isFlightTutorialRunning = true;
     this.activeStep = 'WELCOME';
-    this.stepTimer = 0;
     this.playerInitialX = currentX;
-    this.totalMovementDetected = 0;
+    this.wave1KilledCount = 0;
+    this.isPaused = true; // PAUSE DU JEU
 
-    // Ralentissement initial pour laisser le temps de lire
     if (this.gameSetScrollSpeed) {
-      this.gameSetScrollSpeed(GAME_CONFIG.BASE_SCROLL_SPEED * 0.4);
+      this.gameSetScrollSpeed(0);
     }
 
     this.sound.playSparckyChirp();
     this.showMessage(
       "Bip-boop ! Salutations Commandant ! Je suis Sparcky, ton copilote de bord. Initialisons tes systèmes de vol !",
-      "TOUCHE POUR CONTINUER"
+      "CONTINUER ▶"
     );
     this.showOverlay();
   }
 
   /**
-   * Clic utilisateur sur l'overlay pour passer à l'étape suivante rapidement
+   * Progression manuelle de l'utilisateur (clic sur le bouton d'action principal ou sur la carte)
    */
-  private onOverlayClicked() {
-    if (this.activeStep === 'WELCOME') {
-      this.advanceToMovement();
+  private onUserAdvance() {
+    this.sound.playClick();
+
+    switch (this.activeStep) {
+      case 'WELCOME':
+        this.advanceToMovement();
+        break;
+
+      case 'MOVEMENT':
+        // Si le joueur clique après le délai d'une seconde
+        if (this.movementAllowedToResume) {
+          this.resumeFromMovement();
+        }
+        break;
+
+      case 'BLACK_HOLE':
+        this.isPaused = false;
+        this.activeStep = 'PLAYING_WAVE_2';
+        this.hideOverlay();
+        if (this.gameSetScrollSpeed) {
+          this.gameSetScrollSpeed(GAME_CONFIG.BASE_SCROLL_SPEED);
+        }
+        break;
+
+      case 'RUN_END_SUMMARY':
+        // Le joueur clique pour voir les améliorations : on relance en préparation avec le dock affiché
+        this.showPreFlightUpgrades();
+        break;
+
+      case 'PRE_FLIGHT_UPGRADES':
+        if (this.hasWonTutorialLevel) {
+          // Si le boss a déjà été battu, proposer de refaire ou terminer
+          this.showDecisionReplayOrFinish();
+        } else {
+          // Sinon inviter à dépenser les diamants et décoller
+          this.elDock?.classList.remove('dock-tutorial-highlight');
+          this.hideOverlay();
+          this.activeStep = 'IDLE';
+        }
+        break;
+
+      case 'DECIDE_REPLAY_OR_FINISH':
+        // Bouton principal : "REFAIRE LE NIVEAU 🚀"
+        this.elDock?.classList.remove('dock-tutorial-highlight');
+        this.hideOverlay();
+        this.activeStep = 'IDLE';
+        break;
     }
   }
 
+  /**
+   * Action sur le bouton secondaire (par exemple "TERMINER LE TUTORIEL ✅")
+   */
+  private onSecondaryAdvance() {
+    this.sound.playClick();
+
+    if (this.activeStep === 'DECIDE_REPLAY_OR_FINISH') {
+      this.completeTutorialAndLeave();
+    }
+  }
+
+  /**
+   * Étape 2 : Mouvement et annonce des astéroïdes
+   */
   private advanceToMovement() {
     this.activeStep = 'MOVEMENT';
-    this.stepTimer = 0;
-    this.totalMovementDetected = 0;
+    this.movementStartTime = performance.now();
+    this.movementAllowedToResume = false;
+    this.isPaused = true; // Le niveau est en stop
+
+    if (this.gameSetScrollSpeed) {
+      this.gameSetScrollSpeed(0);
+    }
+
+    // Détection de la plateforme (tactile vs souris)
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.matchMedia('(pointer: coarse)').matches);
+    if (this.elSwipeIcon) {
+      this.elSwipeIcon.textContent = isTouchDevice ? '👆' : '🖱️';
+    }
+    if (this.elSwipeText) {
+      this.elSwipeText.textContent = isTouchDevice ? 'GLISSE TON DOIGT POUR PILOTER' : 'BOUGE LA SOURIS POUR PILOTER';
+    }
 
     this.sound.playSparckyChirp();
     this.showMessage(
-      "Glisse ton doigt ou la souris à gauche et à droite pour manœuvrer la formation de vaisseaux !",
-      "GLISSE POUR TESTER LES COMMANDES"
+      "Des astéroïdes foncent vers ton vaisseau, glisse ton vaisseau pour détruire les astéroïdes et obtenir des diamants pour améliorer ton vaisseau !",
+      null // Pas de bouton : se relance au mouvement après minimum 1s
     );
+
     if (this.elSwipeHint) {
       this.elSwipeHint.classList.remove('hidden');
+    }
+  }
+
+  /**
+   * Reprise du jeu après le menu de mouvement
+   */
+  private resumeFromMovement() {
+    this.isPaused = false;
+    this.activeStep = 'PLAYING_WAVE_1';
+    this.sound.playLaser();
+
+    if (this.elSwipeHint) {
+      this.elSwipeHint.classList.add('hidden');
+    }
+    this.hideOverlay();
+
+    if (this.gameSetScrollSpeed) {
+      this.gameSetScrollSpeed(GAME_CONFIG.BASE_SCROLL_SPEED);
+    }
+  }
+
+  /**
+   * Signalement de destruction d'ennemi (pour détecter les 10 astéroïdes de la vague 1)
+   */
+  public onEnemyKilled(enemy: Enemy) {
+    if (!this.isFlightTutorialRunning) return;
+
+    if ((enemy as any).isTutorialWave1) {
+      this.wave1KilledCount++;
+      if (this.wave1KilledCount >= 10 && this.activeStep === 'PLAYING_WAVE_1') {
+        this.triggerBlackHoleStep();
+      }
+    }
+  }
+
+  /**
+   * Étape 3 : Le Trou Noir bloque les portails (5 PV)
+   */
+  private triggerBlackHoleStep() {
+    this.activeStep = 'BLACK_HOLE';
+    this.isPaused = true; // PAUSE DU JEU DEVANT LE TROU NOIR
+    if (this.gameSetScrollSpeed) {
+      this.gameSetScrollSpeed(0);
+    }
+
+    this.sound.playSparckyChirp();
+    this.showMessage(
+      "Les trous noirs bloquent les portails, détruis-les pour accéder aux portails !",
+      "DÉTRUIRE LE TROU NOIR ⚔️"
+    );
+    this.showOverlay();
+  }
+
+  /**
+   * Signalement de victoire lors de la destruction du boss
+   */
+  public onMissionVictory() {
+    this.hasWonTutorialLevel = true;
+  }
+
+  /**
+   * Fin de vol du tutoriel (défaite ou victoire contre le boss 300 PV)
+   */
+  public handleRunEnd(isVictory: boolean, earnedDiamonds: number) {
+    this.isPaused = true;
+    if (this.gameSetScrollSpeed) {
+      this.gameSetScrollSpeed(0);
+    }
+
+    if (isVictory) {
+      this.hasWonTutorialLevel = true;
+    }
+    this.sessionEarnedDiamonds = earnedDiamonds;
+    this.activeStep = 'RUN_END_SUMMARY';
+
+    this.sound.playSparckyChirp();
+    this.showMessage(
+      `Tu as obtenu ${earnedDiamonds} diamants 💎 ! Utilise-les pour améliorer ton vaisseau et terminer le niveau !`,
+      "AMÉLIORER MON VAISSEAU 🛠️"
+    );
+    this.showOverlay();
+  }
+
+  /**
+   * Relance le niveau en mode préparation (PRE_FLIGHT) et présente les améliorations en bas
+   */
+  private showPreFlightUpgrades() {
+    this.activeStep = 'PRE_FLIGHT_UPGRADES';
+
+    // Relance la préparation de mission pour afficher le vaisseau sur le tarmac et la barre d'amélioration
+    if (this.onReloadPreparationCallback) {
+      this.onReloadPreparationCallback();
+    }
+
+    // Mise en surbrillance de la barre d'amélioration
+    if (this.elDock) {
+      this.elDock.classList.add('dock-tutorial-highlight');
+    }
+
+    this.sound.playSparckyChirp();
+    this.showMessage(
+      "Voici tes améliorations de combat :<br><br>" +
+      "⚡ <strong>Cadence de tir</strong> : Accélère les tirs de tes vaisseaux.<br>" +
+      "💥 <strong>Dégâts</strong> : Multiplie la puissance destructrice de tes lasers.<br>" +
+      "💎 <strong>Bonus Diamants</strong> : Augmente les diamants obtenus sur chaque ennemi.<br><br>" +
+      "Chaque boost possède 5 niveaux par palier (1/5 à 5/5) payables en diamants. Une fois à 5/5, tu passes au palier supérieur ! Au bout de plusieurs paliers, l'accès se bloque et nécessite de l'Iridium 🔮 pour continuer.",
+      "CONTINUER ▶"
+    );
+    this.showOverlay();
+  }
+
+  /**
+   * Choix de fin de tutoriel lorsque le boss d'initiation a été vaincu
+   */
+  private showDecisionReplayOrFinish() {
+    this.activeStep = 'DECIDE_REPLAY_OR_FINISH';
+    this.sound.playSparckyChirp();
+
+    this.showMessage(
+      "Félicitations, tu as vaincu le boss d'initiation ! Souhaites-tu refaire le niveau avec tes nouvelles améliorations ou terminer le tutoriel et accéder au Hangar ?",
+      "REFAIRE LE NIVEAU 🚀",
+      "TERMINER LE TUTORIEL ✅"
+    );
+    this.showOverlay();
+  }
+
+  /**
+   * Validation définitive et sortie du tutoriel vers le Hangar
+   */
+  private completeTutorialAndLeave() {
+    this.store.data.tutorialCompleted = true;
+    this.store.data.hangarTutorialSeen = true;
+    this.store.save();
+
+    this.isPaused = false;
+    this.isFlightTutorialRunning = false;
+    this.activeStep = 'COMPLETE';
+
+    if (this.elDock) {
+      this.elDock.classList.remove('dock-tutorial-highlight');
+    }
+    this.hideOverlay();
+
+    if (this.onFinishTutorialCallback) {
+      this.onFinishTutorialCallback();
     }
   }
 
@@ -136,149 +408,37 @@ export class TutorialSystem {
   public update(
     dt: number,
     playerX: number,
-    nearestGateDist: number,
-    nearestObstacleDist: number,
-    isBossActive: boolean
+    isPointerDown: boolean
   ) {
     if (!this.isFlightTutorialRunning) return;
 
-    this.stepTimer += dt;
-
-    switch (this.activeStep) {
-      case 'WELCOME':
-        // Si le joueur ne clique pas après 3.8s, avance automatiquement
-        if (this.stepTimer >= 3.8) {
-          this.advanceToMovement();
+    // Gestion de l'étape MOVEMENT (minimum 1 seconde d'affichage, puis reprise dès interaction)
+    if (this.activeStep === 'MOVEMENT') {
+      const elapsed = performance.now() - this.movementStartTime;
+      if (elapsed >= 1000) {
+        this.movementAllowedToResume = true;
+        const deltaX = Math.abs(playerX - this.playerInitialX);
+        if (isPointerDown || deltaX > 8) {
+          this.resumeFromMovement();
         }
-        break;
-
-      case 'MOVEMENT':
-        // Détecte le déplacement du joueur
-        const delta = Math.abs(playerX - this.playerInitialX);
-        if (delta > 30) {
-          this.totalMovementDetected += delta;
-        }
-        if (this.totalMovementDetected > 60 || this.stepTimer >= 5.0) {
-          this.activeStep = 'MOVEMENT_DONE';
-          this.stepTimer = 0;
-          this.sound.playSparckyChirp();
-
-          if (this.elSwipeHint) {
-            this.elSwipeHint.classList.add('hidden');
-          }
-
-          // Rétablissement de la vitesse normale
-          if (this.gameSetScrollSpeed) {
-            this.gameSetScrollSpeed(GAME_CONFIG.BASE_SCROLL_SPEED);
-          }
-
-          this.showMessage(
-            "Parfait ! Tes réacteurs répondent à merveille. Accélération nominale !",
-            null
-          );
-        }
-        break;
-
-      case 'MOVEMENT_DONE':
-        if (this.stepTimer >= 2.0) {
-          this.hideOverlay();
-          // Passe en attente de portails
-          if (nearestGateDist < 550) {
-            this.triggerGatesStep();
-          }
-        }
-        break;
-
-      case 'GATES':
-        if (this.stepTimer >= 4.0) {
-          this.hideOverlay();
-        }
-        break;
-
-      case 'OBSTACLES':
-        if (this.stepTimer >= 4.0) {
-          this.hideOverlay();
-        }
-        break;
-
-      case 'BOSS':
-        if (this.stepTimer >= 4.5) {
-          this.hideOverlay();
-        }
-        break;
+      }
     }
-
-    // Déclencheur des portails
-    if ((this.activeStep === 'MOVEMENT_DONE' || this.activeStep === 'IDLE') && nearestGateDist > 0 && nearestGateDist < 500) {
-      this.triggerGatesStep();
-    }
-
-    // Déclencheur des obstacles & prisons
-    if (this.activeStep === 'GATES' && this.stepTimer > 2.0 && nearestObstacleDist > 0 && nearestObstacleDist < 450) {
-      this.triggerObstaclesStep();
-    }
-
-    // Déclencheur du boss
-    if (isBossActive && this.activeStep !== 'BOSS' && this.activeStep !== 'COMPLETE') {
-      this.triggerBossStep();
-    }
-  }
-
-  private triggerGatesStep() {
-    this.activeStep = 'GATES';
-    this.stepTimer = 0;
-    this.sound.playSparckyChirp();
-    this.showMessage(
-      "Vise les portails bleus et verts pour multiplier ta flotte et ta cadence ! Évite les rouges !",
-      null
-    );
-    this.showOverlay();
-  }
-
-  private triggerObstaclesStep() {
-    this.activeStep = 'OBSTACLES';
-    this.stepTimer = 0;
-    this.sound.playSparckyChirp();
-    this.showMessage(
-      "Tes vaisseaux tirent automatiquement ! Pulvérise les astéroïdes et les prisons pour libérer des alliés !",
-      null
-    );
-    this.showOverlay();
-  }
-
-  private triggerBossStep() {
-    this.activeStep = 'BOSS';
-    this.stepTimer = 0;
-    this.sound.playSparckyChirp();
-    this.showMessage(
-      "Vaisseau amiral en vue ! Détruis-le vite pour maximiser ton multiplicateur de butin !",
-      null
-    );
-    this.showOverlay();
-  }
-
-  /**
-   * Appelé lors de la victoire de la mission 1
-   */
-  public onMissionVictory() {
-    if (!this.store.data.tutorialCompleted) {
-      this.store.data.tutorialCompleted = true;
-      this.store.save();
-    }
-    this.activeStep = 'COMPLETE';
-    this.isFlightTutorialRunning = false;
-    this.hideOverlay();
   }
 
   /**
    * Passer le tutoriel immédiatement
    */
   public skipTutorial() {
+    this.isPaused = false;
     this.isFlightTutorialRunning = false;
     this.activeStep = 'COMPLETE';
     this.store.data.tutorialCompleted = true;
     this.store.data.hangarTutorialSeen = true;
     this.store.save();
+
+    if (this.elDock) {
+      this.elDock.classList.remove('dock-tutorial-highlight');
+    }
 
     if (this.gameSetScrollSpeed) {
       this.gameSetScrollSpeed(GAME_CONFIG.BASE_SCROLL_SPEED);
@@ -333,7 +493,9 @@ export class TutorialSystem {
    */
   public resetAndReplayTutorial() {
     this.store.data.tutorialCompleted = false;
-    this.store.data.hangarTutorialSeen = false;
+    this.hasWonTutorialLevel = false;
+    this.wave1KilledCount = 0;
+    this.isFlightTutorialRunning = true;
     this.store.data.selectedMission = 1;
     this.store.save();
 
@@ -350,16 +512,24 @@ export class TutorialSystem {
     this.elOverlay?.classList.add('hidden');
   }
 
-  private showMessage(text: string, promptText: string | null) {
+  private showMessage(text: string, actionLabel: string | null, secondaryLabel: string | null = null) {
     if (this.elText) {
-      this.elText.textContent = text;
+      this.elText.innerHTML = text;
     }
-    if (this.elPrompt) {
-      if (promptText) {
-        this.elPrompt.textContent = promptText;
-        this.elPrompt.classList.remove('hidden');
+    if (this.elBtnAction) {
+      if (actionLabel) {
+        this.elBtnAction.textContent = actionLabel;
+        this.elBtnAction.classList.remove('hidden');
       } else {
-        this.elPrompt.classList.add('hidden');
+        this.elBtnAction.classList.add('hidden');
+      }
+    }
+    if (this.elBtnSecondary) {
+      if (secondaryLabel) {
+        this.elBtnSecondary.textContent = secondaryLabel;
+        this.elBtnSecondary.classList.remove('hidden');
+      } else {
+        this.elBtnSecondary.classList.add('hidden');
       }
     }
   }

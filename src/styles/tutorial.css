@@ -4,28 +4,36 @@
 
 /* Bouton Sparcky dans les barres d'outils */
 .nav-btn-sparcky {
-  border-color: rgba(0, 240, 255, 0.5) !important;
-  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(255, 107, 0, 0.12) 100%) !important;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25) !important;
+  border-color: rgba(255, 107, 0, 0.6) !important;
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.2) 0%, rgba(10, 16, 36, 0.8) 100%) !important;
+  box-shadow: 0 0 12px rgba(255, 107, 0, 0.35) !important;
   position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 3px !important;
 }
 
 .nav-btn-sparcky:hover {
-  border-color: #00F0FF !important;
-  box-shadow: 0 0 18px rgba(0, 240, 255, 0.5) !important;
+  border-color: #FF6B00 !important;
+  box-shadow: 0 0 20px rgba(255, 107, 0, 0.6) !important;
   transform: translateY(-2px);
 }
 
-.sparcky-nav-icon {
-  font-size: 1.25rem;
-  display: inline-block;
+.sparcky-nav-thumb {
+  width: 26px;
+  height: 26px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1.5px solid #FF6B00;
+  box-shadow: 0 0 8px rgba(255, 107, 0, 0.6);
   animation: sparckyWiggle 4s ease-in-out infinite;
 }
 
 @keyframes sparckyWiggle {
   0%, 85%, 100% { transform: rotate(0deg); }
-  90% { transform: rotate(-10deg) scale(1.1); }
-  95% { transform: rotate(10deg) scale(1.1); }
+  90% { transform: rotate(-8deg) scale(1.08); }
+  95% { transform: rotate(8deg) scale(1.08); }
 }
 
 /* Overlay en vol */
@@ -39,7 +47,7 @@
   z-index: 100;
   pointer-events: auto;
   cursor: pointer;
-  animation: sparckySlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: sparckySlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes sparckySlideDown {
@@ -58,29 +66,29 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 16px;
-  background: rgba(10, 16, 36, 0.94);
-  border: 1.5px solid rgba(0, 240, 255, 0.55);
-  border-radius: 18px;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), 0 0 25px rgba(0, 240, 255, 0.35);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  padding: 14px 18px;
+  background: rgba(8, 12, 28, 0.96);
+  border: 2px solid #FF6B00;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 30px rgba(255, 107, 0, 0.4), inset 0 0 15px rgba(255, 107, 0, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .tutorial-sparcky-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 17px;
-  background: radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.12) 0%, transparent 60%);
+  border-radius: 18px;
+  background: radial-gradient(circle at 18% 50%, rgba(255, 107, 0, 0.15) 0%, transparent 65%);
   pointer-events: none;
 }
 
-/* Avatar animé */
+/* Avatar officiel de Sparcky */
 .sparcky-avatar-wrap {
   position: relative;
-  width: 68px;
-  height: 68px;
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -90,28 +98,33 @@
 
 @keyframes sparckyFloat {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  50% { transform: translateY(-4px); }
 }
 
 .sparcky-halo {
   position: absolute;
-  width: 56px;
-  height: 56px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 240, 255, 0.35) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 107, 0, 0.4) 0%, transparent 70%);
   animation: sparckyGlowPulse 2.4s ease-in-out infinite;
   pointer-events: none;
 }
 
 @keyframes sparckyGlowPulse {
-  0%, 100% { transform: scale(0.9); opacity: 0.5; }
-  50% { transform: scale(1.2); opacity: 0.9; }
+  0%, 100% { transform: scale(0.92); opacity: 0.5; }
+  50% { transform: scale(1.15); opacity: 0.9; }
 }
 
-.sparcky-svg-avatar {
+.sparcky-avatar-img {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 4px 10px rgba(0, 240, 255, 0.4));
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #FF6B00;
+  box-shadow: 0 0 16px rgba(255, 107, 0, 0.6), inset 0 0 10px rgba(255, 107, 0, 0.4);
+  position: relative;
+  z-index: 2;
 }
 
 .tutorial-sparcky-body {
@@ -119,7 +132,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .tutorial-sparcky-header {
@@ -129,14 +142,34 @@
   gap: 8px;
 }
 
+.sparcky-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sparcky-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FF6B00;
+  box-shadow: 0 0 8px #FF6B00;
+  animation: pulseDot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 0.5; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
 .sparcky-tag {
   font-family: var(--font-display);
   font-size: 0.72rem;
-  font-weight: 800;
-  color: #00F0FF;
+  font-weight: 900;
+  color: #FF6B00;
   letter-spacing: 1px;
   text-transform: uppercase;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  text-shadow: 0 0 10px rgba(255, 107, 0, 0.6);
 }
 
 .btn-tutorial-skip {
@@ -154,7 +187,7 @@
 }
 
 .btn-tutorial-skip:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.25);
   border-color: #EF4444;
   color: #F87171;
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
@@ -162,67 +195,155 @@
 
 .tutorial-sparcky-text {
   font-family: var(--font-sans);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #F8FAFC;
-  line-height: 1.35;
+  line-height: 1.4;
   margin: 0;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
-.tutorial-sparcky-prompt {
+.tutorial-sparcky-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.tutorial-sparcky-btn-action {
+  background: linear-gradient(135deg, #FF6B00 0%, #FF8533 100%);
+  border: none;
+  color: #030712;
   font-family: var(--font-display);
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #FF6B00;
-  letter-spacing: 1px;
-  margin-top: 2px;
-  animation: promptBlink 1.4s ease-in-out infinite;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(255, 107, 0, 0.45);
+  transition: all 0.2s ease;
+  animation: actionPulse 1.8s ease-in-out infinite;
 }
 
-@keyframes promptBlink {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+@keyframes actionPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(255, 107, 0, 0.45); }
+  50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(255, 107, 0, 0.7); }
 }
 
-/* Aide Swipe Directionnel */
+.tutorial-sparcky-btn-action:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px) scale(1.04);
+}
+
+/* Aide Swipe Directionnel (flèches horizontales à gauche et à droite de l'icône) */
 .tutorial-swipe-hint {
   position: absolute;
-  bottom: 120px;
+  bottom: 140px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  z-index: 90;
+  gap: 8px;
+  z-index: 95;
   pointer-events: none;
-  background: rgba(10, 16, 36, 0.75);
-  border: 1px dashed rgba(0, 240, 255, 0.4);
-  padding: 10px 18px;
-  border-radius: 20px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(10, 16, 36, 0.92);
+  border: 2px solid #FF6B00;
+  padding: 12px 26px;
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 25px rgba(255, 107, 0, 0.45);
 }
 
-.tutorial-swipe-hint .swipe-hand {
-  font-size: 2rem;
-  animation: handSwipe 1.8s ease-in-out infinite;
+.swipe-indicator-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
 }
 
-@keyframes handSwipe {
-  0% { transform: translateX(-35px); }
-  50% { transform: translateX(35px); }
-  100% { transform: translateX(-35px); }
+.swipe-arrow-left, .swipe-arrow-right {
+  font-size: 1.5rem;
+  color: #FF6B00;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(255, 107, 0, 0.85);
+  user-select: none;
+}
+
+.swipe-arrow-left {
+  animation: pulseArrowLeft 1s ease-in-out infinite alternate;
+}
+
+.swipe-arrow-right {
+  animation: pulseArrowRight 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulseArrowLeft {
+  0% { transform: translateX(0); opacity: 0.5; }
+  100% { transform: translateX(-8px); opacity: 1; }
+}
+
+@keyframes pulseArrowRight {
+  0% { transform: translateX(0); opacity: 0.5; }
+  100% { transform: translateX(8px); opacity: 1; }
+}
+
+.tutorial-swipe-hint .swipe-icon {
+  font-size: 2.2rem;
+  display: inline-block;
+  animation: iconSwipe 1.8s ease-in-out infinite;
+  user-select: none;
+}
+
+@keyframes iconSwipe {
+  0% { transform: translateX(-24px); }
+  50% { transform: translateX(24px); }
+  100% { transform: translateX(-24px); }
 }
 
 .tutorial-swipe-hint .swipe-text {
   font-family: var(--font-display);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 800;
+  color: #FF6B00;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 10px rgba(255, 107, 0, 0.7);
+  white-space: nowrap;
+}
+
+/* Boutons de choix du tutoriel */
+.tutorial-sparcky-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tutorial-sparcky-btn-action.secondary {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(16, 185, 129, 0.35) 100%);
   color: #00F0FF;
-  letter-spacing: 1px;
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+  border-color: rgba(0, 240, 255, 0.7);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+.tutorial-sparcky-btn-action.secondary:hover {
+  background: linear-gradient(135deg, #00F0FF 0%, #10B981 100%);
+  color: #050B14;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
+}
+
+/* Mise en valeur néon de la barre d'améliorations lors des explications de Sparcky */
+.dock-tutorial-highlight {
+  box-shadow: 0 0 35px rgba(255, 107, 0, 0.85), 0 0 70px rgba(255, 107, 0, 0.45) !important;
+  border-color: #FF6B00 !important;
+  animation: dockPulseNeon 1.2s ease-in-out infinite alternate !important;
+}
+
+@keyframes dockPulseNeon {
+  0% { filter: drop-shadow(0 0 8px #FF6B00); }
+  100% { filter: drop-shadow(0 0 22px #FF6B00); }
 }
 
 /* Modale Manuel de vol Sparcky */
@@ -246,31 +367,29 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%);
-  border: 1px solid rgba(0, 240, 255, 0.35);
-  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.15) 0%, rgba(15, 23, 42, 0.7) 100%);
+  border: 1.5px solid rgba(255, 107, 0, 0.45);
+  border-radius: 16px;
   padding: 12px 14px;
 }
 
 .sparcky-mini-avatar {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sparcky-mini-avatar.large {
-  width: 64px;
-  height: 64px;
-}
-
-.sparcky-mini-avatar svg {
-  width: 100%;
-  height: 100%;
+  width: 68px;
+  height: 68px;
 }
 
 .sparcky-tips-banner-title {
   font-family: var(--font-display);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 900;
   color: #FF6B00;
   letter-spacing: 1px;
@@ -303,7 +422,7 @@
 
 .sparcky-tip-card:hover {
   background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(0, 240, 255, 0.3);
+  border-color: rgba(255, 107, 0, 0.35);
 }
 
 .tip-card-icon {
@@ -315,8 +434,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: rgba(0, 240, 255, 0.1);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  background: rgba(255, 107, 0, 0.12);
+  border: 1px solid rgba(255, 107, 0, 0.3);
 }
 
 .tip-card-content {
@@ -341,7 +460,7 @@
 }
 
 .tip-card-desc strong {
-  color: #38BDF8;
+  color: #FF8533;
 }
 
 .sparcky-tips-actions {
@@ -376,9 +495,9 @@
 
 .btn-ok-sparcky {
   flex: 1.2;
-  background: linear-gradient(135deg, #00F0FF 0%, #0284C7 100%);
+  background: linear-gradient(135deg, #FF6B00 0%, #EA580C 100%);
   border: none;
-  color: #030712;
+  color: #FFF;
   font-family: var(--font-display);
   font-size: 0.85rem;
   font-weight: 900;
@@ -386,7 +505,7 @@
   border-radius: 12px;
   cursor: pointer;
   letter-spacing: 0.5px;
-  box-shadow: 0 0 18px rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 18px rgba(255, 107, 0, 0.4);
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -396,7 +515,7 @@
 .btn-ok-sparcky:hover {
   filter: brightness(1.15);
   transform: translateY(-2px);
-  box-shadow: 0 0 24px rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 24px rgba(255, 107, 0, 0.6);
 }
 
 /* Modale Bienvenue Hangar */
@@ -410,7 +529,7 @@
   align-items: center;
   gap: 14px;
   margin-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 107, 0, 0.25);
   padding-bottom: 14px;
 }
 
@@ -470,7 +589,7 @@
 }
 
 .feat-desc strong {
-  color: #38BDF8;
+  color: #FF8533;
 }
 
 .btn-hangar-start {
@@ -480,6 +599,7 @@
   font-size: 0.95rem !important;
   font-weight: 900 !important;
   letter-spacing: 1px !important;
+  background: linear-gradient(135deg, #FF6B00 0%, #EA580C 100%) !important;
 }
 
 @media (max-width: 600px) {
@@ -488,15 +608,15 @@
     width: calc(100% - 20px);
   }
   .tutorial-sparcky-card {
-    padding: 10px 12px;
+    padding: 12px 14px;
     gap: 10px;
   }
   .sparcky-avatar-wrap {
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
   }
   .tutorial-sparcky-text {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
   }
   .tutorial-swipe-hint {
     bottom: 90px;

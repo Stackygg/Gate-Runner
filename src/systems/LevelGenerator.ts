@@ -25,6 +25,7 @@ export interface LevelData {
   bossName?: string;
   nextSectorGreek?: string;
   nextSectorName?: string;
+  isTutorialLevel?: boolean;
 }
 
 export class LevelGenerator {
@@ -45,6 +46,82 @@ export class LevelGenerator {
     if (r === 1) return 'expedition';
     if (r === 2) return 'raid';
     return 'escort';
+  }
+
+  /**
+   * 🌟 NIVEAU DÉDIÉ AU TUTORIEL D'INITIATION (SPARCKY)
+   * - Voie Gauche : 1 Trou Noir (5 PV) bloquant 2 Portails (+1 et +1 Vaisseau)
+   * - Vague 1 : 10 astéroïdes (1 PV) bien disséminés pour tester le pilotage et le tir
+   * - Vague 2 : 50 astéroïdes pour accumuler des diamants
+   * - Boss Final : 300 PV (Boss d'Initiation)
+   */
+  public static generateTutorialLevel(): LevelData {
+    const gates: Gate[] = [];
+    const enemies: Enemy[] = [];
+
+    const leftLaneX = 100;
+    const leftGateWidth = 115;
+
+    // 1. Séquence Voie Gauche : Trou Noir (5 PV) à Y = 360 + 2 Portails bloqués (+1 et +1)
+    const bh = new Enemy(leftLaneX, 360, 80, 80, 'black_hole', 5);
+    (bh as any).isTutorialBlackHole = true;
+    enemies.push(bh);
+
+    const g1 = new Gate(leftLaneX, 250, leftGateWidth, GAME_CONFIG.GATE_HEIGHT, 'ADD_SHIPS', 1, false);
+    const g2 = new Gate(leftLaneX, 140, leftGateWidth, GAME_CONFIG.GATE_HEIGHT, 'ADD_SHIPS', 1, false);
+    g1.assignedBH = bh;
+    g2.assignedBH = bh;
+    gates.push(g1, g2);
+
+    // 2. Vague 1 : 10 astéroïdes bien disséminés (1 PV chacun)
+    // Répartis sur le couloir central et droit (X: 180 à 450)
+    const wave1Positions = [
+      { x: 260, y: 240 },
+      { x: 380, y: 200 },
+      { x: 200, y: 160 },
+      { x: 330, y: 120 },
+      { x: 440, y: 80 },
+      { x: 230, y: 40 },
+      { x: 360, y: 0 },
+      { x: 190, y: -40 },
+      { x: 410, y: -80 },
+      { x: 280, y: -120 }
+    ];
+
+    for (const pos of wave1Positions) {
+      const ast = new Enemy(pos.x, pos.y, 44, 40, 'block', 1);
+      (ast as any).isTutorialWave1 = true;
+      enemies.push(ast);
+    }
+
+    // 3. Vague 2 : 50 astéroïdes après le trou noir pour accumuler des diamants (Y = -350 à -2300)
+    for (let i = 0; i < 50; i++) {
+      const y = -350 - (i * 38) + (Math.random() - 0.5) * 15;
+      const x = 75 + Math.random() * 390;
+      const size = 36 + Math.random() * 20;
+      const hp = 1 + (Math.random() < 0.35 ? 1 : 0); // 1 ou 2 PV
+      const ast = new Enemy(x, y, size, size * 0.85, 'block', hp);
+      (ast as any).isTutorialWave2 = true;
+      enemies.push(ast);
+    }
+
+    // 4. Boss Final d'Initiation (300 PV)
+    const boss = new Enemy(270, -2600, 160, 95, 'boss_v1', 300, "BOSS D'INITIATION");
+    boss.isLevelBoss = true;
+    (boss as any).isTutorialBoss = true;
+    enemies.push(boss);
+
+    return {
+      levelNumber: 1,
+      missionType: 'expedition',
+      isFunLevel: false,
+      totalDistance: 3200,
+      gates,
+      enemies,
+      hasBoss: true,
+      bossEnemy: boss,
+      isTutorialLevel: true
+    };
   }
 
   public static generateLevel(levelNum: number): LevelData {
