@@ -30,12 +30,10 @@ type MissionProgress = ReturnType<UpgradeStore['getCurrentLevelData']>;
 
 // Réglages du portail mur (voir main.ts : updateTutorialWallGate)
 export const TUTORIAL_WALL = {
-  holdY: 250,              // Profondeur où il s'arrête devant la flotte
-  holdSeconds: 7,          // Durée de l'arrêt, pendant laquelle la flotte tire dedans
-  releaseSpeed: 200,       // Vitesse d'avance vers la flotte après l'arrêt (px/s)
+  shootableY: -560,        // Profondeur où il devient tirable (bien visible), puis fonce vers la flotte sans s'arrêter
   // Les vaisseaux tirent en salves synchronisées : la marge avec ce que la flotte peut tirer se compte en salves.
   // Sans les niveaux exigés, il reste au moins une salve complète de négatif en plus : toute la flotte y passe.
-  failVolleyMargin: 2.5,
+  failVolleyMargin: 3,
   // Avec les niveaux exigés, le portail bascule au positif avec cette marge.
   passVolleyMargin: 1.5,
   requiredFireRateSteps: 2 // Niveaux de Vitesse tir exigés avant de repartir (+16 %)
@@ -76,8 +74,8 @@ const TUTORIAL_LESSONS: TutorialLesson[] = [
   },
   {
     tag: 'gate_wall',
-    text: 'Ce portail rouge barre toute la route ! Tire dedans : chaque tir le fait remonter.',
-    triggerY: TUTORIAL_WALL.holdY
+    text: 'Ce portail rouge barre toute la route ! Tire dedans avant qu\'il t\'atteigne : chaque tir le fait remonter.',
+    triggerY: TUTORIAL_WALL.shootableY
   },
   {
     tag: 'black_hole',
@@ -222,8 +220,12 @@ export class TutorialSystem {
    * fireRate et damage : cadence et dégâts réels d'un vaisseau (améliorations comprises).
    */
   public computeWallValue(shipCount: number, fireRate: number, damage: number): number {
-    const releaseTime = (GAME_CONFIG.PLAYER_BASE_Y - TUTORIAL_WALL.holdY) / TUTORIAL_WALL.releaseSpeed;
-    const volleys = fireRate * (TUTORIAL_WALL.holdSeconds + releaseTime);
+    // Temps de tir : de son apparition tirable jusqu'au franchissement (25 px avant la flotte), au rythme constant du tutoriel,
+    // plus le trajet des tirs déjà en vol quand il devient tirable (ils le touchent aussitôt)
+    const approachTime = (GAME_CONFIG.PLAYER_BASE_Y - 25 - TUTORIAL_WALL.shootableY) / GAME_CONFIG.BASE_SCROLL_SPEED;
+    const bulletsInFlight = (GAME_CONFIG.PLAYER_BASE_Y - TUTORIAL_WALL.shootableY) / GAME_CONFIG.BASE_BULLET_SPEED;
+    const exposure = approachTime + bulletsInFlight;
+    const volleys = fireRate * exposure;
     const margin = this.hasRequiredFireRate() ? -TUTORIAL_WALL.passVolleyMargin : TUTORIAL_WALL.failVolleyMargin;
     return Math.max(1, Math.round(shipCount * damage * (volleys + margin)));
   }

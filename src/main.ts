@@ -430,7 +430,6 @@ export class GameApp {
   }
 
   private currentPhase: number = 1;
-  private tutorialWallHoldTimer: number = 0;
   private finalBossTimer: number = 30.0;
   private finalBossMultiplier: number = 5.0;
 
@@ -456,7 +455,6 @@ export class GameApp {
     this.particles.clear();
     this.input.resetToCenter();
     this.fleetDamageTakenInRun = 0;
-    this.tutorialWallHoldTimer = TUTORIAL_WALL.holdSeconds;
     this.mothershipDamageTakenInRun = 0;
     this.victoryDelayTimer = undefined;
     this.currentPhase = 1;
@@ -1229,7 +1227,8 @@ export class GameApp {
         gate.y = safeMaxY;
       } else {
         // Le trou noir devant est vaincu : le portail est libéré et glisse promptement vers le joueur !
-        gate.update(dt, gateRapidSpeed);
+        // (au rythme du niveau pendant le vol d'initiation)
+        gate.update(dt, this.currentLevelData?.isTutorialLevel ? this.scrollSpeed : gateRapidSpeed);
       }
     }
 
@@ -1442,7 +1441,8 @@ export class GameApp {
 
     const hasScreenObstacles = hasActiveBoss || hasActiveBlackHole || hasActiveGate || hasActiveAsteroids;
     const hasUpcomingContent = this.enemies.some(e => !e.isDead && e.y < asteroidProximityY) || this.gates.some(g => !g.isPassed && g.y < gateProximityY);
-    const allowHyperdrive = (this.currentLevelData?.missionType !== 'escort');
+    // Pas d'hyperdrive en escorte, ni pendant le vol d'initiation (rythme constant pour apprendre)
+    const allowHyperdrive = (this.currentLevelData?.missionType !== 'escort') && !this.currentLevelData?.isTutorialLevel;
 
     if (allowHyperdrive && !hasScreenObstacles && hasUpcomingContent && this.state !== 'BOSS' && this.state !== 'GAMEOVER' && this.state !== 'PAUSED') {
       // Hyperdrive fluide : fait glisser la vague d'astéroïdes jusqu'au joueur et l'apparition du boss sans attente
@@ -1451,13 +1451,6 @@ export class GameApp {
       // Décélération fluide et naturelle vers la vitesse nominale dès qu'un boss ou obstacle est présent
       const decelSpeed = hasActiveBoss ? 2800 : 1800;
       this.scrollSpeed = Math.max(GAME_CONFIG.BASE_SCROLL_SPEED, this.scrollSpeed - dt * decelSpeed);
-    }
-
-    // Vol d'initiation : la flotte s'arrête devant le portail mur le temps de le remonter au tir
-    const isWallHolding = !!this.currentLevelData?.isTutorialLevel && this.tutorialWallHoldTimer > 0 &&
-      this.gates.some(g => g.tutorialTag === 'gate_wall' && g.isSpecial && !g.isPassed);
-    if (isWallHolding) {
-      this.scrollSpeed = 0;
     }
 
     // 5. État et Affichage des Boss de Vagues & Timer Dégressif (30s de x5.0 à x1.0)
@@ -1636,29 +1629,22 @@ export class GameApp {
     this.updateHudStats();
   }
 
-  // Portail mur du vol d'initiation : il approche avec le niveau, s'arrête devant la flotte
-  // le temps de la remontée au tir, puis avance vers le joueur
+  // Portail mur du vol d'initiation : il fonce vers la flotte au rythme du niveau
+  // et devient tirable dès qu'il est bien visible
   private updateTutorialWallGate(gate: Gate, dt: number) {
     if (!gate.isSpecial) {
-      // Pendant l'approche, sa valeur suit la flotte : infranchissable tant que les améliorations exigées manquent
+      // Tant qu'il n'est pas tirable, sa valeur suit la flotte : infranchissable tant que les améliorations exigées manquent
       gate.rawValue = -this.tutorial.computeWallValue(
         this.fleet.shipCount,
         this.fleet.fireRate * this.fleet.evolutionFireRateMultiplier,
         this.fleet.bulletDamage * this.fleet.evolutionDamageMultiplier
       );
       gate.value = gate.rawValue;
-      gate.update(dt, this.scrollSpeed, TUTORIAL_WALL.holdY);
-      if (gate.y >= TUTORIAL_WALL.holdY) {
+      if (gate.y >= TUTORIAL_WALL.shootableY) {
         gate.isSpecial = true;
       }
-      return;
     }
-    if (this.tutorialWallHoldTimer > 0) {
-      this.tutorialWallHoldTimer -= dt;
-      gate.update(dt, 0);
-      return;
-    }
-    gate.update(dt, TUTORIAL_WALL.releaseSpeed);
+    gate.update(dt, this.scrollSpeed);
   }
 
   // --- DÉFI SPÉCIAL : CONVOI D'IRIDIUM (MODE ARÈNE DÉFENSE 360°) ---

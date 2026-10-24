@@ -110,22 +110,23 @@ export class LevelGenerator {
       enemies.push(ast);
     }
 
-    // 6. Portail mur : toute la largeur, négatif, à remonter au tir.
+    // 6. Portail mur : toute la largeur, négatif, à remonter au tir pendant qu'il fonce vers la flotte.
+    // Assez loin de la vague 2 pour que les astéroïdes n'interceptent plus les tirs quand il devient tirable.
     // Sa valeur est calculée en vol (voir main.ts) pour être infranchissable sans améliorations
-    const gWall = new Gate(270, -4400, 480, H, 'SUBTRACT_SHIPS', -1, false);
+    const gWall = new Gate(270, -5150, 480, H, 'SUBTRACT_SHIPS', -1, false);
     gWall.tutorialTag = 'gate_wall';
     gates.push(gWall);
 
     // 7. Trou noir sur la voie gauche, verrouillant un portail x2
-    const bh = new Enemy(100, -5100, 80, 80, 'black_hole', 12);
+    const bh = new Enemy(100, -5850, 80, 80, 'black_hole', 12);
     bh.tutorialTag = 'black_hole';
     enemies.push(bh);
-    const gBh = new Gate(100, -5230, 125, H, 'MULTIPLY_SHIPS', 2, false);
+    const gBh = new Gate(100, -5980, 125, H, 'MULTIPLY_SHIPS', 2, false);
     gBh.assignedBH = bh;
     gates.push(gBh);
 
     // 8. Boss d'initiation
-    const boss = new Enemy(270, -6700, 160, 95, 'boss_v1', 250, "BOSS D'INITIATION");
+    const boss = new Enemy(270, -7450, 160, 95, 'boss_v1', 250, "BOSS D'INITIATION");
     boss.isLevelBoss = true;
     boss.tutorialTag = 'boss';
     enemies.push(boss);
@@ -134,7 +135,7 @@ export class LevelGenerator {
       levelNumber: 1,
       missionType: 'expedition',
       isFunLevel: false,
-      totalDistance: 7400,
+      totalDistance: 8200,
       gates,
       enemies,
       hasBoss: true,
