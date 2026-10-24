@@ -4,6 +4,7 @@ import { GAME_CONFIG, GameplayType } from '../config';
 import { Gate } from '../entities/Gate';
 import { Enemy } from '../entities/Enemy';
 import { SectorSystem } from './SectorSystem';
+import { TUTORIAL_WALL } from './TutorialSystem';
 
 export type MissionMode = 'expedition' | 'raid' | 'escort' | 'boss_duel' | 'interception' | 'flare_run' | 'gauntlet';
 
@@ -52,7 +53,8 @@ export class LevelGenerator {
    * 🌟 NIVEAU DÉDIÉ AU TUTORIEL D'INITIATION (SPARCKY)
    * Chaque objet porte un tutorialTag qui déclenche une leçon de Sparcky à son approche.
    * - Vague d'entraînement : 6 astéroïdes inoffensifs, alternés gauche / droite / centre
-   * - Portail +4 au centre, puis choix +2 / x2, puis portail rouge -4 face à un +3
+   * - Portail +4 au centre, puis choix +2 / x2, puis portail rouge -4 face à un +3,
+   *   avec des astéroïdes d'entraînement entre les rangées
    * - Vague 2 : astéroïdes réels (ils coûtent des vaisseaux)
    * - Portail mur rouge sur toute la largeur, à remonter au tir (infranchissable sans améliorations)
    * - Trou noir (voie gauche) bloquant un portail x2
@@ -93,6 +95,19 @@ export class LevelGenerator {
     gChoiceMul.tutorialTag = 'gate_choice';
     gates.push(gChoiceAdd, gChoiceMul);
 
+    // Astéroïdes d'entraînement entre les rangées de portails : des diamants en plus, sans risque
+    const betweenGates = [
+      { x: 150, y: -1120 }, { x: 390, y: -1180 }, { x: 270, y: -1250 },
+      { x: 130, y: -1320 }, { x: 410, y: -1380 }, { x: 270, y: -1440 },
+      { x: 400, y: -1820 }, { x: 160, y: -1880 }, { x: 280, y: -1950 },
+      { x: 420, y: -2020 }, { x: 140, y: -2080 }, { x: 270, y: -2140 }
+    ];
+    for (const pos of betweenGates) {
+      const ast = new Enemy(pos.x, pos.y, 44, 40, 'block', 2);
+      ast.isHarmless = true;
+      enemies.push(ast);
+    }
+
     // 4. Portail rouge du côté où le joueur vient de passer (x2), le bon portail est de l'autre côté
     const gRed = new Gate(375, -2300, 170, H, 'SUBTRACT_SHIPS', 4, false);
     const gSafe = new Gate(165, -2300, 170, H, 'ADD_SHIPS', 3, false);
@@ -111,22 +126,23 @@ export class LevelGenerator {
     }
 
     // 6. Portail mur : toute la largeur, négatif, à remonter au tir pendant qu'il fonce vers la flotte.
-    // Assez loin de la vague 2 pour que les astéroïdes n'interceptent plus les tirs quand il devient tirable.
+    // Visible et tirable de très loin ; assez loin de la vague 2 pour que les astéroïdes n'interceptent plus les tirs.
     // Sa valeur est calculée en vol (voir main.ts) pour être infranchissable sans améliorations
-    const gWall = new Gate(270, -5150, 480, H, 'SUBTRACT_SHIPS', -1, false);
+    const gWall = new Gate(270, -5950, 480, H, 'SUBTRACT_SHIPS', -1, false);
     gWall.tutorialTag = 'gate_wall';
+    gWall.visibleFromY = TUTORIAL_WALL.shootableY;
     gates.push(gWall);
 
     // 7. Trou noir sur la voie gauche, verrouillant un portail x2
-    const bh = new Enemy(100, -5850, 80, 80, 'black_hole', 12);
+    const bh = new Enemy(100, -6650, 80, 80, 'black_hole', 12);
     bh.tutorialTag = 'black_hole';
     enemies.push(bh);
-    const gBh = new Gate(100, -5980, 125, H, 'MULTIPLY_SHIPS', 2, false);
+    const gBh = new Gate(100, -6780, 125, H, 'MULTIPLY_SHIPS', 2, false);
     gBh.assignedBH = bh;
     gates.push(gBh);
 
-    // 8. Boss d'initiation
-    const boss = new Enemy(270, -7450, 160, 95, 'boss_v1', 250, "BOSS D'INITIATION");
+    // 8. Boss d'initiation : assez résistant pour apprendre à esquiver ses salves
+    const boss = new Enemy(270, -8250, 160, 95, 'boss_v1', 1500, "BOSS D'INITIATION");
     boss.isLevelBoss = true;
     boss.tutorialTag = 'boss';
     enemies.push(boss);
@@ -135,7 +151,7 @@ export class LevelGenerator {
       levelNumber: 1,
       missionType: 'expedition',
       isFunLevel: false,
-      totalDistance: 8200,
+      totalDistance: 9000,
       gates,
       enemies,
       hasBoss: true,

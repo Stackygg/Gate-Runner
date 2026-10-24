@@ -667,3 +667,35 @@
     flex-direction: column;
   }
 }
+
+/* Bilan du vol d'initiation : explication de Sparcky sous la récompense d'Iridium */
+.tuto-loot-sparcky {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.14) 0%, rgba(15, 23, 42, 0.7) 100%);
+  border: 1px solid rgba(255, 107, 0, 0.45);
+  border-radius: 12px;
+  text-align: left;
+}
+
+.tuto-loot-sparcky-avatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1.5px solid #FF6B00;
+  box-shadow: 0 0 8px rgba(255, 107, 0, 0.5);
+}
+
+.tuto-loot-sparcky p {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #E2E8F0;
+}

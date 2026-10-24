@@ -26,6 +26,7 @@ export class Gate {
   public pairGate?: Gate; // Portail jumeau (choix exclusif : franchir l'un fait disparaître l'autre)
   public assignedBH?: Enemy; // Trou noir spécifiquement associé dont dépend la libération du portail
   public tutorialTag: string | null = null; // Repère utilisé par Sparcky pour déclencher ses leçons
+  public visibleFromY: number = -1100; // Profondeur à partir de laquelle le portail apparaît (fondu sur 300 px)
   
   public hitPulse: number = 1.0;
   public energyPhase: number = 0;
@@ -143,14 +144,14 @@ export class Gate {
   }
 
   public draw3D(ctx: CanvasRenderingContext2D, renderer: Renderer) {
-    if (this.isPassed || this.y < -1100 || this.y > 690) return;
+    if (this.isPassed || this.y < this.visibleFromY || this.y > 690) return;
 
     const pt = renderer.project(this.x, this.y);
     if (!pt.isVisible || pt.scale <= 0.04) return;
 
     ctx.save();
-    if (this.y < -800) {
-      ctx.globalAlpha = Math.max(0, Math.min(1, (this.y + 1100) / 300));
+    if (this.y < this.visibleFromY + 300) {
+      ctx.globalAlpha = Math.max(0, Math.min(1, (this.y - this.visibleFromY) / 300));
     }
     const s = pt.scale * this.hitPulse;
     const isPos = this.isPositive();

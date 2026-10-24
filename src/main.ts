@@ -673,6 +673,8 @@ export class GameApp {
     // Déclenchement du tutoriel de vol avec Sparcky (Niveau Dédié Tutoriel)
     if (this.currentLevelData?.isTutorialLevel) {
       this.tutorial.startFlightTutorial(this.fleet ? this.fleet.centerX : 270);
+    } else {
+      this.tutorial.onFlightLaunched();
     }
   }
 
@@ -720,8 +722,19 @@ export class GameApp {
       const earned = Math.round(this.sessionDiamonds);
       this.store.addDiamondsToMission(1, earned);
       this.store.save();
-      this.hangar.refreshCurrencies();
+      // Le bilan de Sparcky peut offrir de l'Iridium : on rafraîchit les monnaies après
       this.tutorial.handleRunEnd(isVictory, earned);
+      this.hangar.refreshCurrencies();
+
+      // Victoire : menu de fin de niveau, version tutoriel
+      if (isVictory) {
+        this.gameOverModal.showTutorialComplete({
+          survivingFleet: Math.max(0, this.fleet ? this.fleet.shipCount : 0),
+          enemiesKilled: this.sessionKills,
+          attempts: this.tutorial.getAttempts(),
+          iridiumEarned: this.tutorial.getEarnedIridium()
+        }, () => this.tutorial.continueAfterVictory());
+      }
       return;
     }
 
@@ -1472,7 +1485,8 @@ export class GameApp {
         this.finalBossMultiplier = 1.0 + 4.0 * (this.finalBossTimer / 30.0);
         this.maxMultiplierAchieved = this.finalBossMultiplier;
 
-        const isEnraged = (activeBoss.combatTimer >= 10.0);
+        // Pas d'annonce de surcharge pendant le vol d'initiation : le boss d'initiation n'accélère pas
+        const isEnraged = !this.currentLevelData?.isTutorialLevel && (activeBoss.combatTimer >= 10.0);
         this.hud.updateBossTimer(this.finalBossTimer, this.finalBossMultiplier, isEnraged);
 
         // Alerte visuelle et sonore au déclenchement de la surcharge à 10 secondes de combat
@@ -1630,18 +1644,22 @@ export class GameApp {
   }
 
   // Portail mur du vol d'initiation : il fonce vers la flotte au rythme du niveau
-  // et devient tirable dès qu'il est bien visible
+  // et devient tirable dès qu'il apparaît
   private updateTutorialWallGate(gate: Gate, dt: number) {
     if (!gate.isSpecial) {
-      // Tant qu'il n'est pas tirable, sa valeur suit la flotte : infranchissable tant que les améliorations exigées manquent
-      gate.rawValue = -this.tutorial.computeWallValue(
-        this.fleet.shipCount,
-        this.fleet.fireRate * this.fleet.evolutionFireRateMultiplier,
-        this.fleet.bulletDamage * this.fleet.evolutionDamageMultiplier
-      );
+      // Avant son apparition, sa valeur suit la flotte (hors améliorations de la barre), puis elle est figée
+      const frTrack = this.store.data.upgradeTracks.fireRate;
+      const dmgTrack = this.store.data.upgradeTracks.damage;
+      const baseFireRate = this.fleet.fireRate * this.fleet.evolutionFireRateMultiplier /
+        UPGRADE_TRACKS_CONFIG.fireRate.getStatMultiplier(frTrack.tier, frTrack.step);
+      const baseDamage = this.fleet.bulletDamage * this.fleet.evolutionDamageMultiplier /
+        UPGRADE_TRACKS_CONFIG.damage.getStatMultiplier(dmgTrack.tier, dmgTrack.step);
+      const value = this.tutorial.getWallValue(this.fleet.shipCount, baseFireRate, baseDamage);
+      gate.rawValue = -value;
       gate.value = gate.rawValue;
       if (gate.y >= TUTORIAL_WALL.shootableY) {
         gate.isSpecial = true;
+        this.tutorial.lockWallValue(value);
       }
     }
     gate.update(dt, this.scrollSpeed);

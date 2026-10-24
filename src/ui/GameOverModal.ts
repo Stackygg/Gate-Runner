@@ -27,6 +27,21 @@ export interface GameOverStats {
   isHangarUnlocked?: boolean;
 }
 
+export interface TutorialCompleteStats {
+  survivingFleet: number;
+  enemiesKilled: number;
+  attempts: number;
+  iridiumEarned: number;
+}
+
+// Compétences présentées dans le bilan du vol d'initiation
+const TUTORIAL_SKILLS = [
+  { title: 'PORTAILS', desc: 'Bleus, ×2 et rouges : choisir le bon chemin' },
+  { title: 'TROUS NOIRS', desc: 'Les détruire pour libérer les portails' },
+  { title: 'AMÉLIORATIONS', desc: 'Dépenser ses 💎 pour tirer plus vite' },
+  { title: 'BOSS', desc: 'Esquiver ses salves en gardant le cap' }
+];
+
 export class GameOverModal {
   private elModal = document.getElementById('modal-gameover');
   private elBadge = document.getElementById('modal-status-badge');
@@ -62,6 +77,10 @@ export class GameOverModal {
 
   private currentStats: GameOverStats | null = null;
   private isDoubled: boolean = false;
+  // Bilan du vol d'initiation : le bouton principal mène à la mission 1 au lieu de rejouer
+  private onTutorialContinue: (() => void) | null = null;
+  private elMultiplierLabel = this.elMultiplier?.previousElementSibling as HTMLElement | null;
+  private elQuestsTitle = this.elQuestsBox?.querySelector('.gameover-quests-title') as HTMLElement | null;
 
   constructor(
     onNext: () => void,
@@ -84,6 +103,12 @@ export class GameOverModal {
         return;
       }
       this.hide();
+      const tutorialContinue = this.onTutorialContinue;
+      if (tutorialContinue) {
+        this.onTutorialContinue = null;
+        tutorialContinue();
+        return;
+      }
       this.onNextCallback();
     });
 
@@ -201,9 +226,15 @@ export class GameOverModal {
     if (!this.elModal) return;
     this.currentStats = { ...stats };
     this.isDoubled = false;
+    this.onTutorialContinue = null;
+
+    // Remise en état après un éventuel bilan de tutoriel
+    if (this.elMultiplierLabel) this.elMultiplierLabel.textContent = 'Multiplicateur Gauntlet :';
+    if (this.elQuestsTitle) this.elQuestsTitle.textContent = 'HAUTS-FAITS DE LA MISSION';
 
     if (this.elBtnHangar) {
       this.elBtnHangar.textContent = 'MENU PRINCIPAL';
+      this.elBtnHangar.style.display = '';
     }
 
     const isHangarUnlocked = stats.isHangarUnlocked !== undefined
@@ -622,6 +653,102 @@ export class GameOverModal {
 
     this.elUnlockedModal?.classList.add('hidden');
     this.elModal.classList.remove('hidden');
+  }
+
+  /**
+   * Bilan du vol d'initiation : même menu que les missions, version tutoriel
+   * (statistiques du vol, compétences acquises, récompense d'Iridium expliquée par Sparcky)
+   */
+  public showTutorialComplete(stats: TutorialCompleteStats, onContinue: () => void) {
+    if (!this.elModal) return;
+    this.currentStats = null;
+    this.onTutorialContinue = onContinue;
+
+    if (this.elBadge) {
+      this.elBadge.className = 'modal-badge victory';
+      this.elBadge.textContent = "VOL D'INITIATION RÉUSSI !";
+    }
+    if (this.elTitle) this.elTitle.textContent = 'ENTRAÎNEMENT TERMINÉ';
+
+    if (this.elFinalFleet) this.elFinalFleet.textContent = `${stats.survivingFleet} vaisseau(x)`;
+    if (this.elKills) this.elKills.textContent = `${stats.enemiesKilled}`;
+    if (this.elMultiplierLabel) this.elMultiplierLabel.textContent = 'Essais :';
+    if (this.elMultiplier) this.elMultiplier.textContent = `${stats.attempts}`;
+
+    // Pas de bandeau de diamants, de pub x2 ni de retour au menu : le tutoriel mène droit à la mission 1
+    const elTopRewards = document.getElementById('gameover-top-rewards');
+    const elTopDivider = document.getElementById('gameover-top-divider');
+    if (elTopRewards) elTopRewards.style.display = 'none';
+    if (elTopDivider) elTopDivider.style.display = 'none';
+    if (this.elBtnDoubleAd) this.elBtnDoubleAd.style.display = 'none';
+    if (this.elBtnHangar) this.elBtnHangar.style.display = 'none';
+    if (this.elBtnLootToHangar) this.elBtnLootToHangar.style.display = 'none';
+    this.elUnlockedBox?.classList.add('hidden');
+
+    // Compétences acquises (à la place des hauts-faits)
+    if (this.elQuestsBox && this.elQuestsList) {
+      if (this.elQuestsTitle) this.elQuestsTitle.textContent = 'COMPÉTENCES ACQUISES';
+      this.elQuestsBox.style.display = 'block';
+      this.elQuestsList.innerHTML = TUTORIAL_SKILLS.map(skill => `
+        <div class="gameover-quest-row">
+          <div class="quest-row-left">
+            <span class="quest-status-badge quest-chip-done">✅ ACQUIS</span>
+            <div class="quest-row-info">
+              <div class="quest-row-title">${skill.title}</div>
+              <div class="quest-row-desc">${skill.desc}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Récompense d'Iridium, avec l'explication de Sparcky
+    if (this.elLootBox && this.elLootGrid) {
+      if (stats.iridiumEarned > 0) {
+        const headerTitle = this.elLootBox.querySelector('.loot-header-title');
+        if (headerTitle) headerTitle.textContent = "RÉCOMPENSE D'ENTRAÎNEMENT";
+        this.elLootGrid.innerHTML = `
+          <div class="loot-slot-cell cell-iridium" title="Iridium">
+            <div class="loot-cell-icon-wrap">
+              <span class="loot-cell-icon"><span class="icon-iridium"></span></span>
+            </div>
+            <div class="loot-cell-val val-iridium">+${stats.iridiumEarned}</div>
+            <div class="loot-cell-title">IRIDIUM</div>
+          </div>
+        `;
+        if (this.elLootDetails) {
+          this.elLootDetails.innerHTML = `
+            <div class="tuto-loot-sparcky">
+              <img src="./sparcky-mascotte.png" alt="Sparcky" class="tuto-loot-sparcky-avatar" />
+              <p>L'Iridium <span class="icon-iridium"></span> est rare : il débloque les paliers d'amélioration avancés et peut t'offrir un vaisseau de plus au départ.</p>
+            </div>
+          `;
+        }
+        this.elLootBox.classList.remove('hidden');
+      } else {
+        this.elLootGrid.innerHTML = '';
+        if (this.elLootDetails) this.elLootDetails.innerHTML = '';
+        this.elLootBox.classList.add('hidden');
+      }
+    }
+
+    if (this.elBtnNext) {
+      this.elBtnNext.removeAttribute('disabled');
+      this.elBtnNext.classList.remove('disabled');
+      this.elBtnNext.textContent = 'MISSION 1 ▶';
+    }
+
+    this.elUnlockedModal?.classList.add('hidden');
+    this.elModal.classList.remove('hidden');
+
+    try {
+      confetti({
+        particleCount: 90,
+        spread: 75,
+        origin: { y: 0.6 },
+        colors: ['#FF6B00', '#00F0FF', '#FFE600', '#7928CA']
+      });
+    } catch {}
   }
 
   public hide() {
