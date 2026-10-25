@@ -1,5 +1,5 @@
 {
-  "name": "stacky-gate-runner",
+  "name": "space-gate-runner",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^8.2.1",
     "@capacitor/android": "^8.5.1",
     "@capacitor/cli": "^8.5.1",
     "@capacitor/core": "^8.5.1",

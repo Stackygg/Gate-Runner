@@ -1,5 +1,5 @@
 // Service Worker pour le support 100% Hors-Ligne (Offline / Mode Avion)
-const CACHE_NAME = 'stacky-fleet-cache-v1';
+const CACHE_NAME = 'space-gate-runner-cache-v1';
 
 const STATIC_ASSETS = [
   './',

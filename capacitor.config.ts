@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.stacky.gaterunner',
-  appName: 'Stacky Fleet',
+  appName: 'Space Gate Runner',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

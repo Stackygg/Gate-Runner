@@ -1,6 +1,6 @@
 {
-  "name": "Stacky Fleet : Gate Runner",
-  "short_name": "Stacky Fleet",
+  "name": "Space Gate Runner",
+  "short_name": "Gate Runner",
   "description": "Space Multiplier Shoot'em Up",
   "start_url": "./",
   "display": "standalone",

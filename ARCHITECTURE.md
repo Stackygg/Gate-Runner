@@ -1,4 +1,4 @@
-# 🗺️ STACKY-GATERUNNER : FEUILLE DE ROUTE & ARCHITECTURE MAÎTRESSE
+# 🗺️ SPACE GATE RUNNER : FEUILLE DE ROUTE & ARCHITECTURE MAÎTRESSE
 
 > **Guide de référence pérenne et exhaustif** : ce document consigne l'ensemble des constantes fondamentales, formules mathématiques, unités de jeu, hiérarchies de fichiers et registres de données pour orienter tout travail de conception, d'équilibrage et de débogage.
 

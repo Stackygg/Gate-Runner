@@ -378,10 +378,17 @@ export class GameApp {
       syncHapticsUI();
     });
 
+    // Consentement publicitaire (RGPD) : le joueur peut revoir ses choix à tout moment
+    const settingsAdPrivacyItem = document.getElementById('settings-ad-privacy-item');
+    document.getElementById('btn-settings-ad-privacy')?.addEventListener('click', () => {
+      void AdService.showPrivacyOptions();
+    });
+
     btnHangarSettings?.addEventListener('click', () => {
       syncAudioUI();
       syncPerfUI();
       syncHapticsUI();
+      settingsAdPrivacyItem?.classList.toggle('hidden', !AdService.isPrivacyOptionsAvailable());
       modalSettings?.classList.remove('hidden');
     });
 

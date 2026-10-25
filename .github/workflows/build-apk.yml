@@ -61,22 +61,22 @@ jobs:
             exit 1
           fi
           echo "✅ Fichier APK trouvé : $APK_PATH"
-          cp "$APK_PATH" StackyFleet.apk
-          ls -lh StackyFleet.apk
+          cp "$APK_PATH" SpaceGateRunner.apk
+          ls -lh SpaceGateRunner.apk
 
       - name: 📤 Publication en tant qu'Artifact GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: StackyFleet-Android-APK
-          path: StackyFleet.apk
+          name: SpaceGateRunner-Android-APK
+          path: SpaceGateRunner.apk
           retention-days: 30
 
       - name: 🚀 Publication de la Release GitHub publique
         run: |
-          gh release create "v1.0.${{ github.run_number }}" StackyFleet.apk \
+          gh release create "v1.0.${{ github.run_number }}" SpaceGateRunner.apk \
             --repo "${{ github.repository }}" \
-            --title "Stacky Fleet v1.0.${{ github.run_number }}" \
-            --notes "🎮 Téléchargez **StackyFleet.apk** ci-dessous directement sur votre smartphone Android pour installer le jeu !" \
+            --title "Space Gate Runner v1.0.${{ github.run_number }}" \
+            --notes "🎮 Téléchargez **SpaceGateRunner.apk** ci-dessous directement sur votre smartphone Android pour installer le jeu !" \
             --latest
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
