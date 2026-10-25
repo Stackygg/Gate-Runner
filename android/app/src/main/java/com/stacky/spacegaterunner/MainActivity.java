@@ -1,4 +1,4 @@
-package com.stacky.gaterunner;
+package com.stacky.spacegaterunner;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -11,10 +11,10 @@ if (keystorePropertiesFile.exists()) {
 def releaseStoreFile = System.getenv('ANDROID_KEYSTORE_PATH') ?: keystoreProperties['storeFile']
 
 android {
-    namespace = "com.stacky.gaterunner"
+    namespace = "com.stacky.spacegaterunner"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.stacky.gaterunner"
+        applicationId "com.stacky.spacegaterunner"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Le Play Store exige un versionCode croissant à chaque envoi (fourni par la CI)

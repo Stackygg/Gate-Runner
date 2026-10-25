@@ -2,8 +2,8 @@
 <resources>
     <string name="app_name">Space Gate Runner</string>
     <string name="title_activity_main">Space Gate Runner</string>
-    <string name="package_name">com.stacky.gaterunner</string>
-    <string name="custom_url_scheme">com.stacky.gaterunner</string>
+    <string name="package_name">com.stacky.spacegaterunner</string>
+    <string name="custom_url_scheme">com.stacky.spacegaterunner</string>
     <!-- AdMob : identifiant d'application de démonstration public de Google.
          À remplacer par l'identifiant de l'app AdMob (ca-app-pub-XXXX~YYYY) avant la mise en production. -->
     <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
